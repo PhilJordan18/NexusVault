@@ -1,0 +1,11 @@
+{
+    "mcpServers": {
+        "laravel-boost": {
+            "command": "/Users/philippemonfouayi/.config/herd-lite/bin/php",
+            "args": [
+                "/Users/philippemonfouayi/PhpstormProjects/nexusvault/artisan",
+                "boost:mcp"
+            ]
+        }
+    }
+}
