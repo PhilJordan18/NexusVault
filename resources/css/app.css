@@ -3,9 +3,19 @@
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 
+@theme {
+    --color-nexus-500: #00ff9d;
+    --color-nexus-600: #00cc7a;
+    --color-nexus-700: #00b36b;
+    --color-background-dark: #0a0a0a;
+    --color-background-light: #f8f9fa;
+}
+
 @theme inline {
     --font-sans:
         Instrument Sans, ui-sans-serif, system-ui, sans-serif,
         'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
