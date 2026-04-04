@@ -26,38 +26,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-
-        Schema::create('services', function (Blueprint $table) {
-           $table->id();
-           $table->foreignId('user_id')->constrained()->onDelete('cascade');
-           $table->string('name');
-           $table->string('url')->nullable();
-           $table->string('favicon')->nullable();
-
-           $table->string('username');
-           $table->string('password');
-           $table->string('notes');
-
-           $table->string('iv', 64);
-           $table->string('tag', 64);
-
-           $table->foreignId('shared_user_id')->nullable()->constrained('users');
-           $table->timestamp('shared_at')->nullable();
-           $table->timestamps();
-        });
-
-        Schema::create('shares', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('service_id')->constrained()->onDelete('cascade');
-            $table->foreignId('from_user_id')->constrained('users');
-            $table->foreignId('to_user_id')->constrained('users');
-            $table->timestamp('shared_at')->useCurrent();
-            $table->timestamp('accepted_at')->nullable();
-            $table->boolean('rejected')->default(false);
-            $table->text('shared_data');
-            $table->timestamps();
-        });
-
         Schema::create('passkeys', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
@@ -91,8 +59,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::dropIfExists('passkeys');
-        Schema::dropIfExists('shares');
-        Schema::dropIfExists('services');
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
