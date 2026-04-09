@@ -2,6 +2,14 @@
 
 namespace App\Providers;
 
+use App\Services\Auth\Contracts\LoginServiceInterface;
+use App\Services\Auth\Contracts\OAuthServiceInterface;
+use App\Services\Auth\Contracts\RegisterServiceInterface;
+use App\Services\Auth\Contracts\UserKeyServiceInterface;
+use App\Services\Auth\LoginService;
+use App\Services\Auth\OAuthService;
+use App\Services\Auth\RegisterService;
+use App\Services\Auth\UserKeyService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -15,7 +23,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(LoginServiceInterface::class, LoginService::class);
+        $this->app->bind(RegisterServiceInterface::class, RegisterService::class);
+        $this->app->bind(OAuthServiceInterface::class, OAuthService::class);
+        $this->app->bind(UserKeyServiceInterface::class, UserKeyService::class);
     }
 
     /**

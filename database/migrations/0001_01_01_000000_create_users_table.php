@@ -20,6 +20,7 @@ return new class extends Migration
             $table->string('salt', 64);
             $table->text('public_key');
             $table->text('private_key');
+            $table->text('encrypted_master_key')->nullable();
             $table->boolean('mfa_enabled')->default(false);
             $table->text('totp_secret');
             $table->rememberToken();
