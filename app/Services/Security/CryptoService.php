@@ -3,11 +3,12 @@
 namespace App\Services\Security;
 
 use Random\RandomException;
+use SodiumException;
 
 final readonly class CryptoService
 {
     /**
-     * @throws \SodiumException
+     * @throws SodiumException
      */
     public function deriveMasterKey(string $password, string $salt) : string {
         $pepper  = config('app.pepper');
@@ -38,7 +39,7 @@ final readonly class CryptoService
 
     /**
      * @throws RandomException
-     * @throws \SodiumException
+     * @throws SodiumException
      */
     public function encryptPrivateKey(string $privateKey, string $masterKey) : array {
         $nonce = random_bytes(SODIUM_CRYPTO_SECRETBOX_NONCEBYTES);

@@ -22,7 +22,7 @@ return new class extends Migration
             $table->text('private_key');
             $table->text('encrypted_master_key')->nullable();
             $table->boolean('mfa_enabled')->default(false);
-            $table->text('totp_secret');
+            $table->text('totp_secret')->nullable();
             $table->rememberToken();
             $table->timestamps();
         });

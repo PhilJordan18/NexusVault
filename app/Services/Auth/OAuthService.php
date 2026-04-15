@@ -17,13 +17,29 @@ final readonly class OAuthService implements OAuthServiceInterface
     public function handleCallback($oauthUser, string $provider): void
     {
         $user = User::where('email', $oauthUser->email)->first();
+        $dummyPassword = null;
+
         if (!$user) {
-            $password = Hash::make(Str::random(60));
-            $keys = $this->service->provisionKey();
-            $user = User::create(['name' => $oauthUser->name ?? 'User', 'email' => $oauthUser->email, 'password' => $password, 'salt' => $keys['salt'], 'public_key' => $keys['public_key'], 'private_key' => base64_encode($keys['private_key']), 'encrypted_master_key' => $keys['encryptedMasterKey'], 'mfa_enabled' => false, 'totp_secret' => null ,'email_verified_at' => now()]);
+            $dummyPassword = Str::random(60);
+            $hashedPassword = Hash::make($dummyPassword);
+            $keys = $this->service->provisionKey($dummyPassword);
+
+            $user = User::create([
+                'name'                 => $oauthUser->name ?? 'User',
+                'email'                => $oauthUser->email,
+                'password'             => $hashedPassword,
+                'salt'                 => $keys['salt'],
+                'public_key'           => $keys['public_key'],
+                'private_key'          => base64_encode($keys['private_key']),
+                'encrypted_master_key' => $keys['encrypted_master_key'],
+                'mfa_enabled'          => false,
+                'totp_secret'          => null,
+                'email_verified_at'    => now(),
+            ]);
         }
+
         Auth::login($user);
         Session::regenerate();
-        $this->service->storeMasterKey($user);
+        $this->service->storeMasterKey($user, $dummyPassword);
     }
 }

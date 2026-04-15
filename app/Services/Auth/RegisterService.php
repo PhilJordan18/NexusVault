@@ -12,9 +12,6 @@ final readonly class RegisterService implements RegisterServiceInterface
 {
     public function __construct(private UserKeyServiceInterface $service) {}
 
-    /**
-     * @throws RandomException
-     */
     public function register(array $data): User
     {
         $keys = $this->service->provisionKey($data['password']);

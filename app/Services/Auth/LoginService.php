@@ -26,7 +26,18 @@ final readonly class LoginService implements LoginServiceInterface
         Auth::login($user);
         Session::regenerate();
         $this->service->storeMasterKey($user, $credentials['password']);
+        if ($user->mfa_enabled) {
+            return redirect()->route('mfa.verify.login');
+        }
         return redirect()->intended('/dashboard');
+    }
+
+    public function authenticate(array $credentials): RedirectResponse
+    {
+        if (!isset($credentials['password']) || empty($credentials['password'])) {
+            return redirect()->route('login.password', ['email' => $credentials['email']]);
+        }
+        return $this->login($credentials);
     }
 
     public function logout(): void

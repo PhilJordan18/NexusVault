@@ -1,9 +1,14 @@
 <?php
 
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
+use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Support\Facades\Route;
 
 Route::inertia('/', 'Welcome')->name('home');
@@ -17,7 +22,9 @@ Route::get('/register', [RegisterController::class, 'index'])->name('register');
 Route::post('/register', [RegisterController::class, 'register']);
 
 Route::get('/login', [LoginController::class, 'index'])->name('login');
-Route::post('/login', [LoginController::class, 'authenticate']);
+Route::post('/login', [LoginController::class, 'authenticateEmail'])->name('login.authenticate.email');
+Route::get('/login/password', [LoginController::class, 'password'])->name('login.password');
+Route::post('/login/password', [LoginController::class, 'authenticate'])->name('login.authenticate.password');
 Route::post('/logout', [LoginController::class, 'logout']);
 
 //OAuth
@@ -25,3 +32,55 @@ Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
 Route::get('/auth/github/callback', [OAuthController::class, 'handleGithub']);
 Route::get('/auth/google', [OAuthController::class, 'redirectGoogle']);
 Route::get('/auth/google/callback', [OAuthController::class, 'handleGoogle']);
+
+//Verify Email
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('home')->with('success', 'Your Email has been verified!');
+    })->middleware('signed')->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('message', 'Verification link sent!');
+    })->middleware('throttle:6,1')->name('verification.send');
+});
+
+
+
+//MFA
+Route::middleware('auth')->group(function () {
+    Route::get('/mfa/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
+    Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])->name('mfa.setup.verify');
+
+    Route::get('/mfa/verify', fn() => view('auth.mfa.verify'))->name('mfa.verify.login');
+    Route::post('/mfa/verify', [MfaController::class, 'verifyLogin'])->name('mfa.verify');
+
+    Route::post('/mfa/disable', [MfaController::class, 'disableMfa'])->name('mfa.disable');
+});
+
+
+// Enregistrement d'une nouvelle Passkey (depuis les settings)
+Route::middleware('auth')->group(function () {
+    Route::get('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);
+    Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
+});
+
+// Login avec Passkey (depuis la page login)
+Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
+Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
+
+
+
+//Dashboard
+Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+});
+
+Route::get('/settings', function () {
+    return view('settings');
+})->name('settings');

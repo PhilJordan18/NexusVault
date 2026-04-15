@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class LogUserRequest extends FormRequest
+class MfaRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +23,7 @@ class LogUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
+            'code' => 'required|digits:6'
         ];
     }
 }

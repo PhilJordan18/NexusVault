@@ -14,6 +14,7 @@
         "ext-openssl": "*",
         "ext-sodium": "*",
         "inertiajs/inertia-laravel": "^3.0",
+        "laragear/webauthn": "^5.0",
         "laravel/framework": "^13.0",
         "laravel/socialite": "^5.26",
         "laravel/tinker": "^3.0",

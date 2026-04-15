@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Services\Auth\Contracts\LoginServiceInterface;
+use App\Services\Auth\Contracts\MfaServiceInterface;
 use App\Services\Auth\Contracts\OAuthServiceInterface;
 use App\Services\Auth\Contracts\RegisterServiceInterface;
 use App\Services\Auth\Contracts\UserKeyServiceInterface;
 use App\Services\Auth\LoginService;
+use App\Services\Auth\MfaService;
 use App\Services\Auth\OAuthService;
 use App\Services\Auth\RegisterService;
 use App\Services\Auth\UserKeyService;
@@ -27,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(RegisterServiceInterface::class, RegisterService::class);
         $this->app->bind(OAuthServiceInterface::class, OAuthService::class);
         $this->app->bind(UserKeyServiceInterface::class, UserKeyService::class);
+        $this->app->bind(MfaServiceInterface::class, MfaService::class);
     }
 
     /**
