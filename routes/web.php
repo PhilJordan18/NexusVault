@@ -6,6 +6,7 @@ use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
@@ -25,7 +26,7 @@ Route::get('/login', [LoginController::class, 'index'])->name('login');
 Route::post('/login', [LoginController::class, 'authenticateEmail'])->name('login.authenticate.email');
 Route::get('/login/password', [LoginController::class, 'password'])->name('login.password');
 Route::post('/login/password', [LoginController::class, 'authenticate'])->name('login.authenticate.password');
-Route::post('/logout', [LoginController::class, 'logout']);
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 //OAuth
 Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
@@ -81,6 +82,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
-Route::get('/settings', function () {
-    return view('settings');
-})->name('settings');
+// Settings
+Route::middleware('auth')->prefix('settings')->group(function () {
+    Route::get('/', [SettingsController::class, 'index'])->name('settings');
+    Route::post('/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
+    Route::post('/pfp', [SettingsController::class, 'updatePfp'])->name('settings.pfp.update');
+    Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
+});

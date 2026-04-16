@@ -7,12 +7,16 @@ use App\Services\Auth\Contracts\MfaServiceInterface;
 use PragmaRX\Google2FA\Exceptions\IncompatibleWithGoogleAuthenticatorException;
 use PragmaRX\Google2FA\Exceptions\InvalidCharactersException;
 use PragmaRX\Google2FA\Exceptions\SecretKeyTooShortException;
-use PragmaRX\Google2FA\Google2FA;
+use PragmaRX\Google2FAQRCode\Exceptions\MissingQrCodeServiceException;
+use PragmaRX\Google2FAQRCode\Google2FA as Google2FAQRCode;
 
-final readonly class MfaService implements Contracts\MfaServiceInterface
+final readonly class MfaService implements MfaServiceInterface
 {
 
-    public function __construct(private Google2FA $google2FA) {}
+    private Google2FAQRCode $google2FA;
+    public function __construct() {
+        $this->google2FA = new Google2FAQRCode();
+    }
 
     /**
      * @throws IncompatibleWithGoogleAuthenticatorException
@@ -24,9 +28,12 @@ final readonly class MfaService implements Contracts\MfaServiceInterface
         return $this->google2FA->generateSecretKey(32);
     }
 
+    /**
+     * @throws MissingQrCodeServiceException
+     */
     public function getQrCodeUrl(User $user): string
     {
-        return $this->google2FA->getQRCodeUrl('NexusVault', $user->email, $user->totp_secret);
+        return $this->google2FA->getQRCodeInline('NexusVault', $user->email, $user->totp_secret, 220);
     }
 
     /**
@@ -51,7 +58,7 @@ final readonly class MfaService implements Contracts\MfaServiceInterface
     public function enableMfa(User $user, string $code): bool
     {
        if ($this->verifyCode($user, $code)) {
-           $user->update(['mfa_enabled' => true ,'totp_secret' => $user->totp_secret]);
+           $user->update(['mfa_enabled' => true]);
            return true;
        }
        return false;

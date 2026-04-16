@@ -24,6 +24,7 @@ return new class extends Migration
             $table->boolean('mfa_enabled')->default(false);
             $table->text('totp_secret')->nullable();
             $table->rememberToken();
+            $table->string('pfp')->nullable();
             $table->timestamps();
         });
 

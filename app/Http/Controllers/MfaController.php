@@ -11,17 +11,19 @@ final class MfaController extends Controller
 {
     public function __construct(private readonly MfaServiceInterface $service) {}
 
-    public function showSetup() : View
+    public function showSetup(): View
     {
-        $user = $this->getUser();
+        $user = auth()->user();
+
         if (empty($user->totp_secret)) {
             $secret = $this->service->generateSecret();
             $user->update(['totp_secret' => $secret]);
         }
+
         $qrUrl = $this->service->getQrCodeUrl($user);
 
         return view('auth.mfa.setup', [
-            'qrUrl' => $qrUrl,
+            'qrUrl'       => $qrUrl,
             'totp_secret' => $user->totp_secret,
         ]);
     }

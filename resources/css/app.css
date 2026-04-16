@@ -19,3 +19,14 @@
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
+
+/* Prevent text overflow */
+.break-words {
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+/* Better input handling */
+input[type="text"] {
+    box-sizing: border-box;
+}

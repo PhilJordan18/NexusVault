@@ -62,5 +62,3 @@
     }
 </script>
 
-{{--<script type="module" src="{{ asset('scripts/auth.js') }}"></script>--}}
-

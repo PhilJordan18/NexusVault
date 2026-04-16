@@ -5,7 +5,7 @@ namespace App\Http\Requests;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class LoginEmailRequest extends FormRequest
+class UpdatePfpRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,7 +23,7 @@ class LoginEmailRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email',
+            'pfp' => 'required|image|mimes:jpg,jpeg,png,webp|max:2048',
         ];
     }
 }
