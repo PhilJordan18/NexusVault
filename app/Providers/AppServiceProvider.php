@@ -12,6 +12,10 @@ use App\Services\Auth\MfaService;
 use App\Services\Auth\OAuthService;
 use App\Services\Auth\RegisterService;
 use App\Services\Auth\UserKeyService;
+use App\Services\Vault\Contracts\ServiceServiceInterface;
+use App\Services\Vault\Contracts\ShareServiceInterface;
+use App\Services\Vault\ServiceService;
+use App\Services\Vault\ShareService;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -30,6 +34,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OAuthServiceInterface::class, OAuthService::class);
         $this->app->bind(UserKeyServiceInterface::class, UserKeyService::class);
         $this->app->bind(MfaServiceInterface::class, MfaService::class);
+        $this->app->bind(ServiceServiceInterface::class, ServiceService::class);
+        $this->app->bind(ShareServiceInterface::class, ShareService::class);
     }
 
     /**

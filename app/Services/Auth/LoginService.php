@@ -17,18 +17,24 @@ final readonly class LoginService implements LoginServiceInterface
     public function login(array $credentials): RedirectResponse
     {
         $user = User::where('email', $credentials['email'])->first();
-        if(!$user || !Hash::check($credentials['password'], $user->password)){
+
+        if (!$user || !Hash::check($credentials['password'], $user->password)) {
             throw ValidationException::withMessages(['email' => 'Invalid credentials']);
         }
+
         if (!$user->hasVerifiedEmail()) {
-            throw ValidationException::withMessages(['email' => 'Please verify your email']);
+            return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
         }
+
         Auth::login($user);
         Session::regenerate();
+
         $this->service->storeMasterKey($user, $credentials['password']);
+
         if ($user->mfa_enabled) {
             return redirect()->route('mfa.verify.login');
         }
+
         return redirect()->intended('/dashboard');
     }
 

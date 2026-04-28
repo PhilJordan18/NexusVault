@@ -23,6 +23,9 @@
                            class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 pl-11 pr-4 text-white placeholder:text-white/40 outline-none transition"
                            placeholder="myemail@service.com" required autofocus>
                 </div>
+                @error('email')
+                <p class="text-red-400 text-sm mt-2">{{ $message }}</p>
+                @enderror
             </div>
 
             <button type="submit"
@@ -35,7 +38,7 @@
             <button id="passkey-btn"
                     class="mt-4 w-full flex items-center justify-center gap-3 border border-white/20 hover:border-nexus-500/50 rounded-2xl py-4 text-white/90 hover:text-white transition">
                 <i class="fa-solid fa-fingerprint text-2xl text-nexus-500"></i>
-                <span class="font-medium">Use passkey</span>
+                <span class="font-medium">Sign in using passkey</span>
             </button>
         </a>
 

@@ -30,3 +30,40 @@
 input[type="text"] {
     box-sizing: border-box;
 }
+
+/*.glass {*/
+/*    background: rgba(255,255,255,0.04);*/
+/*    backdrop-filter: blur(20px);*/
+/*    border: 1px solid rgba(255,255,255,0.08);*/
+/*    box-shadow:*/
+/*        inset 0 1px 0 rgba(255,255,255,0.05),*/
+/*        0 10px 30px rgba(0,0,0,0.4);*/
+/*}*/
+
+/*!* smooth Apple feel *!*/
+/** {*/
+/*    transition: all 0.2s ease;*/
+/*}*/
+
+/*!* hide scroll *!*/
+/*::-webkit-scrollbar {*/
+/*    width: 0px;*/
+/*}*/
+
+/* Glassmorphism */
+.glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Apple-like subtle shadows */
+.glass {
+    box-shadow: 0 10px 30px -15px rgb(0 0 0 / 0.3);
+}
+
+/* Security status colors */
+.security-red   { border-color: #ef4444; background: rgba(239, 68, 68, 0.08); }
+.security-yellow { border-color: #eab308; background: rgba(234, 179, 8, 0.08); }
+.security-green  { border-color: #22c55e; background: rgba(34, 197, 94, 0.08); }

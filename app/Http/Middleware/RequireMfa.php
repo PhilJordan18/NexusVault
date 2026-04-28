@@ -2,12 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use Closure;
 use Symfony\Component\HttpFoundation\Response;
-use Laravel\Mcp\Request;
+use Illuminate\Http\Request;
 
 final class RequireMfa
 {
-    public function handle(Request $request, \Closure $next): Response
+    public function handle(Request $request, Closure $next): Response
     {
         $user = auth()->user();
         if ($user && $user->mfa_enabled && !session('mfa_verified')) {

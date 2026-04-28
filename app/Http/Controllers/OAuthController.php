@@ -17,7 +17,6 @@ final class OAuthController extends Controller
 
     private function handleCallback(string $provider) {
         $oauthUser =  Socialite::driver($provider)->stateless()->user();
-        $this->service->handleCallback($oauthUser, $provider);
-        return redirect()->intended('/dashboard');
+        return $this->service->handleCallback($oauthUser, $provider);
     }
 }

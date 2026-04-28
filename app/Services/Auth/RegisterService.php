@@ -16,7 +16,7 @@ final readonly class RegisterService implements RegisterServiceInterface
     {
         $keys = $this->service->provisionKey($data['password']);
        $password = Hash::make($data['password']);
-       $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $password, 'salt' => $keys['salt'], 'public_key' => $keys['public_key'], 'private_key' => base64_encode($keys['private_key']), 'encrypted_master_key' => null, 'mfa_enabled' => false, 'totp_secret' => null]);
+       $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $password, 'salt' => $keys['salt'], 'public_key' => $keys['public_key'], 'private_key' => base64_encode($keys['private_key']), 'private_nonce' => $keys['private_nonce'], 'encrypted_master_key' => null, 'mfa_enabled' => false, 'totp_secret' => null]);
        $user->sendEmailVerificationNotification();
        return $user;
     }

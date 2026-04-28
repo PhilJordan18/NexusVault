@@ -4,8 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\MfaRequest;
 use App\Services\Auth\Contracts\MfaServiceInterface;
+use App\Services\Auth\UserKeyService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Random\RandomException;
+use SodiumException;
 
 final class MfaController extends Controller
 {
@@ -37,13 +40,20 @@ final class MfaController extends Controller
         return back()->with('error', 'Code incorrect. Try again.');
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function verifyLogin(MfaRequest $request): RedirectResponse {
         $user = $this->getUser();
         $request->validated();
-        if ($this->service->enableMfa($user, $request->code)) {
+
+        if ($this->service->verifyCode($user, $request->code)) {
             session(['mfa_verified' => true]);
+            app(UserKeyService::class)->storeMasterKey($user);
             return redirect()->intended('/dashboard');
         }
+
         return back()->with('error', 'TOTP Code is incorrect. Try again.');
     }
 

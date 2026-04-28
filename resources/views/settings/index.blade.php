@@ -31,17 +31,39 @@
         </div>
 
         <!-- Passkeys -->
-        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
-            <h2 class="text-xl font-medium mb-6 flex items-center gap-3">
-                <i class="fa-solid fa-fingerprint text-nexus-500"></i>
+        <!-- Passkeys Section -->
+        <div class="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8">
+            <h2 class="text-2xl font-semibold mb-2 flex items-center gap-3">
+                <i class="fa-solid fa-key text-emerald-500"></i>
                 Passkeys
             </h2>
+            <p class="text-white/60 mb-6">Utilisez votre empreinte, Face ID ou clé de sécurité pour vous connecter sans mot de passe.</p>
+
+            <div id="passkeys-list" class="space-y-3 mb-8 min-h-[60px]">
+                <p class="text-white/40 italic">Aucune passkey enregistrée pour le moment.</p>
+            </div>
+
             <button id="register-passkey-btn"
-                    class="flex items-center gap-3 bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl transition cursor-pointer">
-                <i class="fa-solid fa-fingerprint"></i>
-                <span>Add new Passkey</span>
+                    class="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold px-8 py-3.5 rounded-2xl text-base transition-all cursor-pointer active:scale-95">
+                <i class="fa-solid fa-key"></i>
+                Ajouter une nouvelle Passkey
             </button>
+
+            <p class="text-xs text-white/40 text-center mt-6">
+                Compatible avec iPhone, Android, Windows Hello, YubiKey…
+            </p>
         </div>
+{{--        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">--}}
+{{--            <h2 class="text-xl font-medium mb-6 flex items-center gap-3">--}}
+{{--                <i class="fa-solid fa-fingerprint text-nexus-500"></i>--}}
+{{--                Passkeys--}}
+{{--            </h2>--}}
+{{--            <button id="register-passkey-btn"--}}
+{{--                    class="flex items-center gap-3 bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl transition cursor-pointer">--}}
+{{--                <i class="fa-solid fa-fingerprint"></i>--}}
+{{--                <span>Add new Passkey</span>--}}
+{{--            </button>--}}
+{{--        </div>--}}
 
         <!-- Change Password -->
         <div class="bg-white/5 border border-white/10 rounded-3xl p-8">

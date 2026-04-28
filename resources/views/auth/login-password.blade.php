@@ -29,23 +29,18 @@
                     </button>
                 </div>
 
-                <div id="strength-container" class="mt-3 hidden">
-                    <div class="flex justify-between text-xs mb-1">
-                        <span class="text-white/60">Password strength</span>
-                        <span id="strength-text" class="font-medium">Calculating...</span>
-                    </div>
-                    <div class="h-2 bg-white/10 rounded-2xl overflow-hidden">
-                        <div id="strength-bar" class="h-2 w-0 transition-all duration-300 bg-nexus-500"></div>
-                    </div>
-                </div>
+                @error('password')
+                <p class="text-red-400 text-sm mt-2">{{ $message }}</p>
+                @enderror
+                @error('email')
+                <p class="text-red-400 text-sm mt-2">{{ $message }}</p>
+                @enderror
             </div>
 
-            <a>
-                <button type="submit"
-                        class="w-full bg-gradient-to-r from-nexus-600 to-nexus-500 hover:from-nexus-700 hover:to-nexus-600 text-white font-semibold py-4 rounded-2xl text-lg transition shadow-lg shadow-nexus-500/30">
-                    Sign In
-                </button>
-            </a>
+            <button type="submit"
+                    class="w-full bg-gradient-to-r from-nexus-600 to-nexus-500 hover:from-nexus-700 hover:to-nexus-600 text-white font-semibold py-4 rounded-2xl text-lg transition shadow-lg shadow-nexus-500/30">
+                Sign In
+            </button>
         </form>
 
         <a href="{{ route('login') }}" class="block text-center text-white/50 mt-6 hover:text-white">← Change email address</a>
@@ -61,4 +56,3 @@
         localStorage.setItem('temp_email', email);
     }
 </script>
-

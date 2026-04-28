@@ -27,6 +27,13 @@ function initAuthPage() {
     });
 
     // Passkey button
+
+    const registerPasskeyBtn = document.getElementById('register-passkey-btn');
+
+    if (registerPasskeyBtn) {
+        registerPasskeyBtn.addEventListener('click', handlePasskeyRegister);
+    }
+
     const passkeyBtn = document.getElementById('passkey-btn');
 
     if (passkeyBtn) {
@@ -59,6 +66,35 @@ function initAuthPage() {
             userEmailSpan.textContent = email;
             hiddenEmailInput.value = email;
             localStorage.setItem('temp_email', email);
+        }
+    }
+}
+
+async function handlePasskeyRegister() {
+    console.log('🚀 handlePasskeyRegister déclenché');   // ← debug
+
+    try {
+        const options = await webauthn.getRegisterOptions();
+        console.log('✅ Options reçues', options);
+
+        const credential = await navigator.credentials.create({ publicKey: options });
+        console.log('✅ Credential créé', credential);
+
+        const success = await webauthn.register(credential);
+
+        if (success) {
+            alert('✅ Passkey enregistrée avec succès !');
+            window.location.reload();
+        } else {
+            alert('❌ Erreur lors de l’enregistrement de la passkey');
+        }
+    } catch (e: any) {
+        console.error('❌ Passkey register error:', e);
+
+         if (e.name === 'NotAllowedError') {
+            alert('Action annulée par l’utilisateur.');
+        } else {
+            alert('Impossible d’enregistrer la passkey.\n\nVérifie la console pour plus de détails.');
         }
     }
 }

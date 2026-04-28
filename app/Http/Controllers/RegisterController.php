@@ -11,8 +11,10 @@ final class RegisterController extends Controller
 
     public function index() {return view('auth.register');}
 
-    public function register(RegisterUserRequest $request) {
+    public function register(RegisterUserRequest $request)
+    {
         $this->service->register($request->validated());
-        return redirect()->route('login')->with('success', 'Registration successful! A confirmation email has been sent.');
+
+        return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
     }
 }

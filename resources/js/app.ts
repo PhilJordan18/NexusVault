@@ -1,6 +1,13 @@
 import { createInertiaApp } from '@inertiajs/vue3';
+import './pages/service';
+import { showShareModal, hideShareModal } from '../ts/utils/modals';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+if (typeof window !== 'undefined') {
+    (window as any).showShareModal = showShareModal;
+    (window as any).hideShareModal = hideShareModal;
+}
+
+const appName = 'NexusVault';
 
 createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),

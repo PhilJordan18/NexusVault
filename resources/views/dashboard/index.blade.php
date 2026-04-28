@@ -36,18 +36,25 @@
 
     <!-- Services Grid -->
     <div class="grid grid-cols-4 gap-6">
-        @for ($i = 0; $i < 12; $i++)
-            <div class="bg-white/5 border border-white/10 rounded-3xl p-5 hover:border-nexus-500/30 transition group cursor-pointer">
+        @foreach ($grouped as $service)
+            <a href="{{ route('services.show', $service->name) }}"
+               class="bg-white/5 border border-white/10 rounded-3xl p-5 hover:border-emerald-500/30 transition group">
                 <div class="flex items-center gap-4">
-                    <div class="w-11 h-11 bg-white/10 rounded-2xl flex items-center justify-center text-3xl">🔥</div>
+                    @if ($service->favicon)
+                        <img src="{{ $service->favicon }}" alt="" class="w-11 h-11 rounded-2xl object-contain">
+                    @else
+                        <div class="w-11 h-11 bg-white/10 rounded-2xl flex items-center justify-center text-3xl">🔑</div>
+                    @endif
                     <div class="flex-1">
-                        <p class="font-medium">Netflix</p>
-                        <p class="text-xs text-white/50">3 accounts</p>
+                        <p class="font-medium">{{ $service->name }}</p>
+                        <p class="text-xs text-white/50">{{ $service->account_count }} accounts</p>
                     </div>
                 </div>
-                <div class="mt-6 text-xs text-white/40">Last modified 2 days ago</div>
-            </div>
-        @endfor
+                <div class="mt-6 text-xs text-white/40">
+                    Last modified {{ $service->last_modified?->diffForHumans() ?? '—' }}
+                </div>
+            </a>
+        @endforeach
     </div>
 
 </x-layouts.app>

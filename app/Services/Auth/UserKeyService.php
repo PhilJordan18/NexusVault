@@ -72,12 +72,56 @@ final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
         Session::put('masterKey', base64_encode($masterKey));
     }
 
+    /**
+     * @throws RandomException
+     * @throws SodiumException
+     */
     public function getMasterKey(): string
     {
         $encoded = Session::get('masterKey');
-        if (!$encoded) {
-            throw new RuntimeException('Master key not found in session. User must login again.');
+
+        if (!$encoded && auth()->check()) {
+            $user = auth()->user();
+
+            try {
+                // On essaie de reconstituer la clé correctement
+                if (!empty($user->encrypted_master_key)) {
+                    // Cas des utilisateurs créés sans mot de passe (OAuth)
+                    $masterKey = Crypt::decrypt($user->encrypted_master_key);
+                } else {
+                    // Cas normal (utilisateur avec mot de passe)
+                    // On ne peut pas la régénérer sans le mot de passe → on force une reconnexion propre
+                    throw new RuntimeException('Master key missing. Please login again.');
+                }
+
+                Session::put('masterKey', base64_encode($masterKey));
+                $encoded = Session::get('masterKey');
+
+            } catch (\Exception $e) {
+                // On déconnecte proprement l’utilisateur
+                auth()->logout();
+                Session::invalidate();
+                throw new RuntimeException('Session expirée. Veuillez vous reconnecter.');
+            }
         }
+
+        if (!$encoded) {
+            throw new RuntimeException('Master key not found. Please login again.');
+        }
+
         return base64_decode($encoded);
+    }
+
+    /**
+     * Retourne la clé privée RSA déchiffrée (utilisée uniquement quand on en a besoin)
+     *
+     * @throws SodiumException|RandomException
+     */
+    public function getDecryptedPrivateKey(User $user): string
+    {
+        $masterKey = $this->getMasterKey();
+        $ciphertext = base64_decode($user->private_key);
+        $nonce = $user->private_nonce;
+        return $this->service->decryptPrivateKey($ciphertext, $nonce, $masterKey);
     }
 }
