@@ -34,13 +34,11 @@
             </button>
         </form>
 
-        <a>
-            <button id="passkey-btn"
-                    class="mt-4 w-full flex items-center justify-center gap-3 border border-white/20 hover:border-nexus-500/50 rounded-2xl py-4 text-white/90 hover:text-white transition">
-                <i class="fa-solid fa-fingerprint text-2xl text-nexus-500"></i>
-                <span class="font-medium">Sign in using passkey</span>
-            </button>
-        </a>
+        <button id="passkey-btn"
+                class="mt-4 w-full flex items-center justify-center gap-3 border border-white/20 hover:border-nexus-500/50 rounded-2xl py-4 text-white/90 hover:text-white transition">
+            <i class="fa-solid fa-fingerprint text-2xl text-nexus-500"></i>
+            <span class="font-medium">Sign in using passkey</span>
+        </button>
 
         <div class="my-4 flex items-center gap-4">
             <div class="flex-1 h-px bg-white/10"></div>
@@ -74,5 +72,3 @@
         </p>
     </div>
 </x-layouts.auth>
-
-{{--<script type="module" src="{{ asset('scripts/auth.js') }}"></script>--}}

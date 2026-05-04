@@ -62,6 +62,11 @@ Route::middleware('auth')->group(function () {
 // Login avec Passkey
 Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
 Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
+Route::middleware('auth')->group(function () {
+    Route::delete('/webauthn/credentials/{credential}',
+        [\Laragear\WebAuthn\Models\WebAuthnCredential::class, 'destroy']
+    )->name('webauthn.destroy');
+});
 
 //Verify Email
 Route::middleware('auth')->group(function () {
@@ -95,6 +100,14 @@ Route::middleware(['auth', 'master_key','mfa'])->prefix('settings')->group(funct
     Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
 });
 
+// Active Sessions
+Route::middleware(['auth', 'master_key', 'mfa'])->prefix('settings')->group(function () {
+    Route::delete('/sessions/{sessionId}', [SettingsController::class, 'revokeSession'])
+        ->name('settings.sessions.revoke');
+
+    Route::post('/sessions/logout-all', [SettingsController::class, 'logoutAllOtherSessions'])
+        ->name('settings.sessions.logout-all');
+});
 
 //Vault
 Route::middleware(['auth', 'master_key','mfa'])->group(function () {

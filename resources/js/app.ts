@@ -1,6 +1,8 @@
 import { createInertiaApp } from '@inertiajs/vue3';
-import './pages/service';
+import { initPasskeys } from '../ts/passkey';
 import { showShareModal, hideShareModal } from '../ts/utils/modals';
+import '../ts/sessions'
+import './pages/service';
 
 if (typeof window !== 'undefined') {
     (window as any).showShareModal = showShareModal;
@@ -14,4 +16,9 @@ createInertiaApp({
     progress: {
         color: '#4B5563',
     },
+});
+
+// Initialize Passkeys on every page (including Settings)
+document.addEventListener('DOMContentLoaded', () => {
+    initPasskeys();
 });

@@ -10,16 +10,16 @@
 </head>
 <body class="bg-[#0a0a0a] text-white min-h-screen overflow-auto relative">
 
-<!-- Navbar en haut (fixe) -->
+<!-- Navbar -->
 <x-navbar variant="auth"/>
 
-<!-- Fond avec gradients subtils -->
+<!-- Background with gradient -->
 <div class="absolute inset-0 pointer-events-none">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(16,185,129,0.07)_0%,transparent_55%)]"></div>
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_70%_75%,rgba(16,185,129,0.05)_0%,transparent_60%)]"></div>
 </div>
 
-<!-- Contenu centré (sous le navbar) -->
+<!-- Focused content under navbar -->
 <div class="min-h-[calc(100vh-5rem)] flex items-center justify-center py-12 relative z-10">
     <div class="max-w-md w-full mx-auto px-4">
         {{ $slot }}

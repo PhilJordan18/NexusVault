@@ -107,6 +107,3 @@
         </p>
     </div>
 </x-layouts.auth>
-
-{{--<script type="module" src="{{ asset('scripts/auth.js') }}"></script>--}}
-

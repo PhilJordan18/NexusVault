@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initAuthPage() {
+    // Password visibility toggle
     document.querySelectorAll('[id^="toggle-password"]').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -26,14 +27,7 @@ function initAuthPage() {
         });
     });
 
-    // Passkey button
-
-    const registerPasskeyBtn = document.getElementById('register-passkey-btn');
-
-    if (registerPasskeyBtn) {
-        registerPasskeyBtn.addEventListener('click', handlePasskeyRegister);
-    }
-
+    //Passkeys
     const passkeyBtn = document.getElementById('passkey-btn');
 
     if (passkeyBtn) {
@@ -70,54 +64,40 @@ function initAuthPage() {
     }
 }
 
-async function handlePasskeyRegister() {
-    console.log('🚀 handlePasskeyRegister déclenché');   // ← debug
-
-    try {
-        const options = await webauthn.getRegisterOptions();
-        console.log('✅ Options reçues', options);
-
-        const credential = await navigator.credentials.create({ publicKey: options });
-        console.log('✅ Credential créé', credential);
-
-        const success = await webauthn.register(credential);
-
-        if (success) {
-            alert('✅ Passkey enregistrée avec succès !');
-            window.location.reload();
-        } else {
-            alert('❌ Erreur lors de l’enregistrement de la passkey');
-        }
-    } catch (e: any) {
-        console.error('❌ Passkey register error:', e);
-
-         if (e.name === 'NotAllowedError') {
-            alert('Action annulée par l’utilisateur.');
-        } else {
-            alert('Impossible d’enregistrer la passkey.\n\nVérifie la console pour plus de détails.');
-        }
-    }
-}
-
 async function handlePasskeyLogin() {
+
     try {
-        // Get login options (not register options)
+
         const options = await webauthn.getLoginOptions();
 
-        const credential = await navigator.credentials.get({
-            publicKey: options
-        });
+        const credential = await navigator.credentials.get({ publicKey: options });
 
-        const success = await webauthn.login(credential);
+        const result = await webauthn.login(credential);
 
-        if (success) {
-            window.location.href = '/dashboard';
+        if (result.success && result.redirect) {
+
+            window.location.href = result.redirect;
+
         } else {
-            alert('Passkey authentication failed');
+
+            alert('Authentication failed with passkey.');
+
         }
-    } catch (e) {
-        console.error('Passkey error:', e);
-        alert('No passkey found for this device or authentication cancelled.');
+
+    } catch (e: any) {
+
+        console.error('Passkey login error:', e);
+
+        if (e.name === 'NotAllowedError') {
+
+            alert('Action canceled by user.');
+
+        } else {
+
+            alert('An error occurred during login. Please try again.');
+
+        }
+
     }
 }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ShareRequest;
+use App\Mappers\ShareMapper;
 use App\Models\Service;
 use App\Models\Share;
 use App\Services\Vault\Contracts\ShareServiceInterface;
@@ -13,12 +14,9 @@ final class ShareController extends Controller
     public function __construct(private readonly ShareServiceInterface $shareService) {}
 
     public function store(ShareRequest $request) {
-        $request->validated();
-        $service = Service::findOrFail($request->service_id);
-        if ($service->user_id !== auth()->id()) abort(403);
 
-        $this->shareService->share($service, $request->email);
-
+        $sharedData = ShareMapper::fromRequest($request->validated());
+        $this->shareService->share($sharedData);
         return back()->with('success', 'Share sent successfully!');
     }
 

@@ -23,7 +23,8 @@ class ShareRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email' => 'required|email|exists:users,email',
+            'service_id' => 'required|integer|exists:services,id',
+            'email'      => 'required|email|exists:users,email',
         ];
     }
 }

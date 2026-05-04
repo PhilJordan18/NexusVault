@@ -2,6 +2,11 @@
 
 namespace App\Services\Vault;
 
+use App\DTOs\Share\AcceptedShareResult;
+use App\DTOs\Share\ShareData;
+use App\DTOs\Share\SharePayload;
+use App\Exceptions\ShareException;
+use App\Mappers\ShareMapper;
 use App\Models\Service;
 use App\Models\Share;
 use App\Models\User;
@@ -16,99 +21,193 @@ final readonly class ShareService implements ShareServiceInterface
         private UserKeyService $userKeyService
     ) {}
 
-    public function share(Service $service, string $recipientEmail): Share
+    // ==================== PUBLIC API ====================
+
+    public function share(ShareData $data): Share
     {
-        $recipient = User::where('email', $recipientEmail)->firstOrFail();
+        $service   = $this->findService($data->serviceId);
+        $recipient = $this->findRecipient($data->recipientEmail);
 
-        $publicKey = trim($recipient->public_key);
-        if (empty($publicKey) || !str_contains($publicKey, 'BEGIN PUBLIC KEY')) {
-            throw new \RuntimeException('La clé publique du destinataire est invalide.');
+        $this->validateOwnership($service);
+        $publicKey = $this->getValidPublicKey($recipient);
+
+        $aesKey          = $this->generateAesKey();
+        $encryptedData   = $this->encryptSensitiveData($service, $aesKey);
+        $encryptedAesKey = $this->encryptAesKeyWithRecipientPublicKey($aesKey, $publicKey);
+        $payload         = $this->buildSharePayload($service, $encryptedData, $encryptedAesKey);
+
+        return $this->createShareRecord($service, $recipient, $payload);
+    }
+
+    public function accept(Share $share): AcceptedShareResult
+    {
+        $this->validateAcceptPermissions($share);
+
+        $payload       = $this->extractPayload($share);
+        $aesKey        = $this->decryptAesKey($payload, auth()->user());
+        $decryptedData = $this->decryptSensitiveData($payload, $aesKey);
+        $reEncrypted   = $this->reEncryptForRecipient($decryptedData);
+        $newService    = $this->createServiceFromSharedData($payload, $reEncrypted, $share);
+
+        $share->update(['accepted_at' => now()]);
+
+        return new AcceptedShareResult($newService);
+    }
+
+    public function reject(Share $share): void
+    {
+        $this->validateRejectPermissions($share);
+        $share->update(['rejected' => true]);
+    }
+
+    // ==================== PRIVATE HELPERS ====================
+
+    private function findService(int $serviceId): Service
+    {
+        return Service::findOrFail($serviceId);
+    }
+
+    private function findRecipient(string $email): User
+    {
+        return User::where('email', $email)->firstOrFail();
+    }
+
+    private function validateOwnership(Service $service): void
+    {
+        if ($service->user_id !== auth()->id()) {
+            throw ShareException::unauthorized();
         }
+    }
 
-        // 1. Générer une clé AES aléatoire (32 bytes)
-        $aesKey = random_bytes(32);
+    private function getValidPublicKey(User $recipient): string
+    {
+        $key = trim($recipient->public_key);
+        if (empty($key) || !str_contains($key, 'BEGIN PUBLIC KEY')) {
+            throw ShareException::invalidRecipient();
+        }
+        return $key;
+    }
 
-        // 2. Chiffrer les données sensibles avec cette clé AES
-        $sensitiveData = json_encode([
+    private function generateAesKey(): string
+    {
+        return random_bytes(32);
+    }
+
+    private function encryptSensitiveData(Service $service, string $aesKey): array
+    {
+        $json = json_encode([
             'username' => $service->username,
             'password' => $service->password,
             'notes'    => $service->notes,
         ]);
 
-        $encryptedData = $this->cryptoService->encryptWithCustomKey($sensitiveData, $aesKey);
+        return $this->cryptoService->encryptWithCustomKey($json, $aesKey);
+    }
 
-        // 3. Chiffrer la clé AES avec la clé publique RSA du destinataire
-        $encryptedAesKey = $this->cryptoService->encryptWithPublicKey($aesKey, $publicKey);
+    private function encryptAesKeyWithRecipientPublicKey(string $aesKey, string $publicKey): string
+    {
+        return $this->cryptoService->encryptWithPublicKey($aesKey, $publicKey);
+    }
 
-        $payload = [
-            'encrypted_aes_key' => $encryptedAesKey,
-            'encrypted_data'    => $encryptedData,
-            'name'              => $service->name,
-            'url'               => $service->url,
-            'favicon'           => $service->favicon,
-        ];
+    private function buildSharePayload(Service $service, array $encryptedData, string $encryptedAesKey): SharePayload
+    {
+        return new SharePayload(
+            encryptedAesKey: $encryptedAesKey,
+            encryptedData: $encryptedData,
+            name: $service->name,
+            url: $service->url,
+            favicon: $service->favicon
+        );
+    }
 
+    private function createShareRecord(Service $service, User $recipient, SharePayload $payload): Share
+    {
         return Share::create([
             'service_id'    => $service->id,
             'from_user_id'  => auth()->id(),
             'to_user_id'    => $recipient->id,
-            'shared_data'   => json_encode($payload),
+            'shared_data'   => json_encode([
+                'encrypted_aes_key' => $payload->encryptedAesKey,
+                'encrypted_data'    => $payload->encryptedData,
+                'name'              => $payload->name,
+                'url'               => $payload->url,
+                'favicon'           => $payload->favicon,
+            ]),
             'shared_at'     => now(),
         ]);
     }
 
-    public function accept(Share $share): Service
+    private function validateAcceptPermissions(Share $share): void
     {
         if ($share->to_user_id !== auth()->id() || $share->accepted_at || $share->rejected) {
-            abort(403);
+            throw ShareException::unauthorized();
         }
-
-        $payload = json_decode($share->shared_data, true);
-
-        // 1. Déchiffrer la clé AES avec la clé privée RSA du destinataire
-        $privateKey = $this->userKeyService->getDecryptedPrivateKey(auth()->user());
-        $aesKey = $this->cryptoService->decryptWithPrivateKey($payload['encrypted_aes_key'], $privateKey);
-
-        // 2. Déchiffrer les données avec la clé AES
-        $decryptedJson = $this->cryptoService->decryptWithCustomKey(
-            $payload['encrypted_data']['ciphertext'],
-            $payload['encrypted_data']['iv'],
-            $payload['encrypted_data']['tag'],
-            $aesKey
-        );
-
-        $data = json_decode($decryptedJson, true);
-
-        // --- RECHIFFREMENT AVEC LA MASTER KEY DU DESTINATAIRE ---
-        $encUsername = $this->cryptoService->encryptWithMasterKey($data['username']);
-        $encPassword = $this->cryptoService->encryptWithMasterKey($data['password']);
-        $encNotes = !empty($data['notes']) ? $this->cryptoService->encryptWithMasterKey($data['notes']) : null;
-
-        $service = Service::create([
-            'user_id'        => auth()->id(),
-            'name'           => $payload['name'],
-            'url'            => $payload['url'],
-            'favicon'        => $payload['favicon'],
-            // Champs chiffrés
-            'username'       => $encUsername['ciphertext'],
-            'username_iv'    => $encUsername['iv'],
-            'username_tag'   => $encUsername['tag'],
-            'password'       => $encPassword['ciphertext'],
-            'password_iv'    => $encPassword['iv'],
-            'password_tag'   => $encPassword['tag'],
-            'notes'          => $encNotes ? $encNotes['ciphertext'] : null,
-            'notes_iv'       => $encNotes ? $encNotes['iv'] : null,
-            'notes_tag'      => $encNotes ? $encNotes['tag'] : null,
-            'shared_user_id' => $share->from_user_id,
-        ]);
-
-        $share->update(['accepted_at' => now()]);
-        return $service;
     }
 
-    public function reject(Share $share): void
+    private function extractPayload(Share $share): SharePayload
     {
-        if ($share->to_user_id !== auth()->id()) abort(403);
-        $share->update(['rejected' => true]);
+        $raw = json_decode($share->shared_data, true);
+        return ShareMapper::toPayload($raw);
+    }
+
+    private function decryptAesKey(SharePayload $payload, User $recipient): string
+    {
+        $privateKey = $this->userKeyService->getDecryptedPrivateKey($recipient);
+        return $this->cryptoService->decryptWithPrivateKey($payload->encryptedAesKey, $privateKey);
+    }
+
+    private function decryptSensitiveData(SharePayload $payload, string $aesKey): array
+    {
+        $json = $this->cryptoService->decryptWithCustomKey(
+            $payload->encryptedData['ciphertext'],
+            $payload->encryptedData['iv'],
+            $payload->encryptedData['tag'],
+            $aesKey
+        );
+        return json_decode($json, true);
+    }
+
+    private function reEncryptForRecipient(array $data): array
+    {
+        $username = $this->cryptoService->encryptWithMasterKey($data['username']);
+        $password = $this->cryptoService->encryptWithMasterKey($data['password']);
+
+        $notes = null;
+        if (!empty($data['notes'])) {
+            $notes = $this->cryptoService->encryptWithMasterKey($data['notes']);
+        }
+
+        return [
+            'username' => $username,
+            'password' => $password,
+            'notes'    => $notes,
+        ];
+    }
+
+    private function createServiceFromSharedData(SharePayload $payload, array $reEncrypted, Share $share): Service
+    {
+        return Service::create([
+            'user_id'        => auth()->id(),
+            'name'           => $payload->name,
+            'url'            => $payload->url,
+            'favicon'        => $payload->favicon,
+            'username'       => $reEncrypted['username']['ciphertext'],
+            'username_iv'    => $reEncrypted['username']['iv'],
+            'username_tag'   => $reEncrypted['username']['tag'],
+            'password'       => $reEncrypted['password']['ciphertext'],
+            'password_iv'    => $reEncrypted['password']['iv'],
+            'password_tag'   => $reEncrypted['password']['tag'],
+            'notes'          => $reEncrypted['notes']['ciphertext'] ?? null,
+            'notes_iv'       => $reEncrypted['notes']['iv'] ?? null,
+            'notes_tag'      => $reEncrypted['notes']['tag'] ?? null,
+            'shared_user_id' => $share->from_user_id,
+        ]);
+    }
+
+    private function validateRejectPermissions(Share $share): void
+    {
+        if ($share->to_user_id !== auth()->id()) {
+            throw ShareException::unauthorized();
+        }
     }
 }

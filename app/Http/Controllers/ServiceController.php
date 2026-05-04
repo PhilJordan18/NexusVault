@@ -29,9 +29,26 @@ final class ServiceController extends Controller
         return view('dashboard.service', compact('accounts', 'name'));
     }
 
-    public function update(UpdateServiceRequest $request, Service $service): RedirectResponse {
-        if ($service->user_id !== auth()->id()) abort(403);
-        $this->service->update($service, $request->validated());
+    public function update(UpdateServiceRequest $request, Service $service)
+    {
+        if ($service->user_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $updatedService = $this->service->update($service, $request->validated());
+
+        if ($request->wantsJson() || $request->expectsJson()) {
+            return response()->json([
+                'id'         => $updatedService->id,
+                'name'       => $updatedService->name,
+                'url'        => $updatedService->url,
+                'username'   => $updatedService->username,
+                'password'   => $updatedService->password,
+                'notes'      => $updatedService->notes,
+                'updated_at' => $updatedService->updated_at->diffForHumans(),
+            ]);
+        }
+
         return back()->with('success', 'Service updated with success!');
     }
 

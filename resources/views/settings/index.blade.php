@@ -30,42 +30,62 @@
             @endif
         </div>
 
-        <!-- Passkeys -->
         <!-- Passkeys Section -->
         <div class="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8">
             <h2 class="text-2xl font-semibold mb-2 flex items-center gap-3">
                 <i class="fa-solid fa-key text-emerald-500"></i>
                 Passkeys
             </h2>
-            <p class="text-white/60 mb-6">Utilisez votre empreinte, Face ID ou clé de sécurité pour vous connecter sans mot de passe.</p>
+            <p class="text-white/60 mb-6">Use your fingerprint, Face ID or security key to sign in without a password.</p>
 
-            <div id="passkeys-list" class="space-y-3 mb-8 min-h-[60px]">
-                <p class="text-white/40 italic">Aucune passkey enregistrée pour le moment.</p>
+            <!-- LIST OF PASSKEYS -->
+            <div class="space-y-3 mb-6">
+                @forelse(auth()->user()->webAuthnCredentials as $credential)
+                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+                        <div class="flex items-center gap-4">
+                            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+                                <i class="fa-solid fa-fingerprint text-emerald-500 text-xl"></i>
+                            </div>
+                            <div>
+                                <p class="font-medium text-white">{{ $credential->name ?? 'Unnamed device' }}</p>
+                                <p class="text-xs text-white/50">
+                                    Created {{ $credential->created_at->format('M d, Y') }}
+                                    • Last used: {{ $credential->last_used_at?->diffForHumans() ?? 'Never' }}
+                                </p>
+                            </div>
+                        </div>
+
+                        <form action="{{ route('webauthn.destroy', $credential->id) }}" method="POST"
+                              onsubmit="return confirm('Delete this passkey?')">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit"
+                                    class="text-red-400 hover:text-red-500 px-3 py-1.5 rounded-xl hover:bg-red-500/10 transition">
+                                <i class="fa-solid fa-trash text-sm"></i>
+                            </button>
+                        </form>
+                    </div>
+                @empty
+                    <div class="text-center py-6">
+                        <p class="text-white/40 italic">No passkeys registered yet.</p>
+                        <p class="text-xs text-white/30 mt-1">Add one below to sign in without a password.</p>
+                    </div>
+                @endforelse
             </div>
 
+            <!-- ADD PASSKEY BUTTON -->
             <button id="register-passkey-btn"
                     class="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold px-8 py-3.5 rounded-2xl text-base transition-all cursor-pointer active:scale-95">
                 <i class="fa-solid fa-key"></i>
-                Ajouter une nouvelle Passkey
+                Add new Passkey
             </button>
 
             <p class="text-xs text-white/40 text-center mt-6">
-                Compatible avec iPhone, Android, Windows Hello, YubiKey…
+                Works with iPhone, Android, Windows Hello, YubiKey…
             </p>
         </div>
-{{--        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">--}}
-{{--            <h2 class="text-xl font-medium mb-6 flex items-center gap-3">--}}
-{{--                <i class="fa-solid fa-fingerprint text-nexus-500"></i>--}}
-{{--                Passkeys--}}
-{{--            </h2>--}}
-{{--            <button id="register-passkey-btn"--}}
-{{--                    class="flex items-center gap-3 bg-white/10 hover:bg-white/20 px-6 py-3 rounded-2xl transition cursor-pointer">--}}
-{{--                <i class="fa-solid fa-fingerprint"></i>--}}
-{{--                <span>Add new Passkey</span>--}}
-{{--            </button>--}}
-{{--        </div>--}}
 
-        <!-- Change Password -->
+        <!-- Change Password Section -->
         <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
             <h2 class="text-xl font-medium mb-6">Change Password</h2>
             <form method="POST" action="{{ route('settings.password.update') }}" class="space-y-6">
@@ -94,6 +114,102 @@
                 <input type="file" name="pfp" accept="image/*" class="file:mr-4 file:py-2 file:px-6 file:rounded-2xl file:border-0 file:bg-white/10 file:text-white">
                 <button type="submit" class="bg-nexus-500 hover:bg-nexus-600 text-white px-6 py-3 rounded-2xl">Upload</button>
             </form>
+        </div>
+
+        <!-- Active Sessions -->
+        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-semibold flex items-center gap-3">
+                        <i class="fa-solid fa-laptop text-emerald-500"></i>
+                        Active Sessions
+                    </h2>
+                    <p class="text-sm text-white/50 mt-1">These are the devices currently logged into your account.</p>
+                </div>
+
+                <button id="logout-all-sessions-btn"
+                        class="px-4 py-2 text-sm bg-red-500/10 hover:bg-red-500/20 text-red-400 rounded-2xl transition flex items-center gap-2">
+                    <i class="fa-solid fa-sign-out-alt"></i>
+                    <span>Logout from all other devices</span>
+                </button>
+            </div>
+
+            <div id="active-sessions-list" class="space-y-3">
+                @php
+                    $userSessions = \Illuminate\Support\Facades\DB::table('sessions')
+                        ->where('user_id', auth()->id())
+                        ->orderBy('last_activity', 'desc')
+                        ->get();
+                @endphp
+
+                @forelse($userSessions as $session)
+                    @php
+                        $isCurrent = $session->id === session()->getId();
+                        $lastActive = \Carbon\Carbon::createFromTimestamp($session->last_activity)->diffForHumans();
+
+                        // Device detection
+                        $ua = strtolower($session->user_agent ?? '');
+                        if (str_contains($ua, 'macintosh') || str_contains($ua, 'mac os')) {
+                            $deviceName = 'Mac';
+                            $deviceIcon = 'fa-laptop';
+                        } elseif (str_contains($ua, 'iphone')) {
+                            $deviceName = 'iPhone';
+                            $deviceIcon = 'fa-mobile-alt';
+                        } elseif (str_contains($ua, 'ipad')) {
+                            $deviceName = 'iPad';
+                            $deviceIcon = 'fa-tablet-alt';
+                        } elseif (str_contains($ua, 'android')) {
+                            $deviceName = 'Android Device';
+                            $deviceIcon = 'fa-mobile-alt';
+                        } elseif (str_contains($ua, 'windows')) {
+                            $deviceName = 'Windows PC';
+                            $deviceIcon = 'fa-laptop';
+                        } elseif (str_contains($ua, 'linux')) {
+                            $deviceName = 'Linux Device';
+                            $deviceIcon = 'fa-laptop';
+                        } else {
+                            $deviceName = 'Unknown Device';
+                            $deviceIcon = 'fa-laptop';
+                        }
+                    @endphp
+
+                    <div class="session-card flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4 {{ $isCurrent ? 'current-session border-emerald-500/30' : '' }}">
+                        <div class="flex items-center gap-4">
+                            <div class="w-11 h-11 bg-white/10 rounded-2xl flex items-center justify-center">
+                                <i class="fa-solid {{ $deviceIcon }} text-xl text-emerald-400"></i>
+                            </div>
+
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <p class="font-medium">{{ $deviceName }}</p>
+                                    @if($isCurrent)
+                                        <span class="text-[10px] px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded-full font-medium">This device</span>
+                                    @endif
+                                </div>
+                                <p class="text-xs text-white/50">
+                                    {{ $lastActive }} • {{ $session->ip_address }}
+                                </p>
+                            </div>
+                        </div>
+
+                        @if(!$isCurrent)
+                            <button type="button"
+                                    class="revoke-session-btn px-4 py-2 text-sm text-red-400 hover:text-red-500 hover:bg-red-500/10 rounded-2xl transition flex items-center gap-2"
+                                    data-session-id="{{ $session->id }}">
+                                <i class="fa-solid fa-sign-out-alt"></i>
+                                <span>Logout</span>
+                            </button>
+                        @endif
+                    </div>
+                @empty
+                    <div class="text-center py-8">
+                        <div class="mx-auto w-12 h-12 bg-white/5 rounded-full flex items-center justify-center mb-3">
+                            <i class="fa-solid fa-laptop text-white/30 text-xl"></i>
+                        </div>
+                        <p class="text-white/40">No other active sessions found.</p>
+                    </div>
+                @endforelse
+            </div>
         </div>
 
         <!-- Danger Zone -->

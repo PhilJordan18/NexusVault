@@ -2,6 +2,7 @@
 
 namespace App\Services\Auth;
 
+use App\DTOs\Auth\LoginData;
 use App\Models\User;
 use App\Services\Auth\Contracts\LoginServiceInterface;
 use App\Services\Auth\Contracts\UserKeyServiceInterface;
@@ -13,37 +14,30 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class LoginService implements LoginServiceInterface
 {
-    public function __construct(private UserKeyServiceInterface $service) {}
-    public function login(array $credentials): RedirectResponse
-    {
-        $user = User::where('email', $credentials['email'])->first();
-
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
-            throw ValidationException::withMessages(['email' => 'Invalid credentials']);
-        }
-
-        if (!$user->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
-        }
-
-        Auth::login($user);
-        Session::regenerate();
-
-        $this->service->storeMasterKey($user, $credentials['password']);
-
-        if ($user->mfa_enabled) {
-            return redirect()->route('mfa.verify.login');
-        }
-
-        return redirect()->intended('/dashboard');
-    }
+    public function __construct(private UserKeyServiceInterface $userKeyService) {}
 
     public function authenticate(array $credentials): RedirectResponse
     {
-        if (!isset($credentials['password']) || empty($credentials['password'])) {
-            return redirect()->route('login.password', ['email' => $credentials['email']]);
+        $loginData = $this->createLoginData($credentials);
+
+        if ($this->isPasswordMissing($loginData)) {
+            return $this->redirectToPasswordPage($loginData->email);
         }
-        return $this->login($credentials);
+
+        return $this->login($loginData);
+    }
+
+    public function login(LoginData $data): RedirectResponse
+    {
+        $user = $this->findUserByEmail($data->email);
+
+        $this->validateCredentials($user, $data->password);
+        $this->ensureEmailIsVerified($user);
+
+        $this->performLogin($user);
+        $this->storeMasterKey($user, $data->password);
+
+        return $this->redirectAfterLogin($user);
     }
 
     public function logout(): void
@@ -52,5 +46,66 @@ final readonly class LoginService implements LoginServiceInterface
         Auth::logout();
         Session::invalidate();
         Session::regenerateToken();
+    }
+
+    // ==================== PRIVATE HELPERS ====================
+
+    private function createLoginData(array $credentials): LoginData
+    {
+        return new LoginData(
+            email: $credentials['email'],
+            password: $credentials['password'] ?? null
+        );
+    }
+
+    private function isPasswordMissing(LoginData $data): bool
+    {
+        return empty($data->password);
+    }
+
+    private function redirectToPasswordPage(string $email): RedirectResponse
+    {
+        return redirect()->route('login.password', ['email' => $email]);
+    }
+
+    private function findUserByEmail(string $email): ?User
+    {
+        return User::where('email', $email)->first();
+    }
+
+    private function validateCredentials(?User $user, ?string $password): void
+    {
+        if (!$user || !Hash::check($password, $user->password)) {
+            throw ValidationException::withMessages(['email' => 'Invalid credentials']);
+        }
+    }
+
+    private function ensureEmailIsVerified(User $user): void
+    {
+        if (!$user->hasVerifiedEmail()) {
+            redirect()->route('verification.notice')
+                ->with('status', 'verification-link-sent')
+                ->throwResponse();
+        }
+    }
+
+    private function performLogin(User $user): void
+    {
+        Auth::login($user);
+        Session::regenerate();
+    }
+
+    private function storeMasterKey(User $user, string $password): void
+    {
+        $this->userKeyService->storeMasterKey($user, $password);
+    }
+
+    private function redirectAfterLogin(User $user): RedirectResponse
+    {
+        if ($user->mfa_enabled) {
+            return redirect()->route('mfa.verify.login');
+        }
+
+        return redirect()->intended('/dashboard');
     }
 }

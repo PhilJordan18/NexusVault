@@ -1,3 +1,4 @@
+<!-- Share Modal -->
 <div id="share-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
     <div class="bg-[#1a1a1c] rounded-3xl w-full max-w-md p-8 border border-white/10">
 
@@ -14,6 +15,7 @@
 
         <form action="{{ route('shares.store') }}" method="POST" id="share-form">
             @csrf
+            <!-- Service ID is set dynamically via JavaScript -->
             <input type="hidden" name="service_id" id="modal-service-id">
 
             <div class="mb-6">
@@ -35,12 +37,30 @@
     </div>
 </div>
 
+<!-- Success Toast -->
 <div id="success-toast" class="hidden fixed bottom-6 right-6 bg-emerald-600 text-white px-6 py-4 rounded-2xl shadow-xl flex items-center gap-3 z-[200]">
     <i class="fa-solid fa-check-circle text-xl"></i>
     <span id="toast-message">Share sent successfully!</span>
 </div>
 
 <script>
+    // Show share modal with dynamic service ID
+    window.showShareModal = function(serviceId) {
+        const modal = document.getElementById('share-modal');
+        const input = document.getElementById('modal-service-id');
+
+        if (modal && input) {
+            input.value = serviceId;
+            modal.classList.remove('hidden');
+        }
+    };
+
+    window.hideShareModal = function() {
+        const modal = document.getElementById('share-modal');
+        if (modal) modal.classList.add('hidden');
+    };
+
+    // Toast function
     window.showToast = function(message = 'Share sent successfully!') {
         const toast = document.getElementById('success-toast');
         const msg = document.getElementById('toast-message');
@@ -55,5 +75,5 @@
                 toast.classList.add('hidden');
             }, 3000);
         }
-    }
+    };
 </script>

@@ -1,5 +1,4 @@
-// resources/js/pages/service.ts
-
+// Types
 type Account = {
     id: number;
     username: string;
@@ -15,74 +14,179 @@ type EntropyResult = {
     reused?: boolean;
 };
 
+// GLOBAL STATE
 let currentAccount: Account | null = null;
 let revealed = false;
 
-// Make functions global so Blade can call them
+// Helper CSRF
+function csrfToken(): string {
+    const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+    return meta?.content || '';
+}
+
+// ===== PUBLIC API =====
+
 (window as any).selectAccount = (id: number) => {
     const accounts = (window as any).accounts as Record<number, Account>;
-    currentAccount = accounts[id];
+    const account = accounts[id];
+    if (!account) return;
+
+    currentAccount = account;
+    revealed = false;
 
     const panel = document.getElementById('detail-panel')!;
     panel.classList.remove('hidden');
+    document.getElementById('empty-state')?.classList.add('hidden');
 
-    // Fill info
-    (document.getElementById('detail-username') as HTMLElement).textContent = currentAccount.username;
-    (document.getElementById('detail-name') as HTMLElement).textContent = currentAccount.name || '';
+    (document.getElementById('detail-username') as HTMLElement).textContent = account.username;
+    (document.getElementById('detail-name') as HTMLElement).textContent = account.name || '';
 
     const passwordEl = document.getElementById('detail-password') as HTMLElement;
     passwordEl.textContent = '••••••••••••';
-    revealed = false;
+    passwordEl.dataset.hidden = 'true';
+    passwordEl.dataset.realPassword = account.password || '';
 
     const urlEl = document.getElementById('detail-url') as HTMLAnchorElement;
-    urlEl.href = currentAccount.url || '#';
-    urlEl.textContent = currentAccount.url || '—';
+    if (account.url) {
+        urlEl.href = account.url;
+        urlEl.textContent = account.url;
+        urlEl.style.display = '';
+    } else {
+        urlEl.style.display = 'none';
+    }
 
     const notesContainer = document.getElementById('detail-notes-container')!;
-    if (currentAccount.notes) {
+    const notesEl = document.getElementById('detail-notes')!;
+    if (account.notes) {
+        notesEl.textContent = account.notes;
         notesContainer.classList.remove('hidden');
-        (document.getElementById('detail-notes') as HTMLElement).textContent = currentAccount.notes;
     } else {
         notesContainer.classList.add('hidden');
     }
 
-    loadSecurity(currentAccount.password);
+    loadSecurity(account.password);
 };
 
 (window as any).togglePassword = () => {
     if (!currentAccount) return;
 
     const el = document.getElementById('detail-password') as HTMLElement;
-    const btn = document.querySelector('#detail-panel button[onclick*="togglePassword"] i') as HTMLElement;
-
-    if (!el || !btn) return;
-
-    if (revealed) {
-        el.textContent = '••••••••••••';
-        revealed = false;
-        btn.classList.replace('fa-eye-slash', 'fa-eye');
-    } else {
+    if (el.dataset.hidden === 'true') {
         el.textContent = currentAccount.password;
-        revealed = true;
-        btn.classList.replace('fa-eye', 'fa-eye-slash');
-
-        // Auto-hide après 5 secondes
-        setTimeout(() => {
-            if (revealed) {
-                (window as any).togglePassword();
-            }
-        }, 5000);
+        el.dataset.hidden = 'false';
+    } else {
+        el.textContent = '••••••••••••';
+        el.dataset.hidden = 'true';
     }
 };
 
+// ===== EDIT =====
+
+(window as any).editAccount = () => {
+    if (!currentAccount) {
+        alert('Please select an account first.');
+        return;
+    }
+
+    (document.getElementById('edit-service-id') as HTMLInputElement).value = currentAccount.id.toString();
+    (document.getElementById('edit-username') as HTMLInputElement).value = currentAccount.username;
+    (document.getElementById('edit-password') as HTMLInputElement).value = currentAccount.password;
+    (document.getElementById('edit-notes') as HTMLTextAreaElement).value = currentAccount.notes || '';
+
+    document.getElementById('edit-account-modal')!.classList.remove('hidden');
+};
+
+(window as any).hideEditModal = () => {
+    document.getElementById('edit-account-modal')!.classList.add('hidden');
+};
+
+(window as any).toggleEditPasswordVisibility = () => {
+    const input = document.getElementById('edit-password') as HTMLInputElement;
+    const icon = document.getElementById('edit-password-icon') as HTMLElement;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye', 'fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash', 'fa-eye');
+    }
+};
+
+(window as any).submitEditAccount = async (e: Event) => {
+    e.preventDefault();
+
+    const serviceId = (document.getElementById('edit-service-id') as HTMLInputElement).value;
+    const username = (document.getElementById('edit-username') as HTMLInputElement).value.trim();
+    const password = (document.getElementById('edit-password') as HTMLInputElement).value.trim();
+    const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement).value.trim();
+
+    if (!username || !password) {
+        alert('Username and password are required.');
+        return;
+    }
+
+    const buttons = document.querySelectorAll<HTMLButtonElement>('#edit-account-form button');
+    buttons.forEach(b => (b.disabled = true));
+
+    try {
+        const response = await fetch(`/services/${serviceId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+            body: JSON.stringify({ username, password, notes: notes || null }),
+        });
+
+        if (response.ok) {
+            const updated = await response.json();
+            const accounts = (window as any).accounts as Record<number, Account>;
+            accounts[serviceId] = { ...accounts[serviceId], ...updated };
+            (window as any).selectAccount(serviceId);
+            (window as any).hideEditModal();
+
+            if ((window as any).showToast) {
+                (window as any).showToast('Account updated successfully!');
+            } else {
+                alert('Account updated successfully!');
+            }
+        } else {
+            const error = await response.json();
+            alert('Error: ' + (error.message || 'Failed to update'));
+        }
+    } catch (err) {
+        console.error(err);
+        alert('Network error while updating account.');
+    } finally {
+        buttons.forEach(b => (b.disabled = false));
+    }
+};
+
+// ===== SHARE =====
+
+(window as any).shareCurrentAccount = () => {
+    if (!currentAccount) return;
+    if ((window as any).showShareModal) {
+        (window as any).showShareModal(currentAccount.id);
+    } else {
+        alert('Share feature not available.');
+    }
+};
+
+// ===== SECURITY =====
+
 async function loadSecurity(password: string) {
+    const panel = document.getElementById('security-panel');
+    if (!panel) return;
+
     const res = await fetch('/password/entropy', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement).content
+            'X-CSRF-TOKEN': csrfToken(),
         },
-        body: JSON.stringify({ password })
+        body: JSON.stringify({ password }),
     });
 
     const data: EntropyResult = await res.json();
@@ -92,7 +196,6 @@ async function loadSecurity(password: string) {
 function renderSecurity(data: EntropyResult) {
     const panel = document.getElementById('security-panel')!;
     panel.classList.remove('hidden');
-    panel.classList.add('glass', 'rounded-3xl', 'p-6', 'mt-6');
 
     let html = '';
 
@@ -112,8 +215,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    }
-    else if (data.reused) {
+    } else if (data.reused) {
         html = `
             <div class="security-yellow border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-yellow-500/20 text-yellow-400 rounded-2xl flex items-center justify-center">
@@ -129,8 +231,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    }
-    else if (data.strength === 'weak') {
+    } else if (data.strength === 'weak') {
         html = `
             <div class="security-red border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center">
@@ -146,8 +247,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    }
-    else if (data.strength === 'very_strong') {
+    } else if (data.strength === 'very_strong') {
         html = `
             <div class="border border-emerald-500/50 bg-emerald-500/10 rounded-3xl p-5 flex gap-4">
                 <div class="w-9 h-9 flex-shrink-0 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center">
@@ -176,11 +276,13 @@ function renderSecurity(data: EntropyResult) {
     panel.innerHTML = html;
 }
 
-(window as any).shareCurrentAccount = () => {
-    if (!currentAccount) return;
-    (window as any).showShareModal(currentAccount.id);
-};
-
-(window as any).editAccount = () => {
-    alert('Edit modal coming soon!');
-};
+// ===== INITIALISATION =====
+document.addEventListener('DOMContentLoaded', () => {
+    const accounts = (window as any).accounts as Record<number, Account> | undefined;
+    if (accounts) {
+        const firstId = Object.keys(accounts)[0];
+        if (firstId) {
+            setTimeout(() => (window as any).selectAccount(firstId), 80);
+        }
+    }
+});

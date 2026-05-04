@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -29,17 +26,6 @@ return new class extends Migration
             $table->timestamps();
         });
 
-        Schema::create('passkeys', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('credential_id');
-            $table->text('public_key');
-            $table->string('user_handle');
-            $table->timestamp('last_used_at');
-            $table->timestamps();
-        });
-
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
@@ -56,12 +42,8 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('passkeys');
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');
