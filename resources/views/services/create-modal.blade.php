@@ -7,23 +7,28 @@
             <div class="space-y-5">
                 <div>
                     <label class="block text-sm mb-1">Service Name</label>
-                    <input type="text" name="name" required class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
+                    <input type="text" name="name" id="service-name" required
+                           class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
                 </div>
                 <div>
                     <label class="block text-sm mb-1">URL (optional)</label>
-                    <input type="url" name="url" class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
+                    <input type="url" name="url" id="service-url"
+                           class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
                 </div>
                 <div>
                     <label class="block text-sm mb-1">Username / Email</label>
-                    <input type="text" name="username" required class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
+                    <input type="text" name="username" required
+                           class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
                 </div>
                 <div>
                     <label class="block text-sm mb-1">Password</label>
-                    <input type="password" name="password" required class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
+                    <input type="password" name="password" required
+                           class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4">
                 </div>
                 <div>
                     <label class="block text-sm mb-1">Notes</label>
-                    <textarea name="notes" rows="3" class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4"></textarea>
+                    <textarea name="notes" rows="3"
+                              class="w-full bg-white/10 border border-white/20 rounded-2xl px-5 py-4"></textarea>
                 </div>
             </div>
 

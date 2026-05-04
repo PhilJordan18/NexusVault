@@ -8,7 +8,11 @@
                 <p class="text-white/50">{{ count($accounts) }} accounts • Last updated {{ $accounts->first()->updated_at->diffForHumans() ?? '' }}</p>
             </div>
 
-            <button onclick="showCreateModalForService('{{ $name }}')"
+            @php
+                $firstUrl = $accounts->first()->url ?? '';
+            @endphp
+
+            <button onclick="showCreateModalForService('{{ $name }}', '{{ $firstUrl }}')"
                     class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-medium">
                 <i class="fa-solid fa-plus"></i>
                 <span>Add Account</span>
@@ -141,7 +145,7 @@
                     </div>
                 </div>
 
-                <!-- Notes (optional) -->
+                <!-- Notes -->
                 <div class="mb-6">
                     <label class="block text-sm text-white/60 mb-2">Notes (optional)</label>
                     <textarea id="edit-notes" rows="3"

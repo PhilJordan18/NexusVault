@@ -142,6 +142,7 @@
 @include('shares.modal')
 
 <script>
+
     function showToast(message) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -161,7 +162,37 @@
         }, 2500);
     }
 
+    // --- Modal functions ---
+    function showCreateModal() {
+        const nameInput = document.getElementById('service-name');
+        const urlInput  = document.getElementById('service-url');
+
+        nameInput.value = '';
+        urlInput.value  = '';
+        nameInput.readOnly = false;
+        urlInput.readOnly  = false;
+
+        document.getElementById('create-modal').classList.remove('hidden');
+    }
+
+    function hideCreateModal() {
+        document.getElementById('create-modal').classList.add('hidden');
+    }
+
+    function showCreateModalForService(serviceName, serviceUrl = '') {
+        const nameInput = document.getElementById('service-name');
+        const urlInput  = document.getElementById('service-url');
+
+        nameInput.value = serviceName;
+        urlInput.value  = serviceUrl;
+        nameInput.readOnly = true;
+        urlInput.readOnly  = true;
+
+        document.getElementById('create-modal').classList.remove('hidden');
+    }
+
     window.showToast = showToast;
 </script>
+
 </body>
 </html>
