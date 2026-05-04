@@ -21,9 +21,21 @@
     </style>
 </head>
 <body class="bg-[#0a0a0a] text-white min-h-screen flex">
+@php
+    // Compte réel des services de l'utilisateur
+    $totalItems = auth()->user()->services()->count();
+@endphp
+
+    <!-- Bouton hamburger (visible seulement sur mobile) -->
+<button id="mobile-menu-btn" class="md:hidden fixed top-4 left-4 z-50 p-3 bg-[#111111] rounded-2xl border border-white/10">
+    <i class="fa-solid fa-bars text-xl"></i>
+</button>
+
+<!-- Overlay mobile (caché par défaut) -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/60 z-40 md:hidden"></div>
 
 <!-- SIDEBAR -->
-<div class="w-72 bg-[#111111] border-r border-white/10 flex flex-col h-screen fixed top-0 left-0 z-50">
+<aside id="sidebar" class="w-72 bg-[#111111] border-r border-white/10 flex flex-col h-screen fixed top-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
     <!-- Logo -->
     <div class="p-6 flex items-center gap-3 border-b border-white/10">
         <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
@@ -40,7 +52,7 @@
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl nav-active">
             <i class="fa-solid fa-key w-4"></i>
             <span>All Items</span>
-            <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems ?? 986 }}</span>
+            <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems }}</span>
         </a>
 
         <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
@@ -63,14 +75,17 @@
             <i class="fa-solid fa-sign-out-alt w-4"></i>
             <button type="submit">Logout</button>
         </form>
-
     </nav>
 
     <!-- User -->
     <div class="p-4 border-t border-white/10 mt-auto">
         <div class="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 cursor-pointer" onclick="window.location='{{ route('settings') }}'">
-            <div class="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-lg">
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            <div class="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-lg overflow-hidden">
+                @if(auth()->user()->pfp)
+                    <img src="{{ Storage::url(auth()->user()->pfp) }}" alt="avatar" class="w-full h-full object-cover rounded-full">
+                @else
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                @endif
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-medium text-sm truncate">{{ auth()->user()->name }}</p>
@@ -78,13 +93,12 @@
             </div>
         </div>
     </div>
-</div>
+</aside>
 
 <!-- MAIN CONTENT -->
-<div class="flex-1 flex flex-col ml-72">
-
+<div class="flex-1 flex flex-col md:ml-72">
     <!-- TOP BAR -->
-    <div class="h-23 border-b border-white/10 bg-[#111111]/80 backdrop-blur-xl flex items-center px-8 sticky top-0 z-40">
+    <div class="h-16 md:h-23 border-b border-white/10 bg-[#111111]/80 backdrop-blur-xl flex items-center px-6 md:px-8 sticky top-0 z-30">
         <div class="flex-1 max-w-md">
             <div class="relative">
                 <input type="text"
@@ -95,12 +109,12 @@
             </div>
         </div>
 
-        <div class="ml-auto flex items-center gap-4">
+        <div class="ml-auto flex items-center gap-2 md:gap-4">
             <!-- New Button -->
             <button onclick="showCreateModal()"
-                    class="flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
+                    class="flex items-center gap-2 px-3 md:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
                 <i class="fa-solid fa-plus"></i>
-                <span>New Item</span>
+                <span class="hidden sm:inline">New Item</span>
             </button>
 
             <!-- Notifications -->
@@ -115,22 +129,26 @@
                         class="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-2xl transition relative">
                     <i class="fa-solid fa-bell text-lg"></i>
                     @if($pendingShares > 0)
-                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4.5 h-4.5 flex items-center justify-center rounded-full">
-                            {{ $pendingShares }}
-                        </span>
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
+                                {{ $pendingShares }}
+                            </span>
                     @endif
                 </button>
             </div>
 
             <!-- User Avatar -->
-            <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm cursor-pointer" onclick="window.location='{{ route('settings') }}'">
-                {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+            <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm cursor-pointer overflow-hidden" onclick="window.location='{{ route('settings') }}'">
+                @if(auth()->user()->pfp)
+                    <img src="{{ Storage::url(auth()->user()->pfp) }}" alt="avatar" class="w-full h-full object-cover rounded-full">
+                @else
+                    {{ strtoupper(substr(auth()->user()->name, 0, 1)) }}
+                @endif
             </div>
         </div>
     </div>
 
     <!-- PAGE CONTENT -->
-    <div class="flex-1 overflow-auto p-8">
+    <div class="flex-1 overflow-auto p-4 md:p-8">
         {{ $slot }}
     </div>
 </div>
@@ -142,18 +160,36 @@
 @include('shares.modal')
 
 <script>
+    // --- Responsive Sidebar Toggle ---
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const toggleBtn = document.getElementById('mobile-menu-btn');
 
+    function openSidebar() {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+    }
+    function closeSidebar() {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+    }
+    toggleBtn.addEventListener('click', () => {
+        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
+        else closeSidebar();
+    });
+    overlay.addEventListener('click', closeSidebar);
+
+    // --- Toast (inchangée) ---
     function showToast(message) {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
         toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border border-white/10`;
         toast.style.background = 'rgba(17,17,17,0.95)';
         toast.innerHTML = `
-            <i class="fa-solid fa-check-circle text-emerald-400"></i>
-            <span>${message}</span>
-        `;
+                <i class="fa-solid fa-check-circle text-emerald-400"></i>
+                <span>${message}</span>
+            `;
         container.appendChild(toast);
-
         setTimeout(() => {
             toast.style.transition = 'all 0.3s ease';
             toast.style.opacity = '0';
@@ -162,37 +198,30 @@
         }, 2500);
     }
 
-    // --- Modal functions ---
+    // --- Modal functions (inchangées) ---
     function showCreateModal() {
         const nameInput = document.getElementById('service-name');
         const urlInput  = document.getElementById('service-url');
-
         nameInput.value = '';
         urlInput.value  = '';
         nameInput.readOnly = false;
         urlInput.readOnly  = false;
-
         document.getElementById('create-modal').classList.remove('hidden');
     }
-
     function hideCreateModal() {
         document.getElementById('create-modal').classList.add('hidden');
     }
-
     function showCreateModalForService(serviceName, serviceUrl = '') {
         const nameInput = document.getElementById('service-name');
         const urlInput  = document.getElementById('service-url');
-
         nameInput.value = serviceName;
         urlInput.value  = serviceUrl;
         nameInput.readOnly = true;
         urlInput.readOnly  = true;
-
         document.getElementById('create-modal').classList.remove('hidden');
     }
 
     window.showToast = showToast;
 </script>
-
 </body>
 </html>

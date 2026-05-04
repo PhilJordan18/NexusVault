@@ -111,8 +111,6 @@ Route::middleware(['auth', 'master_key', 'mfa'])->prefix('settings')->group(func
 
 //Vault
 Route::middleware(['auth', 'master_key','mfa'])->group(function () {
-    Route::get('/dashboard', [ServiceController::class, 'index'])->name('dashboard');
-
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
     Route::get('/services/{name}', [ServiceController::class, 'show'])->name('services.show');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');

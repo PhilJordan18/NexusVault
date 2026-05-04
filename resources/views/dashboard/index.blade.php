@@ -2,42 +2,46 @@
 
     <!-- STATS ROW -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+        <!-- Compromised -->
         <div class="bg-[#111111] border border-white/10 rounded-3xl p-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-red-500/10 rounded-2xl flex items-center justify-center">
                 <i class="fa-solid fa-exclamation-triangle text-red-400 text-xl"></i>
             </div>
             <div>
-                <p class="text-3xl font-semibold">47</p>
+                <p class="text-3xl font-semibold">{{ $stats['compromised'] }}</p>
                 <p class="text-sm text-white/60">Compromised</p>
             </div>
         </div>
 
+        <!-- Reused -->
         <div class="bg-[#111111] border border-white/10 rounded-3xl p-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-amber-500/10 rounded-2xl flex items-center justify-center">
                 <i class="fa-solid fa-sync text-amber-400 text-xl"></i>
             </div>
             <div>
-                <p class="text-3xl font-semibold">89</p>
+                <p class="text-3xl font-semibold">{{ $stats['reused'] }}</p>
                 <p class="text-sm text-white/60">Reused Passwords</p>
             </div>
         </div>
 
+        <!-- Weak -->
         <div class="bg-[#111111] border border-white/10 rounded-3xl p-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-yellow-500/10 rounded-2xl flex items-center justify-center">
                 <i class="fa-solid fa-shield-halved text-yellow-400 text-xl"></i>
             </div>
             <div>
-                <p class="text-3xl font-semibold">156</p>
+                <p class="text-3xl font-semibold">{{ $stats['weak'] }}</p>
                 <p class="text-sm text-white/60">Weak Passwords</p>
             </div>
         </div>
 
+        <!-- Secure -->
         <div class="bg-[#111111] border border-white/10 rounded-3xl p-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
                 <i class="fa-solid fa-check-circle text-emerald-400 text-xl"></i>
             </div>
             <div>
-                <p class="text-3xl font-semibold">694</p>
+                <p class="text-3xl font-semibold">{{ $stats['secure'] }}</p>
                 <p class="text-sm text-white/60">Secure Items</p>
             </div>
         </div>

@@ -169,5 +169,4 @@
     <script>
         window.accounts = @json($accounts->keyBy('id'));
     </script>
-    @vite(['resources/js/app.js'])
 </x-layouts.app>

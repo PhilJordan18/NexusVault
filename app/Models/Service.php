@@ -15,6 +15,9 @@ class Service extends Model
         'password_iv', 'password_tag',
         'notes_iv', 'notes_tag',
         'shared_user_id', 'shared_at',
+        'strength',
+        'compromised',
+        'reused',
     ];
 
     protected $hidden = [

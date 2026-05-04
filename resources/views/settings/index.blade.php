@@ -116,6 +116,17 @@
             </form>
         </div>
 
+        <div class="flex items-center gap-4 mb-4">
+            <div class="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center overflow-hidden">
+                @if(auth()->user()->pfp)
+                    <img src="{{ Storage::url(auth()->user()->pfp) }}" alt="avatar" class="w-full h-full object-cover rounded-full">
+                @else
+                    <span class="text-2xl">{{ strtoupper(substr(auth()->user()->name, 0, 1)) }}</span>
+                @endif
+            </div>
+            <p class="text-sm text-white/60">Current picture</p>
+        </div>
+
         <!-- Active Sessions -->
         <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
             <div class="flex items-center justify-between mb-6">

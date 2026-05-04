@@ -27,6 +27,11 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
         'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean',
     ];
 
+    public function services(): HasMany
+    {
+        return $this->hasMany(Service::class);
+    }
+
     public function sendEmailVerificationNotification(): void
     {
         $this->notify(new EmailVerifier());

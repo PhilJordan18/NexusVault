@@ -3,6 +3,7 @@
 namespace App\Services\Vault;
 
 use App\Models\Service;
+use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
 use Carbon\Carbon;
@@ -12,7 +13,7 @@ use Random\RandomException;
 
 final readonly class ServiceService implements ServiceServiceInterface
 {
-    public function __construct(private CryptoService $cryptoService) {}
+    public function __construct(private CryptoService $cryptoService, private PasswordService $passwordService) {}
 
     public function create(array $data): Service
     {
@@ -21,6 +22,7 @@ final readonly class ServiceService implements ServiceServiceInterface
         $encNotes = isset($data['notes']) && $data['notes']
             ? $this->cryptoService->encryptWithMasterKey($data['notes'])
             : null;
+        $analysis = $this->passwordService->analyze($data['password'], auth()->id());
 
         return Service::create([
             'user_id'      => auth()->id(),
@@ -36,6 +38,9 @@ final readonly class ServiceService implements ServiceServiceInterface
             'notes'        => $encNotes['ciphertext'] ?? null,
             'notes_iv'     => $encNotes['iv'] ?? null,
             'notes_tag'    => $encNotes['tag'] ?? null,
+            'strength'    => $analysis['strength'],
+            'compromised' => $analysis['compromised'],
+            'reused'      => $analysis['reused'],
         ]);
     }
 
@@ -73,10 +78,16 @@ final readonly class ServiceService implements ServiceServiceInterface
             }
         }
 
+        if (isset($data['password'])) {
+            $analysis = $this->passwordService->analyze($data['password'], $service->user_id);
+            $updates['strength']    = $analysis['strength'];
+            $updates['compromised'] = $analysis['compromised'];
+            $updates['reused']      = $analysis['reused'];
+        }
+
         $updates['favicon'] = $this->getFaviconUrl($updates['url'] ?? $service->url);
 
         $service->update($updates);
-
         return $service->fresh();
     }
 

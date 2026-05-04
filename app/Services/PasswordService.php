@@ -2,10 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\Service;
+use Illuminate\Http\Client\Factory as Http;
 use Illuminate\Support\Str;
 
 final readonly class PasswordService
 {
+    public function __construct(private Http $http) {}
+
     public function calculateEntropy(string $password) : array {
         $length = strlen($password);
         if ($length === 0) {
@@ -33,6 +37,48 @@ final readonly class PasswordService
         if ($symbols) $chars .= '!@#$%^&*()-_=+[]{}|;:,.<>?';
 
         return Str::password($length, $upper, $lower, $numbers, $symbols, $chars);
+    }
+
+    public function analyze(string $password, int $userId): array
+    {
+        $entropy = $this->calculateEntropy($password);
+
+        $compromised = $this->isPwned($password);
+        $reused = $this->isReused($password, $userId);
+
+        return [
+            'entropy'     => $entropy['entropy'],
+            'strength'    => $entropy['strength'],
+            'compromised' => $compromised,
+            'reused'      => $reused,
+            'label'       => $entropy['label'],
+        ];
+    }
+
+    public function isPwned(string $password): bool
+    {
+        $sha1 = strtoupper(sha1($password));
+        $prefix = substr($sha1, 0, 5);
+
+        try {
+            $response = $this->http->get("https://api.pwnedpasswords.com/range/{$prefix}")
+                ->throw()
+                ->body();
+            return Str::contains($response, substr($sha1, 5));
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function isReused(string $password, int $userId): bool
+    {
+        $services = Service::where('user_id', $userId)->get();
+        foreach ($services as $service) {
+            if ($service->password === $password) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function getStrength(float $entropy) : string {

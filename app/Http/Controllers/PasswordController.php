@@ -22,8 +22,12 @@ final class PasswordController extends Controller
         return response()->json(['password' => $password]);
     }
 
-    public function entropy(Request $request): JsonResponse {
-        $result = $this->passwordService->calculateEntropy($request->get('password', ''));
+    public function entropy(Request $request): JsonResponse
+    {
+        $password = $request->get('password', '');
+        $userId = auth()->id();
+
+        $result = $this->passwordService->analyze($password, $userId ?? 0);
         return response()->json($result);
     }
 }
