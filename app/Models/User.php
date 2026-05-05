@@ -18,13 +18,13 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
     use HasFactory, Notifiable, WebAuthnAuthentication;
 
     protected $fillable = [
-        'name', 'email', 'password', 'salt', 'public_key', 'private_key', 'encrypted_master_key', 'mfa_enabled', 'totp_secret', 'email_verified_at', 'pfp', 'private_nonce'
+        'name', 'email', 'password', 'salt', 'public_key', 'private_key', 'encrypted_master_key', 'mfa_enabled', 'totp_secret', 'email_verified_at', 'pfp', 'private_nonce', 'is_oauth'
     ];
     protected $hidden = [
         'password', 'salt', 'private_key', 'private_nonce', 'totp_secret', 'remember_token'
     ];
     protected $casts = [
-        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean',
+        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean',
     ];
 
     public function services(): HasMany

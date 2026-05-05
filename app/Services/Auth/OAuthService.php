@@ -37,6 +37,7 @@ final readonly class OAuthService implements OAuthServiceInterface
                 'mfa_enabled'          => false,
                 'totp_secret'          => null,
                 'email_verified_at'    => now(),
+                'is_oauth' => true,
             ]);
         }
 

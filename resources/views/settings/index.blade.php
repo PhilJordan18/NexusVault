@@ -86,25 +86,27 @@
         </div>
 
         <!-- Change Password Section -->
-        <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
-            <h2 class="text-xl font-medium mb-6">Change Password</h2>
-            <form method="POST" action="{{ route('settings.password.update') }}" class="space-y-6">
-                @csrf
-                <div>
-                    <label class="block text-sm text-white/70 mb-1.5">Current Password</label>
-                    <input type="password" name="current_password" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
-                </div>
-                <div>
-                    <label class="block text-sm text-white/70 mb-1.5">New Password</label>
-                    <input type="password" name="new_password" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
-                </div>
-                <div>
-                    <label class="block text-sm text-white/70 mb-1.5">Confirm New Password</label>
-                    <input type="password" name="new_password_confirmation" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
-                </div>
-                <button type="submit" class="bg-gradient-to-r from-nexus-600 to-nexus-500 text-white px-8 py-4 rounded-2xl font-semibold">Update Password</button>
-            </form>
-        </div>
+        @unless(auth()->user()->is_oauth)
+            <div class="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <h2 class="text-xl font-medium mb-6">Change Password</h2>
+                <form method="POST" action="{{ route('settings.password.update') }}" class="space-y-6">
+                    @csrf
+                    <div>
+                        <label class="block text-sm text-white/70 mb-1.5">Current Password</label>
+                        <input type="password" name="current_password" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-white/70 mb-1.5">New Password</label>
+                        <input type="password" name="new_password" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-white/70 mb-1.5">Confirm New Password</label>
+                        <input type="password" name="new_password_confirmation" class="w-full bg-white/10 border border-white/10 focus:border-nexus-500 rounded-2xl py-4 px-5" required>
+                    </div>
+                    <button type="submit" class="bg-gradient-to-r from-nexus-600 to-nexus-500 text-white px-8 py-4 rounded-2xl font-semibold">Update Password</button>
+                </form>
+            </div>
+        @endunless
 
         <!-- Profile Picture -->
         <div class="bg-white/5 border border-white/10 rounded-3xl p-8">

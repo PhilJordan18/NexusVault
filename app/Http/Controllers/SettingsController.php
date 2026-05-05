@@ -34,20 +34,15 @@ final class SettingsController extends Controller
     public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
     {
         $user = auth()->user();
+        if ($user->is_oauth) {
+            abort(403, 'OAuth users cannot change their password.');
+        }
 
-        // 1. Vérifier que l’ancien mot de passe est correct (déjà fait par la règle 'current_password')
         $validated = $request->validated();
 
-        // 2. Dériver la nouvelle master key à partir du nouveau mot de passe
         $newMasterKey = $this->crypto->deriveMasterKey($validated['new_password'], $user->salt);
-
-        // 3. Ré‑encrypter tous les services avec la nouvelle clé
         $this->rotationService->reEncryptAllServicesForUser($user->id, $newMasterKey);
-
-        // 4. Mettre à jour le hash du mot de passe
         $user->password = Hash::make($validated['new_password']);
-
-        // 5. Chiffrer la nouvelle master key et la stocker dans encrypted_master_key
         $user->encrypted_master_key = Crypt::encrypt($newMasterKey);
         $user->save();
 
