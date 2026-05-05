@@ -29,7 +29,10 @@ class WebAuthnRegisterController
     public function register(AttestedRequest $request): Response
     {
         $request->save();
-
+        if ($alias = request()->input('alias')) {
+            $credential = $request->user()->webAuthnCredentials()->latest()->first();
+            $credential?->forceFill(['alias' => $alias])->save();
+        }
         return response()->noContent();
     }
 }

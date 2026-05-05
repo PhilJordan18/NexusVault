@@ -9,6 +9,7 @@ use Laragear\WebAuthn\Http\Requests\AssertedRequest;
 use Laragear\WebAuthn\Http\Requests\AssertionRequest;
 use App\Services\Auth\UserKeyService;
 
+use Laragear\WebAuthn\Models\WebAuthnCredential;
 use function response;
 
 readonly class WebAuthnLoginController
@@ -35,6 +36,12 @@ readonly class WebAuthnLoginController
 
         $user = auth()->user();
         $this->userKeyService->storeMasterKey($user);
+
+        $credentialId = $request->validated()['id'];
+        $credential = WebAuthnCredential::where('credential_id', $credentialId)->first();
+        if ($credential) {
+            $credential->forceFill(['last_used_at' => now()])->save();
+        }
 
         if ($user->mfa_enabled) {
             return response()->json(['redirect' => route('mfa.verify.login')]);

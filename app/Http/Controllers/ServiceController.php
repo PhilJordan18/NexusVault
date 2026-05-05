@@ -6,7 +6,9 @@ use App\Http\Requests\CreateServiceRequest;
 use App\Http\Requests\UpdateServiceRequest;
 use App\Models\Service;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 
 final class ServiceController extends Controller
 {
@@ -52,10 +54,18 @@ final class ServiceController extends Controller
         return back()->with('success', 'Service updated with success!');
     }
 
-    public function destroy(Service $service): RedirectResponse
+    public function destroy(Request $request, Service $service): JsonResponse|RedirectResponse
     {
-        if ($service->user_id !== auth()->id()) abort(403);
+        if ($service->user_id !== auth()->id()) {
+            abort(403);
+        }
+
         $this->service->delete($service);
-        return back()->with('success', 'Service supprimé');
+
+        if ($request->expectsJson()) {
+            return response()->json(['message' => 'Service deleted']);
+        }
+
+        return redirect()->route('dashboard')->with('success', 'Service deleted');
     }
 }

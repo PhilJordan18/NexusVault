@@ -37,6 +37,8 @@ function csrfToken(): string {
     panel.classList.remove('hidden');
     document.getElementById('empty-state')?.classList.add('hidden');
 
+    document.getElementById('delete-account-container')?.classList.remove('hidden');
+
     (document.getElementById('detail-username') as HTMLElement).textContent = account.username;
     (document.getElementById('detail-name') as HTMLElement).textContent = account.name || '';
 
@@ -262,6 +264,29 @@ function renderSecurityFromAccount(account: Account) {
     panel.innerHTML = html;
 }
 
+(window as any).deleteAccount = async () => {
+    if (!currentAccount) return;
+    if (!confirm('Are you sure you want to delete this account?')) return;
+
+    try {
+        const res = await fetch(`/services/${currentAccount.id}`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        });
+
+        if (res.ok) {
+            window.location.href = '/dashboard';
+        } else {
+            (window as any).showToast?.('Failed to delete account.', 'error');
+        }
+    } catch (e) {
+        (window as any).showToast?.('Network error.', 'error');
+    }
+};
+
 // ===== INITIALISATION =====
 document.addEventListener('DOMContentLoaded', () => {
     const accounts = (window as any).accounts as Record<number, Account> | undefined;
@@ -272,12 +297,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    bindPasswordStrength(
-        'edit-password',
-        'edit-password-toggle',
-        'edit-strength-container',
-        'edit-strength-bar',
-        'edit-strength-text',
-        'edit-generate-btn'
-    );
+    if (document.getElementById('edit-password')) {
+        bindPasswordStrength(
+            'edit-password',
+            'edit-password-toggle',
+            'edit-strength-container',
+            'edit-strength-bar',
+            'edit-strength-text',
+            'edit-generate-btn'
+        );
+    }
 });

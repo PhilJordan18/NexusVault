@@ -65,39 +65,29 @@ function initAuthPage() {
 }
 
 async function handlePasskeyLogin() {
-
     try {
-
         const options = await webauthn.getLoginOptions();
-
         const credential = await navigator.credentials.get({ publicKey: options });
-
         const result = await webauthn.login(credential);
 
         if (result.success && result.redirect) {
-
-            window.location.href = result.redirect;
-
+            (window as any).showToast?.('Connected with passkey.', 'success');
+            setTimeout(() => {
+                if (result.redirect != null) {
+                    window.location.href = result.redirect;
+                }
+            }, 300);
         } else {
-
-            alert('Authentication failed with passkey.');
-
+            (window as any).showToast?.('Authentication failed with passkey.', 'error');
         }
-
     } catch (e: any) {
-
         console.error('Passkey login error:', e);
 
         if (e.name === 'NotAllowedError') {
-
-            alert('Action canceled by user.');
-
+            (window as any).showToast?.('Action cancelled.', 'error');
         } else {
-
-            alert('An error occurred during login. Please try again.');
-
+            (window as any).showToast?.('Unable to use passkey. Try another method.', 'error');
         }
-
     }
 }
 

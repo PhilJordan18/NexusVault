@@ -55,7 +55,7 @@ Route::middleware('auth')->group(function () {
 
 // Enregistrement d'une nouvelle Passkey (depuis les settings)
 Route::middleware('auth')->group(function () {
-    Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);   // ← CHANGÉ EN POST
+    Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);
     Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
 });
 
@@ -63,9 +63,9 @@ Route::middleware('auth')->group(function () {
 Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
 Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
 Route::middleware('auth')->group(function () {
-    Route::delete('/webauthn/credentials/{credential}',
-        [\Laragear\WebAuthn\Models\WebAuthnCredential::class, 'destroy']
-    )->name('webauthn.destroy');
+    Route::delete('/webauthn/credentials/{webauthn_credential}',
+        [SettingsController::class, 'destroyPasskey']
+    )->name('webauthn.destroy')->where('webauthn_credential', '[0-9]+');
 });
 
 //Verify Email
@@ -74,17 +74,18 @@ Route::middleware('auth')->group(function () {
         return view('auth.verify-email');
     })->name('verification.notice');
 
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        return redirect()->route('home')->with('success', 'Your Email has been verified!');
-    })->middleware('signed')->name('verification.verify');
-
     Route::post('/email/verification-notification', function (Request $request) {
         $request->user()->sendEmailVerificationNotification();
         return back()->with('message', 'Verification link sent!');
     })->middleware('throttle:6,1')->name('verification.send');
 });
 
+Route::middleware('auth')->group(function () {
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect()->route('home')->with('success', 'Your Email has been verified!');
+    })->middleware('signed')->name('verification.verify');
+});
 
 //Dashboard
 Route::middleware(['auth', 'master_key','mfa'])->group(function () {
@@ -98,6 +99,9 @@ Route::middleware(['auth', 'master_key','mfa'])->prefix('settings')->group(funct
     Route::post('/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/pfp', [SettingsController::class, 'updatePfp'])->name('settings.pfp.update');
     Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
+});
+Route::middleware(['auth', 'master_key', 'mfa'])->group(function () {
+    Route::get('/passkeys', [SettingsController::class, 'passkeys'])->name('passkeys.index');
 });
 
 // Active Sessions

@@ -55,15 +55,15 @@
             <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems }}</span>
         </a>
 
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
+        <a href="{{ route('passkeys.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
             <i class="fa-solid fa-fingerprint w-4"></i>
             <span>Passkeys</span>
         </a>
 
-        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
-            <i class="fa-solid fa-shield-halved w-4"></i>
-            <span>Security</span>
-        </a>
+{{--        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">--}}
+{{--            <i class="fa-solid fa-shield-halved w-4"></i>--}}
+{{--            <span>Security</span>--}}
+{{--        </a>--}}
 
         <a href="{{ route('settings') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
             <i class="fa-solid fa-gear w-4"></i>
@@ -153,14 +153,11 @@
     </div>
 </div>
 
-<!-- Toast Container -->
-<div id="toast-container" class="fixed bottom-6 right-6 z-[100]"></div>
-
+<div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2"></div>
 @include('services.create-modal')
 @include('shares.modal')
 
 <script>
-    // --- Responsive Sidebar Toggle ---
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggleBtn = document.getElementById('mobile-menu-btn');
@@ -179,26 +176,24 @@
     });
     overlay.addEventListener('click', closeSidebar);
 
-    // --- Toast (inchangée) ---
-    function showToast(message) {
+    function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
-        toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border border-white/10`;
-        toast.style.background = 'rgba(17,17,17,0.95)';
-        toast.innerHTML = `
-                <i class="fa-solid fa-check-circle text-emerald-400"></i>
-                <span>${message}</span>
-            `;
+        const bg = type === 'error' ? 'bg-red-500/20 border-red-500/30 text-red-400' : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
+        const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-check-circle';
+
+        toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border ${bg}`;
+        toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
         container.appendChild(toast);
+
         setTimeout(() => {
             toast.style.transition = 'all 0.3s ease';
             toast.style.opacity = '0';
-            toast.style.transform = 'translateY(10px)';
+            toast.style.transform = 'translateY(-10px)';
             setTimeout(() => toast.remove(), 300);
         }, 2500);
     }
 
-    // --- Modal functions (inchangées) ---
     function showCreateModal() {
         const nameInput = document.getElementById('service-name');
         const urlInput  = document.getElementById('service-url');
@@ -222,6 +217,15 @@
     }
 
     window.showToast = showToast;
+
+    document.addEventListener('DOMContentLoaded', () => {
+        @if(session('success'))
+        showToast(@json(session('success')), 'success');
+        @endif
+        @if(session('error'))
+        showToast(@json(session('error')), 'error');
+        @endif
+    });
 </script>
 </body>
 </html>

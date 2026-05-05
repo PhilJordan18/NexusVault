@@ -44,7 +44,6 @@
 </div>
 
 <script>
-    // Show share modal with dynamic service ID
     window.showShareModal = function(serviceId) {
         const modal = document.getElementById('share-modal');
         const input = document.getElementById('modal-service-id');
@@ -58,22 +57,5 @@
     window.hideShareModal = function() {
         const modal = document.getElementById('share-modal');
         if (modal) modal.classList.add('hidden');
-    };
-
-    // Toast function
-    window.showToast = function(message = 'Share sent successfully!') {
-        const toast = document.getElementById('success-toast');
-        const msg = document.getElementById('toast-message');
-
-        if (toast && msg) {
-            msg.textContent = message;
-            toast.classList.remove('hidden');
-            toast.classList.add('flex');
-
-            setTimeout(() => {
-                toast.classList.remove('flex');
-                toast.classList.add('hidden');
-            }, 3000);
-        }
     };
 </script>

@@ -30,60 +30,29 @@
             @endif
         </div>
 
-        <!-- Passkeys Section -->
-        <div class="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8">
-            <h2 class="text-2xl font-semibold mb-2 flex items-center gap-3">
-                <i class="fa-solid fa-key text-emerald-500"></i>
-                Passkeys
-            </h2>
-            <p class="text-white/60 mb-6">Use your fingerprint, Face ID or security key to sign in without a password.</p>
-
-            <!-- LIST OF PASSKEYS -->
-            <div class="space-y-3 mb-6">
-                @forelse(auth()->user()->webAuthnCredentials as $credential)
-                    <div class="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
-                                <i class="fa-solid fa-fingerprint text-emerald-500 text-xl"></i>
-                            </div>
-                            <div>
-                                <p class="font-medium text-white">{{ $credential->name ?? 'Unnamed device' }}</p>
-                                <p class="text-xs text-white/50">
-                                    Created {{ $credential->created_at->format('M d, Y') }}
-                                    • Last used: {{ $credential->last_used_at?->diffForHumans() ?? 'Never' }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <form action="{{ route('webauthn.destroy', $credential->id) }}" method="POST"
-                              onsubmit="return confirm('Delete this passkey?')">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                    class="text-red-400 hover:text-red-500 px-3 py-1.5 rounded-xl hover:bg-red-500/10 transition">
-                                <i class="fa-solid fa-trash text-sm"></i>
-                            </button>
-                        </form>
-                    </div>
-                @empty
-                    <div class="text-center py-6">
-                        <p class="text-white/40 italic">No passkeys registered yet.</p>
-                        <p class="text-xs text-white/30 mt-1">Add one below to sign in without a password.</p>
-                    </div>
-                @endforelse
+        <!-- Passkeys Card -->
+        <a href="{{ route('passkeys.index') }}"
+           class="block bg-white/5 border border-white/10 hover:border-emerald-500/40 rounded-3xl p-8 transition group">
+            <div class="flex items-start justify-between">
+                <div>
+                    <h2 class="text-2xl font-semibold mb-2 flex items-center gap-3">
+                        <i class="fa-solid fa-fingerprint text-emerald-500"></i>
+                        Passkeys
+                    </h2>
+                    <p class="text-white/60 max-w-md">
+                        Use your fingerprint, Face ID or security key to sign in without a password.
+                        Manage your passkeys on a dedicated page.
+                    </p>
+                </div>
+                <div class="text-emerald-400 group-hover:translate-x-1 transition">
+                    <i class="fa-solid fa-arrow-right text-2xl"></i>
+                </div>
             </div>
-
-            <!-- ADD PASSKEY BUTTON -->
-            <button id="register-passkey-btn"
-                    class="inline-flex items-center justify-center gap-3 w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-semibold px-8 py-3.5 rounded-2xl text-base transition-all cursor-pointer active:scale-95">
-                <i class="fa-solid fa-key"></i>
-                Add new Passkey
-            </button>
-
-            <p class="text-xs text-white/40 text-center mt-6">
-                Works with iPhone, Android, Windows Hello, YubiKey…
-            </p>
-        </div>
+            <div class="mt-6 inline-flex items-center gap-2 text-sm text-emerald-400 font-medium">
+                Manage Passkeys
+                <i class="fa-solid fa-chevron-right text-xs"></i>
+            </div>
+        </a>
 
         <!-- Change Password Section -->
         @unless(auth()->user()->is_oauth)

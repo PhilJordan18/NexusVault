@@ -50,4 +50,5 @@ return [
         'timeout' => 60,
         'key' => '_webauthn',
     ],
+    'user_verification' => 'discouraged',
 ];

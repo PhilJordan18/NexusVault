@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
+use Laragear\WebAuthn\Models\WebAuthnCredential;
 
 final class SettingsController extends Controller
 {
@@ -117,5 +118,19 @@ final class SettingsController extends Controller
         auth()->logout();
 
         return redirect()->route('login')->with('success', 'Your account has been deleted.');
+    }
+
+    public function destroyPasskey(WebAuthnCredential $webauthnCredential)
+    {
+        if ($webauthnCredential->user_id !== auth()->id()) {
+            abort(403);
+        }
+        $webauthnCredential->delete();
+        return back()->with('success', 'Passkey deleted.');
+    }
+
+    public function passkeys()
+    {
+        return view('passkey.index');
     }
 }

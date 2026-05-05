@@ -110,6 +110,13 @@
                     </div>
                 </div>
                 <div id="security-panel" class="hidden mt-6"></div>
+
+                <div id="delete-account-container" class="hidden mt-6 text-center">
+                    <button onclick="window.deleteAccount()"
+                            class="text-red-400 hover:text-red-500 px-4 py-2 text-sm rounded-2xl hover:bg-red-500/10 transition">
+                        <i class="fa-solid fa-trash mr-2"></i>Delete this account
+                    </button>
+                </div>
             </div>
         </div>
     </div>

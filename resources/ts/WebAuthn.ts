@@ -118,8 +118,14 @@ export class WebAuthn {
         return decodeAttestationOptions(data);
     }
 
-    async register(credential: any): Promise<boolean> {
+    async register(credential: any, alias?: string): Promise<boolean> {
         const serialized = serializeCredential(credential);
+
+        const body: any = { ...serialized };
+
+        if (alias) {
+            body.alias = alias;
+        }
 
         const res = await fetch('/webauthn/register', {
             method: 'POST',
@@ -128,7 +134,7 @@ export class WebAuthn {
                 'X-CSRF-TOKEN': this.csrfToken,
                 'Accept': 'application/json',
             },
-            body: JSON.stringify(serialized),
+            body: JSON.stringify(body),
         });
 
         if (!res.ok) {
@@ -138,7 +144,7 @@ export class WebAuthn {
             return false;
         }
 
-        return res.ok;
+        return true;
     }
 
     async getLoginOptions(): Promise<any> {
