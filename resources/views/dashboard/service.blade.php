@@ -138,10 +138,20 @@
                     <div class="relative">
                         <input type="password" id="edit-password" required
                                class="w-full bg-white/5 border border-white/10 focus:border-emerald-500 rounded-2xl px-5 py-3.5 pr-12 text-white placeholder:text-white/40 font-mono">
-                        <button type="button" onclick="toggleEditPasswordVisibility()"
+                        <button type="button" id="edit-password-toggle"
                                 class="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white">
-                            <i class="fa-solid fa-eye" id="edit-password-icon"></i>
+                            <i class="fa-solid fa-eye"></i>
                         </button>
+                    </div>
+                    <!-- Barre de force -->
+                    <div id="edit-strength-container" class="mt-2 hidden">
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white/60">Password strength</span>
+                            <span id="edit-strength-text" class="font-medium">Very weak</span>
+                        </div>
+                        <div class="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div id="edit-strength-bar" class="h-full w-0 transition-all duration-300 bg-red-500"></div>
+                        </div>
                     </div>
                 </div>
 
@@ -151,6 +161,13 @@
                     <textarea id="edit-notes" rows="3"
                               class="w-full bg-white/5 border border-white/10 focus:border-emerald-500 rounded-2xl px-5 py-3.5 text-white placeholder:text-white/40 resize-y"></textarea>
                 </div>
+
+                <!-- Generate password button -->
+                <button type="button" id="edit-generate-btn"
+                        class="w-full flex items-center justify-center gap-2 text-emerald-400 hover:text-emerald-300 text-sm font-medium mb-4 transition">
+                    <i class="fa-solid fa-dice"></i>
+                    <span>Generate strong password</span>
+                </button>
 
                 <div class="flex gap-3">
                     <button type="button" onclick="hideEditModal()"

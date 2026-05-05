@@ -39,22 +39,6 @@ final readonly class PasswordService
         return Str::password($length, $upper, $lower, $numbers, $symbols, $chars);
     }
 
-    public function analyze(string $password, int $userId): array
-    {
-        $entropy = $this->calculateEntropy($password);
-
-        $compromised = $this->isPwned($password);
-        $reused = $this->isReused($password, $userId);
-
-        return [
-            'entropy'     => $entropy['entropy'],
-            'strength'    => $entropy['strength'],
-            'compromised' => $compromised,
-            'reused'      => $reused,
-            'label'       => $entropy['label'],
-        ];
-    }
-
     public function isPwned(string $password): bool
     {
         $sha1 = strtoupper(sha1($password));
@@ -70,10 +54,28 @@ final readonly class PasswordService
         }
     }
 
-    private function isReused(string $password, int $userId): bool
+    public function analyze(string $password, int $userId, ?int $excludeServiceId = null): array
     {
-        $services = Service::where('user_id', $userId)->get();
-        foreach ($services as $service) {
+        $entropy = $this->calculateEntropy($password);
+        $compromised = $this->isPwned($password);
+        $reused = $this->isReused($password, $userId, $excludeServiceId);
+
+        return [
+            'entropy'     => $entropy['entropy'],
+            'strength'    => $entropy['strength'],
+            'compromised' => $compromised,
+            'reused'      => $reused,
+            'label'       => $entropy['label'],
+        ];
+    }
+
+    private function isReused(string $password, int $userId, ?int $excludeServiceId = null): bool
+    {
+        $query = Service::where('user_id', $userId);
+        if ($excludeServiceId) {
+            $query->where('id', '!=', $excludeServiceId);
+        }
+        foreach ($query->get() as $service) {
             if ($service->password === $password) {
                 return true;
             }

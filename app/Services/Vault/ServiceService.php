@@ -79,7 +79,7 @@ final readonly class ServiceService implements ServiceServiceInterface
         }
 
         if (isset($data['password'])) {
-            $analysis = $this->passwordService->analyze($data['password'], $service->user_id);
+            $analysis = $this->passwordService->analyze($data['password'], $service->user_id, $service->id);
             $updates['strength']    = $analysis['strength'];
             $updates['compromised'] = $analysis['compromised'];
             $updates['reused']      = $analysis['reused'];

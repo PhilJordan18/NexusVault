@@ -1,3 +1,5 @@
+import { bindPasswordStrength } from '../../ts/utils/password-utils';
+
 // Types
 type Account = {
     id: number;
@@ -6,10 +8,7 @@ type Account = {
     url?: string;
     notes?: string;
     name?: string;
-};
-
-type EntropyResult = {
-    strength: 'weak' | 'strong' | 'very_strong';
+    strength?: string;          // 'very_weak', 'weak', 'strong', 'very_strong'
     compromised?: boolean;
     reused?: boolean;
 };
@@ -64,7 +63,8 @@ function csrfToken(): string {
         notesContainer.classList.add('hidden');
     }
 
-    loadSecurity(account.password);
+    // Utilise les données stockées pour le panneau de sécurité
+    renderSecurityFromAccount(account);
 };
 
 (window as any).togglePassword = () => {
@@ -142,6 +142,7 @@ function csrfToken(): string {
         if (response.ok) {
             const updated = await response.json();
             const accounts = (window as any).accounts as Record<number, Account>;
+            // La réponse du serveur contient maintenant les champs d'analyse (strength, compromised, reused)
             accounts[serviceId] = { ...accounts[serviceId], ...updated };
             (window as any).selectAccount(serviceId);
             (window as any).hideEditModal();
@@ -174,32 +175,17 @@ function csrfToken(): string {
     }
 };
 
-// ===== SECURITY =====
+// ===== SÉCURITÉ (basée sur les données stockées) =====
 
-async function loadSecurity(password: string) {
+function renderSecurityFromAccount(account: Account) {
     const panel = document.getElementById('security-panel');
     if (!panel) return;
-
-    const res = await fetch('/password/entropy', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': csrfToken(),
-        },
-        body: JSON.stringify({ password }),
-    });
-
-    const data: EntropyResult = await res.json();
-    renderSecurity(data);
-}
-
-function renderSecurity(data: EntropyResult) {
-    const panel = document.getElementById('security-panel')!;
     panel.classList.remove('hidden');
 
     let html = '';
 
-    if (data.compromised) {
+    // Priorité à la compromission (données réelles de HIBP)
+    if (account.compromised) {
         html = `
             <div class="security-red border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center">
@@ -215,7 +201,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    } else if (data.reused) {
+    } else if (account.reused) {
         html = `
             <div class="security-yellow border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-yellow-500/20 text-yellow-400 rounded-2xl flex items-center justify-center">
@@ -231,7 +217,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    } else if (data.strength === 'weak') {
+    } else if (account.strength === 'very_weak' || account.strength === 'weak') {
         html = `
             <div class="security-red border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center">
@@ -247,7 +233,7 @@ function renderSecurity(data: EntropyResult) {
                 </div>
             </div>
         `;
-    } else if (data.strength === 'very_strong') {
+    } else if (account.strength === 'very_strong') {
         html = `
             <div class="border border-emerald-500/50 bg-emerald-500/10 rounded-3xl p-5 flex gap-4">
                 <div class="w-9 h-9 flex-shrink-0 bg-emerald-500/20 text-emerald-400 rounded-2xl flex items-center justify-center">
@@ -285,4 +271,13 @@ document.addEventListener('DOMContentLoaded', () => {
             setTimeout(() => (window as any).selectAccount(firstId), 80);
         }
     }
+
+    bindPasswordStrength(
+        'edit-password',
+        'edit-password-toggle',
+        'edit-strength-container',
+        'edit-strength-bar',
+        'edit-strength-text',
+        'edit-generate-btn'
+    );
 });

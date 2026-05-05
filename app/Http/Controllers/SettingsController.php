@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdatePfpRequest;
+use App\Models\Service;
+use App\Models\Share;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\EncryptionRotationService;
 use Illuminate\Http\JsonResponse;
@@ -99,10 +101,26 @@ final class SettingsController extends Controller
     }
 
 
-    public function destroy(): RedirectResponse {
+    public function destroy(): RedirectResponse
+    {
         $user = auth()->user();
+
+        DB::table('sessions')->where('user_id', $user->id)->delete();
+
+        Service::where('shared_user_id', $user->id)->delete();
+
+        $user->services()->delete();
+
+        Share::where('from_user_id', $user->id)
+            ->orWhere('to_user_id', $user->id)
+            ->delete();
+
+        $user->webAuthnCredentials()->delete();
+
         $user->delete();
+
         auth()->logout();
+
         return redirect()->route('login')->with('success', 'Your account has been deleted.');
     }
 }

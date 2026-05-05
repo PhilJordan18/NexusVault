@@ -11,6 +11,7 @@ use App\Models\Service;
 use App\Models\Share;
 use App\Models\User;
 use App\Services\Auth\UserKeyService;
+use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\Contracts\ShareServiceInterface;
 
@@ -18,7 +19,8 @@ final readonly class ShareService implements ShareServiceInterface
 {
     public function __construct(
         private CryptoService $cryptoService,
-        private UserKeyService $userKeyService
+        private UserKeyService $userKeyService,
+        private PasswordService $passwordService
     ) {}
 
     // ==================== PUBLIC API ====================
@@ -46,8 +48,11 @@ final readonly class ShareService implements ShareServiceInterface
         $payload       = $this->extractPayload($share);
         $aesKey        = $this->decryptAesKey($payload, auth()->user());
         $decryptedData = $this->decryptSensitiveData($payload, $aesKey);
+
+        $analysis = $this->passwordService->analyze($decryptedData['password'], auth()->id());
+
         $reEncrypted   = $this->reEncryptForRecipient($decryptedData);
-        $newService    = $this->createServiceFromSharedData($payload, $reEncrypted, $share);
+        $newService    = $this->createServiceFromSharedData($payload, $reEncrypted, $share, $analysis);
 
         $share->update(['accepted_at' => now()]);
 
@@ -184,8 +189,7 @@ final readonly class ShareService implements ShareServiceInterface
         ];
     }
 
-    private function createServiceFromSharedData(SharePayload $payload, array $reEncrypted, Share $share): Service
-    {
+    private function createServiceFromSharedData(SharePayload $payload, array $reEncrypted, Share $share, array $analysis): Service {
         return Service::create([
             'user_id'        => auth()->id(),
             'name'           => $payload->name,
@@ -201,6 +205,9 @@ final readonly class ShareService implements ShareServiceInterface
             'notes_iv'       => $reEncrypted['notes']['iv'] ?? null,
             'notes_tag'      => $reEncrypted['notes']['tag'] ?? null,
             'shared_user_id' => $share->from_user_id,
+            'strength'    => $analysis['strength'],
+            'compromised' => $analysis['compromised'],
+            'reused'      => $analysis['reused'],
         ]);
     }
 
