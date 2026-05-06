@@ -49,21 +49,23 @@
             <div class="lg:col-span-7">
                 <div id="detail-panel" class="hidden bg-[#111111] border border-white/10 rounded-3xl p-8">
 
-                    <div class="flex justify-between items-start mb-8">
-                        <div>
-                            <h2 id="detail-username" class="text-3xl font-semibold"></h2>
-                            <p id="detail-name" class="text-white/50 mt-1"></p>
+                    <div class="flex justify-between items-start mb-8 gap-4">
+                        <div class="flex-1 min-w-0">
+                            <h2 id="detail-username"
+                                class="text-3xl font-semibold truncate"
+                                title=""></h2>
+                            <p id="detail-name" class="text-white/50 mt-1 truncate"></p>
                         </div>
 
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 flex-shrink-0">
                             <button onclick="window.editAccount()"
-                                    class="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-2xl flex items-center gap-2">
+                                    class="px-4 py-2 text-sm bg-white/5 hover:bg-white/10 rounded-2xl flex items-center gap-2 whitespace-nowrap">
                                 <i class="fa-solid fa-edit"></i>
                                 <span>Edit</span>
                             </button>
 
                             <button onclick="window.shareCurrentAccount()"
-                                    class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 rounded-2xl flex items-center gap-2 text-white">
+                                    class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 rounded-2xl flex items-center gap-2 text-white whitespace-nowrap">
                                 <i class="fa-solid fa-share"></i>
                                 <span>Share</span>
                             </button>

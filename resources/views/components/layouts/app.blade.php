@@ -21,21 +21,15 @@
     </style>
 </head>
 <body class="bg-[#0a0a0a] text-white min-h-screen flex">
+
 @php
-    // Compte réel des services de l'utilisateur
     $totalItems = auth()->user()->services()->count();
 @endphp
 
-    <!-- Bouton hamburger (visible seulement sur mobile) -->
-<button id="mobile-menu-btn" class="md:hidden fixed top-4 left-4 z-50 p-3 bg-[#111111] rounded-2xl border border-white/10">
-    <i class="fa-solid fa-bars text-xl"></i>
-</button>
+    <!-- SIDEBAR -->
+<aside id="sidebar"
+       class="w-72 bg-[#111111] border-r border-white/10 flex flex-col h-screen fixed top-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
 
-<!-- Overlay mobile (caché par défaut) -->
-<div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/60 z-40 md:hidden"></div>
-
-<!-- SIDEBAR -->
-<aside id="sidebar" class="w-72 bg-[#111111] border-r border-white/10 flex flex-col h-screen fixed top-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
     <!-- Logo -->
     <div class="p-6 flex items-center gap-3 border-b border-white/10">
         <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
@@ -59,11 +53,6 @@
             <i class="fa-solid fa-fingerprint w-4"></i>
             <span>Passkeys</span>
         </a>
-
-{{--        <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">--}}
-{{--            <i class="fa-solid fa-shield-halved w-4"></i>--}}
-{{--            <span>Security</span>--}}
-{{--        </a>--}}
 
         <a href="{{ route('settings') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
             <i class="fa-solid fa-gear w-4"></i>
@@ -95,22 +84,46 @@
     </div>
 </aside>
 
+<!-- OVERLAY MOBILE -->
+<div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/60 z-40 md:hidden"></div>
+
 <!-- MAIN CONTENT -->
 <div class="flex-1 flex flex-col md:ml-72">
+
     <!-- TOP BAR -->
-    <div class="h-16 md:h-23 border-b border-white/10 bg-[#111111]/80 backdrop-blur-xl flex items-center px-6 md:px-8 sticky top-0 z-30">
-        <div class="flex-1 max-w-md">
-            <div class="relative">
-                <input type="text"
-                       id="search-input"
-                       class="w-full bg-white/5 border border-white/10 focus:border-emerald-500 rounded-3xl py-2.5 pl-11 text-sm placeholder:text-white/40 outline-none"
-                       placeholder="Search passwords, services...">
-                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40"></i>
+    <div class="h-16 md:h-20 border-b border-white/10 bg-[#111111]/80 backdrop-blur-xl flex items-center px-4 md:px-8 sticky top-0 z-30">
+
+        <!-- Partie gauche : Hamburger + Search -->
+        <div class="flex items-center gap-3 flex-1 min-w-0">
+
+            <!-- Hamburger Mobile -->
+            <button id="mobile-menu-btn"
+                    class="md:hidden flex items-center justify-center w-10 h-10 -ml-1 text-white hover:bg-white/10 rounded-2xl transition">
+                <i class="fa-solid fa-bars text-xl"></i>
+            </button>
+
+            <!-- Search Bar -->
+            <div class="flex-1 max-w-md relative">
+                <div class="relative">
+                    <input type="text"
+                           id="search-input"
+                           autocomplete="off"
+                           class="w-full bg-white/5 border border-white/10 focus:border-emerald-500 rounded-3xl py-2.5 pl-11 pr-4 text-sm placeholder:text-white/40 outline-none"
+                           placeholder="Search passwords, services...">
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40"></i>
+                </div>
+
+                <!-- Search Dropdown -->
+                <div id="search-dropdown"
+                     class="absolute top-full mt-2 w-full bg-[#1a1a1c] border border-white/10 rounded-2xl shadow-2xl hidden overflow-hidden z-50">
+                </div>
             </div>
         </div>
 
-        <div class="ml-auto flex items-center gap-2 md:gap-4">
-            <!-- New Button -->
+        <!-- Partie droite : Actions -->
+        <div class="flex items-center gap-1 md:gap-3 ml-2">
+
+            <!-- New Item Button -->
             <button onclick="showCreateModal()"
                     class="flex items-center gap-2 px-3 md:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
                 <i class="fa-solid fa-plus"></i>
@@ -130,14 +143,15 @@
                     <i class="fa-solid fa-bell text-lg"></i>
                     @if($pendingShares > 0)
                         <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                                {{ $pendingShares }}
-                            </span>
+                            {{ $pendingShares }}
+                        </span>
                     @endif
                 </button>
             </div>
 
             <!-- User Avatar -->
-            <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm cursor-pointer overflow-hidden" onclick="window.location='{{ route('settings') }}'">
+            <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm cursor-pointer overflow-hidden"
+                 onclick="window.location='{{ route('settings') }}'">
                 @if(auth()->user()->pfp)
                     <img src="{{ Storage::url(auth()->user()->pfp) }}" alt="avatar" class="w-full h-full object-cover rounded-full">
                 @else
@@ -153,11 +167,14 @@
     </div>
 </div>
 
+<!-- Toast -->
 <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex flex-col items-center gap-2"></div>
+
 @include('services.create-modal')
 @include('shares.modal')
 
 <script>
+    // === SIDEBAR MOBILE ===
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
     const toggleBtn = document.getElementById('mobile-menu-btn');
@@ -170,12 +187,17 @@
         sidebar.classList.add('-translate-x-full');
         overlay.classList.add('hidden');
     }
+
     toggleBtn.addEventListener('click', () => {
-        if (sidebar.classList.contains('-translate-x-full')) openSidebar();
-        else closeSidebar();
+        if (sidebar.classList.contains('-translate-x-full')) {
+            openSidebar();
+        } else {
+            closeSidebar();
+        }
     });
     overlay.addEventListener('click', closeSidebar);
 
+    // === TOAST ===
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');
@@ -194,6 +216,9 @@
         }, 2500);
     }
 
+    window.showToast = showToast;
+
+    // === MODALS ===
     function showCreateModal() {
         const nameInput = document.getElementById('service-name');
         const urlInput  = document.getElementById('service-url');
@@ -215,8 +240,6 @@
         urlInput.readOnly  = true;
         document.getElementById('create-modal').classList.remove('hidden');
     }
-
-    window.showToast = showToast;
 
     document.addEventListener('DOMContentLoaded', () => {
         @if(session('success'))

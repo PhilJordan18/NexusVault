@@ -6,6 +6,7 @@ use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShareController;
@@ -115,6 +116,7 @@ Route::middleware(['auth', 'master_key', 'mfa'])->prefix('settings')->group(func
 
 //Vault
 Route::middleware(['auth', 'master_key','mfa'])->group(function () {
+    Route::get('/search', [SearchController::class, 'search'])->name('search');
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
     Route::get('/services/{name}', [ServiceController::class, 'show'])->name('services.show');
     Route::put('/services/{service}', [ServiceController::class, 'update'])->name('services.update');

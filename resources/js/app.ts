@@ -2,6 +2,7 @@ import { createInertiaApp } from '@inertiajs/vue3';
 import { initPasskeys } from '../ts/passkey';
 import { showShareModal, hideShareModal } from '../ts/utils/modals';
 import { bindPasswordStrength } from '../ts/utils/password-utils';
+import '../ts/search'
 import '../ts/sessions'
 import './pages/service';
 

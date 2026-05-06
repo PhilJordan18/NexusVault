@@ -17,7 +17,7 @@ final class DashboardController extends Controller
             'compromised' => $services->where('compromised', true)->count(),
             'reused'      => $services->where('reused', true)->count(),
             'weak'        => $services->whereIn('strength', ['very_weak', 'weak'])->count(),
-            'secure'      => $services->where('strength', 'very_strong')->count(),
+            'secure' => $services->whereIn('strength', ['strong', 'very_strong'])->count(),
         ];
 
         $grouped = $services->groupBy('name')->map(function ($items, $name) {
