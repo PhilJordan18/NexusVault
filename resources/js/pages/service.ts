@@ -15,11 +15,11 @@ type Account = {
 
 // GLOBAL STATE
 let currentAccount: Account | null = null;
-let revealed = false;
 
 // Helper CSRF
 function csrfToken(): string {
     const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+
     return meta?.content || '';
 }
 
@@ -28,10 +28,12 @@ function csrfToken(): string {
 (window as any).selectAccount = (id: number) => {
     const accounts = (window as any).accounts as Record<number, Account>;
     const account = accounts[id];
-    if (!account) return;
+
+    if (!account) {
+        return;
+    }
 
     currentAccount = account;
-    revealed = false;
 
     const panel = document.getElementById('detail-panel')!;
     panel.classList.remove('hidden');
@@ -48,6 +50,7 @@ function csrfToken(): string {
     passwordEl.dataset.realPassword = account.password || '';
 
     const urlEl = document.getElementById('detail-url') as HTMLAnchorElement;
+
     if (account.url) {
         urlEl.href = account.url;
         urlEl.textContent = account.url;
@@ -58,6 +61,7 @@ function csrfToken(): string {
 
     const notesContainer = document.getElementById('detail-notes-container')!;
     const notesEl = document.getElementById('detail-notes')!;
+
     if (account.notes) {
         notesEl.textContent = account.notes;
         notesContainer.classList.remove('hidden');
@@ -65,14 +69,16 @@ function csrfToken(): string {
         notesContainer.classList.add('hidden');
     }
 
-    // Utilise les données stockées pour le panneau de sécurité
     renderSecurityFromAccount(account);
 };
 
 (window as any).togglePassword = () => {
-    if (!currentAccount) return;
+    if (!currentAccount) {
+        return;
+    }
 
     const el = document.getElementById('detail-password') as HTMLElement;
+
     if (el.dataset.hidden === 'true') {
         el.textContent = currentAccount.password;
         el.dataset.hidden = 'false';
@@ -87,6 +93,7 @@ function csrfToken(): string {
 (window as any).editAccount = () => {
     if (!currentAccount) {
         alert('Please select an account first.');
+
         return;
     }
 
@@ -107,6 +114,7 @@ function csrfToken(): string {
 (window as any).toggleEditPasswordVisibility = () => {
     const input = document.getElementById('edit-password') as HTMLInputElement;
     const icon = document.getElementById('edit-password-icon') as HTMLElement;
+
     if (input.type === 'password') {
         input.type = 'text';
         icon.classList.replace('fa-eye', 'fa-eye-slash');
@@ -126,6 +134,7 @@ function csrfToken(): string {
 
     if (!username || !password) {
         alert('Username and password are required.');
+
         return;
     }
 
@@ -177,7 +186,11 @@ function csrfToken(): string {
 // ===== SHARE =====
 
 (window as any).shareCurrentAccount = () => {
-    if (!currentAccount) return;
+
+    if (!currentAccount) {
+        return;
+    }
+
     if ((window as any).showShareModal) {
         (window as any).showShareModal(currentAccount.id);
     } else {
@@ -189,7 +202,11 @@ function csrfToken(): string {
 
 function renderSecurityFromAccount(account: Account) {
     const panel = document.getElementById('security-panel');
-    if (!panel) return;
+
+    if (!panel) {
+        return;
+    }
+
     panel.classList.remove('hidden');
 
     let html = '';
@@ -273,8 +290,14 @@ function renderSecurityFromAccount(account: Account) {
 }
 
 (window as any).deleteAccount = async () => {
-    if (!currentAccount) return;
-    if (!confirm('Are you sure you want to delete this account?')) return;
+
+    if (!currentAccount) {
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this account?')) {
+        return;
+    }
 
     try {
         const res = await fetch(`/services/${currentAccount.id}`, {
@@ -290,6 +313,7 @@ function renderSecurityFromAccount(account: Account) {
         } else {
             (window as any).showToast?.('Failed to delete account.', 'error');
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         (window as any).showToast?.('Network error.', 'error');
     }
@@ -298,8 +322,11 @@ function renderSecurityFromAccount(account: Account) {
 // ===== INITIALISATION =====
 document.addEventListener('DOMContentLoaded', () => {
     const accounts = (window as any).accounts as Record<number, Account> | undefined;
+
     if (accounts) {
+
         const firstId = Object.keys(accounts)[0];
+
         if (firstId) {
             setTimeout(() => (window as any).selectAccount(firstId), 80);
         }
