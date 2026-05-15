@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+      class="{{ auth()->check() ? auth()->user()->theme : 'dark' }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,20 +8,8 @@
     <title>NexusVault • {{ $title ?? 'Dashboard' }}</title>
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        .glass {
-            background: rgba(255,255,255,0.05);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        .nav-active {
-            background: #10b981;
-            color: white;
-            font-weight: 600;
-        }
-    </style>
 </head>
-<body class="bg-[#0a0a0a] text-white min-h-screen flex">
+<body class="min-h-screen flex bg-[var(--bg-primary)] text-[var(--text-primary)]">
 
 @php
     $totalItems = auth()->user()->services()->count();
@@ -28,16 +17,16 @@
 
     <!-- SIDEBAR -->
 <aside id="sidebar"
-       class="w-72 bg-[#111111] border-r border-white/10 flex flex-col h-screen fixed top-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+       class="sidebar w-72 flex flex-col h-screen fixed top-0 left-0 z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
 
     <!-- Logo -->
-    <div class="p-6 flex items-center gap-3 border-b border-white/10">
+    <div class="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
         <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
             <span class="text-white font-bold text-2xl">N</span>
         </div>
         <div>
             <h1 class="text-2xl font-semibold tracking-tighter">NexusVault</h1>
-            <p class="text-[10px] text-white/40 -mt-1">Password Manager</p>
+            <p class="text-[10px] text-[var(--text-secondary)] -mt-1">Password Manager</p>
         </div>
     </div>
 
@@ -49,17 +38,20 @@
             <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems }}</span>
         </a>
 
-        <a href="{{ route('passkeys.index') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
+        <a href="{{ route('passkeys.index') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-fingerprint w-4"></i>
             <span>Passkeys</span>
         </a>
 
-        <a href="{{ route('settings') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-white/70">
+        <a href="{{ route('settings') }}"
+           class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-gear w-4"></i>
             <span>Settings</span>
         </a>
 
-        <form method="POST" action="{{ route('logout') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-500/10 text-red-400 text-sm transition">
+        <form method="POST" action="{{ route('logout') }}"
+              class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-500/10 text-red-400 text-sm transition">
             @csrf
             <i class="fa-solid fa-sign-out-alt w-4"></i>
             <button type="submit">Logout</button>
@@ -67,8 +59,9 @@
     </nav>
 
     <!-- User -->
-    <div class="p-4 border-t border-white/10 mt-auto">
-        <div class="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 cursor-pointer" onclick="window.location='{{ route('settings') }}'">
+    <div class="p-4 border-t border-[var(--border-color)] mt-auto">
+        <div class="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 cursor-pointer"
+             onclick="window.location='{{ route('settings') }}'">
             <div class="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center text-lg overflow-hidden">
                 @if(auth()->user()->pfp)
                     <img src="{{ Storage::url(auth()->user()->pfp) }}" alt="avatar" class="w-full h-full object-cover rounded-full">
@@ -78,7 +71,7 @@
             </div>
             <div class="flex-1 min-w-0">
                 <p class="font-medium text-sm truncate">{{ auth()->user()->name }}</p>
-                <p class="text-xs text-white/50 truncate">{{ auth()->user()->email }}</p>
+                <p class="text-xs text-[var(--text-secondary)] truncate">{{ auth()->user()->email }}</p>
             </div>
         </div>
     </div>
@@ -91,39 +84,30 @@
 <div class="flex-1 flex flex-col md:ml-72">
 
     <!-- TOP BAR -->
-    <div class="h-16 md:h-20 border-b border-white/10 bg-[#111111]/80 backdrop-blur-xl flex items-center px-4 md:px-8 sticky top-0 z-30">
+    <div class="topbar h-16 md:h-20 flex items-center px-4 md:px-8 sticky top-0 z-30">
 
-        <!-- Partie gauche : Hamburger + Search -->
+        <!-- Hamburger + Search -->
         <div class="flex items-center gap-3 flex-1 min-w-0">
-
-            <!-- Hamburger Mobile -->
             <button id="mobile-menu-btn"
-                    class="md:hidden flex items-center justify-center w-10 h-10 -ml-1 text-white hover:bg-white/10 rounded-2xl transition">
+                    class="md:hidden flex items-center justify-center w-10 h-10 -ml-1 hover:bg-white/10 rounded-2xl transition">
                 <i class="fa-solid fa-bars text-xl"></i>
             </button>
 
-            <!-- Search Bar -->
             <div class="flex-1 max-w-md relative">
                 <div class="relative">
-                    <input type="text"
-                           id="search-input"
-                           autocomplete="off"
-                           class="w-full bg-white/5 border border-white/10 focus:border-emerald-500 rounded-3xl py-2.5 pl-11 pr-4 text-sm placeholder:text-white/40 outline-none"
+                    <input type="text" id="search-input" autocomplete="off"
+                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-3xl py-2.5 pl-11 pr-4 text-sm placeholder:text-[var(--text-secondary)] outline-none"
                            placeholder="Search passwords, services...">
-                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-white/40"></i>
+                    <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"></i>
                 </div>
-
-                <!-- Search Dropdown -->
                 <div id="search-dropdown"
-                     class="absolute top-full mt-2 w-full bg-[#1a1a1c] border border-white/10 rounded-2xl shadow-2xl hidden overflow-hidden z-50">
+                     class="absolute top-full mt-2 w-full bg-[var(--bg-card)] border border-[var(--border-color)] rounded-2xl shadow-2xl hidden overflow-hidden z-50">
                 </div>
             </div>
         </div>
 
-        <!-- Partie droite : Actions -->
+        <!-- Right side actions -->
         <div class="flex items-center gap-1 md:gap-3 ml-2">
-
-            <!-- New Item Button -->
             <button onclick="showCreateModal()"
                     class="flex items-center gap-2 px-3 md:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
                 <i class="fa-solid fa-plus"></i>
@@ -134,22 +118,20 @@
             <div class="relative">
                 @php
                     $pendingShares = \App\Models\Share::where('to_user_id', auth()->id())
-                        ->whereNull('accepted_at')
-                        ->where('rejected', false)
-                        ->count();
+                        ->whereNull('accepted_at')->where('rejected', false)->count();
                 @endphp
                 <button onclick="window.location.href='{{ route('notifications.index') }}'"
                         class="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-2xl transition relative">
                     <i class="fa-solid fa-bell text-lg"></i>
                     @if($pendingShares > 0)
                         <span class="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">
-                            {{ $pendingShares }}
-                        </span>
+                                {{ $pendingShares }}
+                            </span>
                     @endif
                 </button>
             </div>
 
-            <!-- User Avatar -->
+            <!-- Avatar -->
             <div class="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center text-sm cursor-pointer overflow-hidden"
                  onclick="window.location='{{ route('settings') }}'">
                 @if(auth()->user()->pfp)
@@ -220,25 +202,49 @@
 
     // === MODALS ===
     function showCreateModal() {
+        const form = document.getElementById('create-service-form');
+        if (form) form.reset();
+
         const nameInput = document.getElementById('service-name');
-        const urlInput  = document.getElementById('service-url');
-        nameInput.value = '';
-        urlInput.value  = '';
-        nameInput.readOnly = false;
-        urlInput.readOnly  = false;
+        const domainInput = document.getElementById('service-domain');
+        const urlPreview = document.getElementById('service-url-preview');
+        const suggestions = document.getElementById('name-suggestions');
+
+        if (nameInput) nameInput.value = '';
+        if (domainInput) domainInput.value = '';
+        if (urlPreview) urlPreview.innerHTML = 'Sera généré automatiquement';
+        if (suggestions) suggestions.classList.add('hidden');
+
         document.getElementById('create-modal').classList.remove('hidden');
     }
-    function hideCreateModal() {
-        document.getElementById('create-modal').classList.add('hidden');
-    }
+
     function showCreateModalForService(serviceName, serviceUrl = '') {
+        const modal = document.getElementById('create-modal');
         const nameInput = document.getElementById('service-name');
-        const urlInput  = document.getElementById('service-url');
-        nameInput.value = serviceName;
-        urlInput.value  = serviceUrl;
-        nameInput.readOnly = true;
-        urlInput.readOnly  = true;
-        document.getElementById('create-modal').classList.remove('hidden');
+        const domainInput = document.getElementById('service-domain');
+        const urlPreview = document.getElementById('service-url-preview');
+
+        if (nameInput) nameInput.value = serviceName || '';
+
+        if (serviceUrl && domainInput && urlPreview) {
+            try {
+                const urlObj = new URL(serviceUrl);
+                domainInput.value = urlObj.hostname.replace('www.', '');
+                urlPreview.innerHTML = `<span class="text-emerald-400">${serviceUrl}</span>`;
+            } catch (e) {
+                urlPreview.innerHTML = 'Sera généré automatiquement';
+            }
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    function hideCreateModal() {
+        const modal = document.getElementById('create-modal');
+        modal.classList.add('hidden');
+
+        const suggestions = document.getElementById('name-suggestions');
+        if (suggestions) suggestions.classList.add('hidden');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
@@ -249,6 +255,37 @@
         showToast(@json(session('error')), 'error');
         @endif
     });
+</script>
+
+<script>
+    function switchTheme(theme) {
+        // Mise à jour visuelle immédiate
+        document.documentElement.classList.remove('dark', 'light');
+        document.documentElement.classList.add(theme);
+
+        // Mise à jour des boutons
+        document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('border-emerald-500', 'bg-emerald-500/10'));
+        document.getElementById('theme-' + theme).classList.add('border-emerald-500', 'bg-emerald-500/10');
+
+        // Sauvegarde côté serveur
+        fetch("{{ route('settings.theme.update') }}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ theme: theme })
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    window.showToast('Theme updated successfully', 'success');
+                }
+            })
+            .catch(() => {
+                window.showToast('Failed to update theme', 'error');
+            });
+    }
 </script>
 </body>
 </html>

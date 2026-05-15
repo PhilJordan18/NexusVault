@@ -94,6 +94,8 @@ function csrfToken(): string {
     (document.getElementById('edit-username') as HTMLInputElement).value = currentAccount.username;
     (document.getElementById('edit-password') as HTMLInputElement).value = currentAccount.password;
     (document.getElementById('edit-notes') as HTMLTextAreaElement).value = currentAccount.notes || '';
+    (document.getElementById('edit-name') as HTMLInputElement).value = currentAccount.name ?? '';
+    (document.getElementById('edit-url') as HTMLInputElement).value = currentAccount.url ?? '';
 
     document.getElementById('edit-account-modal')!.classList.remove('hidden');
 };
@@ -138,13 +140,19 @@ function csrfToken(): string {
                 'X-CSRF-TOKEN': csrfToken(),
                 'Accept': 'application/json',
             },
-            body: JSON.stringify({ username, password, notes: notes || null }),
+            body: JSON.stringify({
+                name: (document.getElementById('edit-name') as HTMLInputElement).value,
+                url: (document.getElementById('edit-url') as HTMLInputElement).value || null,
+                username,
+                password,
+                notes: notes || null,
+            }),
         });
 
         if (response.ok) {
             const updated = await response.json();
             const accounts = (window as any).accounts as Record<number, Account>;
-            // La réponse du serveur contient maintenant les champs d'analyse (strength, compromised, reused)
+
             accounts[serviceId] = { ...accounts[serviceId], ...updated };
             (window as any).selectAccount(serviceId);
             (window as any).hideEditModal();

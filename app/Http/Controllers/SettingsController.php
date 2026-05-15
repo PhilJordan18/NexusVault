@@ -4,55 +4,40 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdatePfpRequest;
-use App\Models\Service;
-use App\Models\Share;
-use App\Services\Security\CryptoService;
-use App\Services\Vault\EncryptionRotationService;
+use App\Http\Requests\UpdateThemeRequest;
+use App\Services\Auth\AccountDeletionService;
+use App\Services\Auth\ChangePasswordService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 use Illuminate\View\View;
 use Laragear\WebAuthn\Models\WebAuthnCredential;
 
 final class SettingsController extends Controller
 {
-    public function __construct(private readonly EncryptionRotationService $rotationService, private readonly CryptoService $crypto) {}
+    public function __construct(private readonly ChangePasswordService $changePasswordService, private readonly AccountDeletionService $accountDeletionService) {}
 
-    public function index(): View { return view('settings.index'); }
+    public function index(): View
+    {
+        return view('settings.index');
+    }
 
     public function updatePfp(UpdatePfpRequest $request): RedirectResponse
     {
-        $user = auth()->user();
         $path = $request->file('pfp')->store('pfp', 'public');
-        $user->update(['pfp' => $path]);
-        return back()->with('success', 'Your pfp has been updated.');
+        auth()->user()->update(['pfp' => $path]);
+
+        return back()->with('success', 'Your profile picture has been updated.');
     }
 
     public function updatePassword(UpdatePasswordRequest $request): RedirectResponse
     {
-        $user = auth()->user();
-        if ($user->is_oauth) {
-            abort(403, 'OAuth users cannot change their password.');
-        }
-
-        $validated = $request->validated();
-
-        $newMasterKey = $this->crypto->deriveMasterKey($validated['new_password'], $user->salt);
-        $this->rotationService->reEncryptAllServicesForUser($user->id, $newMasterKey);
-        $user->password = Hash::make($validated['new_password']);
-        $user->encrypted_master_key = Crypt::encrypt($newMasterKey);
-        $user->save();
-
-        Session::put('masterKey', base64_encode($newMasterKey));
+        $this->changePasswordService->change(auth()->user(), $request->validated()['new_password']);
 
         return back()->with('success', 'Your password and encryption keys have been updated successfully.');
     }
 
-    public function revokeSession(Request $request, string $sessionId): JsonResponse
+    public function revokeSession(string $sessionId): JsonResponse
     {
         $userId = auth()->id();
         $currentSessionId = session()->getId();
@@ -62,32 +47,29 @@ final class SettingsController extends Controller
             ->where('user_id', $userId)
             ->delete();
 
-        if ($deleted) {
-            if ($sessionId === $currentSessionId) {
-                auth()->logout();
-                $request->session()->invalidate();
-                $request->session()->regenerateToken();
-
-                return response()->json([
-                    'message' => 'Session revoked. You have been logged out.',
-                    'redirect' => route('login')
-                ]);
-            }
-
-            return response()->json(['message' => 'Session revoked successfully.']);
+        if (!$deleted) {
+            return response()->json(['message' => 'Session not found.'], 404);
         }
 
-        return response()->json(['message' => 'Session not found.'], 404);
+        if ($sessionId === $currentSessionId) {
+            auth()->logout();
+            request()->session()->invalidate();
+            request()->session()->regenerateToken();
+
+            return response()->json([
+                'message' => 'Session revoked. You have been logged out.',
+                'redirect' => route('login')
+            ]);
+        }
+
+        return response()->json(['message' => 'Session revoked successfully.']);
     }
 
-    public function logoutAllOtherSessions(Request $request): JsonResponse
+    public function logoutAllOtherSessions(): JsonResponse
     {
-        $userId = auth()->id();
-        $currentSessionId = session()->getId();
-
         $deleted = DB::table('sessions')
-            ->where('user_id', $userId)
-            ->where('id', '!=', $currentSessionId)
+            ->where('user_id', auth()->id())
+            ->where('id', '!=', session()->getId())
             ->delete();
 
         return response()->json([
@@ -96,41 +78,36 @@ final class SettingsController extends Controller
         ]);
     }
 
-
     public function destroy(): RedirectResponse
     {
-        $user = auth()->user();
-
-        DB::table('sessions')->where('user_id', $user->id)->delete();
-
-        Service::where('shared_user_id', $user->id)->delete();
-
-        $user->services()->delete();
-
-        Share::where('from_user_id', $user->id)
-            ->orWhere('to_user_id', $user->id)
-            ->delete();
-
-        $user->webAuthnCredentials()->delete();
-
-        $user->delete();
-
+        $this->accountDeletionService->delete(auth()->user());
         auth()->logout();
 
         return redirect()->route('login')->with('success', 'Your account has been deleted.');
     }
 
-    public function destroyPasskey(WebAuthnCredential $webauthnCredential)
+    public function destroyPasskey(WebAuthnCredential $webauthnCredential): RedirectResponse
     {
         if ($webauthnCredential->user_id !== auth()->id()) {
             abort(403);
         }
+
         $webauthnCredential->delete();
+
         return back()->with('success', 'Passkey deleted.');
     }
 
-    public function passkeys()
+    public function passkeys(): View
     {
         return view('passkey.index');
+    }
+
+    public function updateTheme(UpdateThemeRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+        $user->theme = $request->theme;
+        $user->save();
+
+        return response()->json(['success' => true, 'theme' => $user->theme]);
     }
 }

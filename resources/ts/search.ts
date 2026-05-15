@@ -10,6 +10,7 @@ if (searchInput && dropdown) {
 
         if (query.length === 0) {
             dropdown.classList.add('hidden');
+
             return;
         }
 
@@ -23,7 +24,6 @@ if (searchInput && dropdown) {
         }
     });
 
-    // Cache la liste quand on clique ailleurs
     document.addEventListener('click', (e) => {
         if (!(e.target as HTMLElement).closest('#search-input') &&
             !(e.target as HTMLElement).closest('#search-dropdown')) {
@@ -45,6 +45,7 @@ async function fetchResults(query: string) {
         });
         const html = await res.text();
         dropdown.innerHTML = html;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
         dropdown.innerHTML = '<div class="px-4 py-4 text-center text-red-400">Error</div>';
     }

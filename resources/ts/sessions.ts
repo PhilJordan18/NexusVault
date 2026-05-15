@@ -1,20 +1,12 @@
-interface Session {
-    id: string;
-    ip_address: string;
-    user_agent: string;
-    last_activity: string;
-    is_current: boolean;
-    device_name: string;
-}
-
 class SessionManager {
-    private container: HTMLElement | null = null;
+    private logoutAllBtn: HTMLButtonElement | null = null;
 
     constructor() {
         this.init();
     }
 
     private init(): void {
+        this.logoutAllBtn = document.getElementById('logout-all-sessions-btn') as HTMLButtonElement | null;
         this.bindEvents();
     }
 
@@ -32,16 +24,44 @@ class SessionManager {
         });
 
         // Logout from all other devices
-        const logoutAllBtn = document.getElementById('logout-all-sessions-btn');
-
-        if (logoutAllBtn) {
-            logoutAllBtn.addEventListener('click', async (e) => {
+        if (this.logoutAllBtn) {
+            this.logoutAllBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
 
+                if (this.logoutAllBtn?.disabled) {
+                    return;
+                }
+
                 if (confirm('Are you sure you want to log out from all other devices?')) {
-                    await this.logoutFromAllOtherDevices(logoutAllBtn as HTMLButtonElement);
+                    await this.logoutFromAllOtherDevices(this.logoutAllBtn);
                 }
             });
+        }
+    }
+
+    private countOtherSessions(): number {
+        return document.querySelectorAll('.session-card:not(.current-session)').length;
+    }
+
+    private updateLogoutAllButton(): void {
+        if (!this.logoutAllBtn) {
+            return;
+        }
+
+        const count = this.countOtherSessions();
+
+        if (count >= 2) {
+            // Actif
+            this.logoutAllBtn.disabled = false;
+            this.logoutAllBtn.className = this.logoutAllBtn.className
+                    .replace(/bg-gray-500\/10 text-gray-500 cursor-not-allowed/g, '')
+                + ' bg-red-500/10 hover:bg-red-500/20 text-red-500';
+        } else {
+            // Inactif
+            this.logoutAllBtn.disabled = true;
+            this.logoutAllBtn.className = this.logoutAllBtn.className
+                    .replace(/bg-red-500\/10 hover:bg-red-500\/20 text-red-500/g, '')
+                + ' bg-gray-500/10 text-gray-500 cursor-not-allowed';
         }
     }
 
@@ -64,7 +84,10 @@ class SessionManager {
 
                 if (card) {
                     card.classList.add('opacity-0', 'scale-95');
-                    setTimeout(() => card.remove(), 200);
+                    setTimeout(() => {
+                        card.remove();
+                        this.updateLogoutAllButton();   // mise à jour dynamique
+                    }, 200);
                 }
 
                 this.showToast('Session revoked successfully', 'success');
@@ -96,7 +119,10 @@ class SessionManager {
             if (response.ok) {
                 document.querySelectorAll('.session-card:not(.current-session)').forEach(card => {
                     card.classList.add('opacity-0', 'scale-95');
-                    setTimeout(() => card.remove(), 200);
+                    setTimeout(() => {
+                        card.remove();
+                        this.updateLogoutAllButton();
+                    }, 200);
                 });
                 this.showToast('Logged out from all other devices', 'success');
             } else {

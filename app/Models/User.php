@@ -24,7 +24,7 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
         'password', 'salt', 'private_key', 'private_nonce', 'totp_secret', 'remember_token'
     ];
     protected $casts = [
-        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean',
+        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean', 'theme' => 'string',
     ];
 
     public function services(): HasMany

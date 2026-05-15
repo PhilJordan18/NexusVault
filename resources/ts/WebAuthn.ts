@@ -53,11 +53,11 @@ function arrayBufferToBase64url(buffer: ArrayBuffer): string {
 
     const base64 = btoa(binary);
 
-    // Remplacer les caractères non compatibles URL
+    // Replace the non-compatible url characters
     return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Convertit un PublicKeyCredential brut en objet JSON compatible avec le serveur
+// Convert PublicKeyCredential in JSON'S object
 function serializeCredential(credential: PublicKeyCredential): any {
     const response = credential.response as AuthenticatorAttestationResponse;
 

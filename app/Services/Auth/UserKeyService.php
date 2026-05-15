@@ -100,4 +100,22 @@ final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
 
         return $this->cryptoService->decryptPrivateKey($ciphertext, $nonce, $masterKey);
     }
+
+    public function rotatePrivateKey(User $user, string $oldMasterKey, string $newMasterKey): void
+    {
+        // Déchiffrer la clé privée actuelle avec l’ancienne master key
+        $privateKey = $this->cryptoService->decryptPrivateKey(
+            base64_decode($user->private_key),
+            $user->private_nonce,
+            $oldMasterKey
+        );
+
+        // La ré‑encrypter avec la nouvelle master key
+        $newEncrypted = $this->cryptoService->encryptPrivateKey($privateKey, $newMasterKey);
+
+        $user->update([
+            'private_key'   => base64_encode($newEncrypted['ciphertext']),
+            'private_nonce' => $newEncrypted['nonce'],
+        ]);
+    }
 }

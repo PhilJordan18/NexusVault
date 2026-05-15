@@ -1,11 +1,13 @@
 <?php
 
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
 use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingsController;
@@ -36,37 +38,32 @@ Route::get('/login/password', [LoginController::class, 'password'])->name('login
 Route::post('/login/password', [LoginController::class, 'authenticate'])->name('login.authenticate.password');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// Forgot Password
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+
+// Reset Password
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+
 //OAuth
 Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
 Route::get('/auth/github/callback', [OAuthController::class, 'handleGithub']);
 Route::get('/auth/google', [OAuthController::class, 'redirectGoogle']);
 Route::get('/auth/google/callback', [OAuthController::class, 'handleGoogle']);
 
-//MFA
-Route::middleware('auth')->group(function () {
-    Route::get('/mfa/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
-    Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])->name('mfa.setup.verify');
-
-    Route::get('/mfa/verify', fn() => view('auth.mfa.verify'))->name('mfa.verify.login');
-    Route::post('/mfa/verify', [MfaController::class, 'verifyLogin'])->name('mfa.verify');
-
-    Route::post('/mfa/disable', [MfaController::class, 'disableMfa'])->name('mfa.disable');
-});
-
-
-// Enregistrement d'une nouvelle Passkey (depuis les settings)
 Route::middleware('auth')->group(function () {
     Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);
     Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
 });
 
-// Login avec Passkey
+
 Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
 Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
 Route::middleware('auth')->group(function () {
     Route::delete('/webauthn/credentials/{webauthn_credential}',
         [SettingsController::class, 'destroyPasskey']
-    )->name('webauthn.destroy')->where('webauthn_credential', '[0-9]+');
+    )->name('webauthn.destroy');
 });
 
 //Verify Email
@@ -88,10 +85,26 @@ Route::middleware('auth')->group(function () {
     })->middleware('signed')->name('verification.verify');
 });
 
+
+//MFA
+Route::middleware('auth')->group(function () {
+    Route::get('/mfa/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
+    Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])->name('mfa.setup.verify');
+
+    Route::get('/mfa/verify', fn() => view('auth.mfa.verify'))->name('mfa.verify.login');
+    Route::post('/mfa/verify', [MfaController::class, 'verifyLogin'])->name('mfa.verify');
+
+    Route::post('/mfa/disable', [MfaController::class, 'disableMfa'])->name('mfa.disable');
+});
+
 //Dashboard
 Route::middleware(['auth', 'master_key','mfa'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/service/{service}', [DashboardController::class, 'show'])->name('dashboard.services');
+});
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/api/services/suggest', [ServiceController::class, 'suggest'])->name('services.suggest');
 });
 
 // Settings
@@ -100,6 +113,7 @@ Route::middleware(['auth', 'master_key','mfa'])->prefix('settings')->group(funct
     Route::post('/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/pfp', [SettingsController::class, 'updatePfp'])->name('settings.pfp.update');
     Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
+    Route::post('/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 });
 Route::middleware(['auth', 'master_key', 'mfa'])->group(function () {
     Route::get('/passkeys', [SettingsController::class, 'passkeys'])->name('passkeys.index');
