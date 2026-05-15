@@ -1,4 +1,8 @@
 {
+  "_WebAuthn-DNWMPvPj.js": {
+    "file": "assets/WebAuthn-DNWMPvPj.js",
+    "name": "WebAuthn"
+  },
   "resources/css/app.css": {
     "file": "assets/app-Bw-6w5XS.css",
     "name": "app",
@@ -9,21 +13,33 @@
     "isEntry": true
   },
   "resources/js/app.ts": {
-    "file": "assets/app-BfGFSjhE.js",
+    "file": "assets/app-BDPxCaTT.js",
     "name": "app",
     "src": "resources/js/app.ts",
     "isEntry": true,
+    "imports": [
+      "_WebAuthn-DNWMPvPj.js"
+    ],
     "dynamicImports": [
       "resources/js/pages/Welcome.vue"
     ]
   },
   "resources/js/pages/Welcome.vue": {
-    "file": "assets/Welcome-CJNQzKDz.js",
+    "file": "assets/Welcome-CFfF90xF.js",
     "name": "Welcome",
     "src": "resources/js/pages/Welcome.vue",
     "isDynamicEntry": true,
     "imports": [
       "resources/js/app.ts"
+    ]
+  },
+  "resources/ts/auth.ts": {
+    "file": "assets/auth-if2NpbAy.js",
+    "name": "auth",
+    "src": "resources/ts/auth.ts",
+    "isEntry": true,
+    "imports": [
+      "_WebAuthn-DNWMPvPj.js"
     ]
   }
 }
