@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
@@ -20,20 +17,12 @@ return new class extends Migration
             $table->string('salt', 64);
             $table->text('public_key');
             $table->text('private_key');
+            $table->binary('private_nonce', 24)->nullable();
+            $table->text('encrypted_master_key')->nullable();
             $table->boolean('mfa_enabled')->default(false);
-            $table->text('totp_secret');
+            $table->text('totp_secret')->nullable();
             $table->rememberToken();
-            $table->timestamps();
-        });
-
-        Schema::create('passkeys', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->string('credential_id');
-            $table->text('public_key');
-            $table->string('user_handle');
-            $table->timestamp('last_used_at');
+            $table->string('pfp')->nullable();
             $table->timestamps();
         });
 
@@ -53,12 +42,8 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('passkeys');
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');

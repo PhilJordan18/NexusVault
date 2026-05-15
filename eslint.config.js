@@ -83,6 +83,12 @@ export default defineConfigWithVueTs(
             'bootstrap/ssr',
             'tailwind.config.js',
             'vite.config.ts',
+            // Updated to ignore generated TypeScript files in ts directory
+            'resources/ts/actions/**',
+            'resources/ts/components/ui/*',
+            'resources/ts/routes/**',
+            'resources/ts/wayfinder/**',
+            // Also keep old paths in case they still exist
             'resources/js/actions/**',
             'resources/js/components/ui/*',
             'resources/js/routes/**',

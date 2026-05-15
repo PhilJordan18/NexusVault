@@ -2,31 +2,38 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
+use App\Notifications\EmailVerifier;
+use Illuminate\Auth\Notifications\VerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laragear\WebAuthn\Contracts\WebAuthnAuthenticatable;
+use Laragear\WebAuthn\Models\WebAuthnCredential;
+use Laragear\WebAuthn\WebAuthnAuthentication;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, WebAuthnAuthentication;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    protected $fillable = [
+        'name', 'email', 'password', 'salt', 'public_key', 'private_key', 'encrypted_master_key', 'mfa_enabled', 'totp_secret', 'email_verified_at', 'pfp', 'private_nonce', 'is_oauth'
+    ];
+    protected $hidden = [
+        'password', 'salt', 'private_key', 'private_nonce', 'totp_secret', 'remember_token'
+    ];
+    protected $casts = [
+        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean', 'theme' => 'string',
+    ];
+
+    public function services(): HasMany
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-        ];
+        return $this->hasMany(Service::class);
+    }
+
+    public function sendEmailVerificationNotification(): void
+    {
+        $this->notify(new EmailVerifier());
     }
 }

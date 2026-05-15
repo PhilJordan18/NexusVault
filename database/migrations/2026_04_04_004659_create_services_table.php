@@ -22,8 +22,8 @@ return new class extends Migration
             $table->string('password');
             $table->string('notes');
 
-            $table->string('iv', 64);
-            $table->string('tag', 64);
+            $table->string('password_iv', 64);
+            $table->string('password_tag', 64);
 
             $table->foreignId('shared_user_id')->nullable()->constrained('users');
             $table->timestamp('shared_at')->nullable();
