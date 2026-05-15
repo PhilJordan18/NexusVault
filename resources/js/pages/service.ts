@@ -73,6 +73,7 @@ function csrfToken(): string {
 };
 
 (window as any).togglePassword = () => {
+
     if (!currentAccount) {
         return;
     }
