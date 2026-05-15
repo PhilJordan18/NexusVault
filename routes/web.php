@@ -98,7 +98,7 @@ Route::middleware('auth')->group(function () {
 });
 
 //Dashboard
-Route::middleware(['auth', 'master_key','mfa'])->group(function () {
+Route::middleware(['auth', 'mfa'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/service/{service}', [DashboardController::class, 'show'])->name('dashboard.services');
 });
@@ -108,19 +108,19 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // Settings
-Route::middleware(['auth', 'master_key','mfa'])->prefix('settings')->group(function () {
+Route::middleware(['auth', 'mfa'])->prefix('settings')->group(function () {
     Route::get('/', [SettingsController::class, 'index'])->name('settings');
     Route::post('/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/pfp', [SettingsController::class, 'updatePfp'])->name('settings.pfp.update');
     Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
     Route::post('/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 });
-Route::middleware(['auth', 'master_key', 'mfa'])->group(function () {
+Route::middleware(['auth',  'mfa'])->group(function () {
     Route::get('/passkeys', [SettingsController::class, 'passkeys'])->name('passkeys.index');
 });
 
 // Active Sessions
-Route::middleware(['auth', 'master_key', 'mfa'])->prefix('settings')->group(function () {
+Route::middleware(['auth',  'mfa'])->prefix('settings')->group(function () {
     Route::delete('/sessions/{sessionId}', [SettingsController::class, 'revokeSession'])
         ->name('settings.sessions.revoke');
 
@@ -129,7 +129,7 @@ Route::middleware(['auth', 'master_key', 'mfa'])->prefix('settings')->group(func
 });
 
 //Vault
-Route::middleware(['auth', 'master_key','mfa'])->group(function () {
+Route::middleware(['auth', 'mfa'])->group(function () {
     Route::get('/search', [SearchController::class, 'search'])->name('search');
     Route::post('/services', [ServiceController::class, 'store'])->name('services.store');
     Route::get('/services/{name}', [ServiceController::class, 'show'])->name('services.show');
@@ -137,7 +137,7 @@ Route::middleware(['auth', 'master_key','mfa'])->group(function () {
     Route::delete('/services/{service}', [ServiceController::class, 'destroy'])->name('services.destroy');
 });
 
-Route::middleware(['auth', 'master_key','mfa'])->group(function () {
+Route::middleware(['auth', 'mfa'])->group(function () {
 
     Route::post('/shares', [ShareController::class, 'store'])->name('shares.store');
     Route::post('/shares/{share}/accept', [ShareController::class, 'accept'])->name('shares.accept');
