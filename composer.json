@@ -111,7 +111,8 @@
             "php-http/discovery": true
         },
         "platform": {
-            "ext-libsodium": "1.0"
+            "ext-libsodium": "1.0",
+            "php": "8.3"
         }
     },
     "minimum-stability": "stable"
