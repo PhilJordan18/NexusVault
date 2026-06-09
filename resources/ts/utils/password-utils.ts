@@ -32,6 +32,7 @@ export async function generatePassword(): Promise<string> {
         },
     });
     const data = await res.json();
+
     return data.password;
 }
 
@@ -56,7 +57,10 @@ export function bindPasswordStrength(
     confirmationInputId?: string
 ) {
     const passwordInput = document.getElementById(passwordInputId) as HTMLInputElement;
-    if (!passwordInput) return;
+
+    if (!passwordInput) {
+return;
+}
 
     const strengthContainer = document.getElementById(strengthContainerId);
     const strengthBar = document.getElementById(strengthBarId) as HTMLElement;
@@ -65,9 +69,11 @@ export function bindPasswordStrength(
     // Toggle visibility
     if (toggleBtnId) {
         const toggleBtn = document.getElementById(toggleBtnId);
+
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 const icon = toggleBtn.querySelector('i') as HTMLElement;
+
                 if (passwordInput.type === 'password') {
                     passwordInput.type = 'text';
                     icon?.classList.replace('fa-eye', 'fa-eye-slash');
@@ -81,7 +87,9 @@ export function bindPasswordStrength(
 
     // Entropy on input
     passwordInput.addEventListener('input', async () => {
-        if (!strengthContainer || !strengthBar || !strengthText) return;
+        if (!strengthContainer || !strengthBar || !strengthText) {
+return;
+}
 
         const result = await calculateEntropy(passwordInput.value);
         const entropy = result.entropy;
@@ -104,15 +112,20 @@ export function bindPasswordStrength(
     // Generate password
     if (generateBtnId) {
         const generateBtn = document.getElementById(generateBtnId);
+
         if (generateBtn) {
             generateBtn.addEventListener('click', async () => {
                 const newPassword = await generatePassword();
                 passwordInput.value = newPassword;
                 // Déclencher l'événement input pour mettre à jour la force
                 passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+
                 if (confirmationInputId) {
                     const confirmInput = document.getElementById(confirmationInputId) as HTMLInputElement;
-                    if (confirmInput) confirmInput.value = newPassword;
+
+                    if (confirmInput) {
+confirmInput.value = newPassword;
+}
                 }
             });
         }

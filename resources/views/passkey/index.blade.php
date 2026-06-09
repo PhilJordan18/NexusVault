@@ -45,6 +45,11 @@
             <!-- LIST OF PASSKEYS -->
             <div class="space-y-3 mb-8">
                 @forelse(auth()->user()->webAuthnCredentials as $credential)
+                    @php
+                        $lastUsedAt = $credential->last_used_at
+                            ? \Illuminate\Support\Carbon::parse($credential->last_used_at)->diffForHumans()
+                            : 'Never';
+                    @endphp
                     <div class="flex items-center justify-between bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl px-5 py-4">
                         <div class="flex items-center gap-4">
                             <div class="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center flex-shrink-0">
@@ -54,7 +59,7 @@
                                 <p class="font-medium text-[var(--text-primary)]">{{ $credential->alias ?? 'Unnamed device' }}</p>
                                 <p class="text-xs text-[var(--text-secondary)] mt-0.5">
                                     Created {{ $credential->created_at->format('M d, Y') }}
-                                    • Last used: {{ $credential->last_used_at?->diffForHumans() ?? 'Never' }}
+                                    • Last used: {{ $lastUsedAt }}
                                 </p>
                             </div>
                         </div>

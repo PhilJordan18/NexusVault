@@ -128,7 +128,7 @@ function csrfToken(): string {
 (window as any).submitEditAccount = async (e: Event) => {
     e.preventDefault();
 
-    const serviceId = (document.getElementById('edit-service-id') as HTMLInputElement).value;
+    const serviceId = Number((document.getElementById('edit-service-id') as HTMLInputElement).value);
     const username = (document.getElementById('edit-username') as HTMLInputElement).value.trim();
     const password = (document.getElementById('edit-password') as HTMLInputElement).value.trim();
     const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement).value.trim();

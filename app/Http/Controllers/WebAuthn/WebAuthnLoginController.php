@@ -2,19 +2,19 @@
 
 namespace App\Http\Controllers\WebAuthn;
 
+use App\Services\Auth\UserKeyService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Response;
 use Laragear\WebAuthn\Http\Requests\AssertedRequest;
 use Laragear\WebAuthn\Http\Requests\AssertionRequest;
-use App\Services\Auth\UserKeyService;
-
 use Laragear\WebAuthn\Models\WebAuthnCredential;
+
 use function response;
 
 readonly class WebAuthnLoginController
 {
     public function __construct(private UserKeyService $userKeyService) {}
+
     /**
      * Returns the challenge to assertion.
      */
@@ -30,7 +30,7 @@ readonly class WebAuthnLoginController
     {
         $success = $request->login();
 
-        if (!$success) {
+        if (! $success) {
             return response()->json(['message' => 'Authentication failed'], 422);
         }
 
@@ -38,7 +38,11 @@ readonly class WebAuthnLoginController
         $this->userKeyService->storeMasterKey($user);
 
         $credentialId = $request->validated()['id'];
-        $credential = WebAuthnCredential::where('credential_id', $credentialId)->first();
+        $credential = WebAuthnCredential::query()
+            ->whereKey($credentialId)
+            ->where('authenticatable_id', $user->getAuthIdentifier())
+            ->first();
+
         if ($credential) {
             $credential->forceFill(['last_used_at' => now()])->save();
         }

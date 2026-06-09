@@ -25,15 +25,17 @@ class SessionManager {
 
         // Logout from all other devices
         if (this.logoutAllBtn) {
-            this.logoutAllBtn.addEventListener('click', async (e) => {
+            const logoutAllBtn = this.logoutAllBtn;
+
+            logoutAllBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
 
-                if (this.logoutAllBtn?.disabled) {
+                if (logoutAllBtn.disabled) {
                     return;
                 }
 
                 if (confirm('Are you sure you want to log out from all other devices?')) {
-                    await this.logoutFromAllOtherDevices(this.logoutAllBtn);
+                    await this.logoutFromAllOtherDevices(logoutAllBtn);
                 }
             });
         }
@@ -179,3 +181,5 @@ class SessionManager {
 document.addEventListener('DOMContentLoaded', () => {
     new SessionManager();
 });
+
+export {};
