@@ -15,4 +15,9 @@ class ShareException extends RuntimeException
     {
         return new self('You are not authorized to perform this action.');
     }
+
+    public static function cannotShareWithYourself(): self
+    {
+        return new self('You cannot share a service with yourself.');
+    }
 }

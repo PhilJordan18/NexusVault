@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Share extends Model
 {
@@ -17,20 +18,28 @@ class Share extends Model
     ];
 
     protected $casts = [
-        'shared_at'    => 'datetime',
-        'accepted_at'  => 'datetime',
-        'rejected'     => 'boolean',
+        'shared_at' => 'datetime',
+        'accepted_at' => 'datetime',
+        'rejected' => 'boolean',
     ];
 
-    public function service() {
+    public function service(): BelongsTo
+    {
         return $this->belongsTo(Service::class);
     }
 
-    public function sharedService() {
+    public function sharedService(): BelongsTo
+    {
         return $this->belongsTo(Service::class, 'service_id');
     }
 
-    public function fromUser() { return $this->belongsTo(User::class, 'from_user_id'); }
+    public function fromUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'from_user_id');
+    }
 
-    public function toUser() { return $this->belongsTo(User::class, 'to_user_id'); }
+    public function toUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'to_user_id');
+    }
 }

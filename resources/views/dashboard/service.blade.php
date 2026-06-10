@@ -34,7 +34,12 @@
 
                             <div class="flex-1 min-w-0">
                                 <p class="font-medium truncate">{{ $account->username }}</p>
-                                <p class="text-xs text-[var(--text-secondary)]">{{ $account->updated_at->diffForHumans() }}</p>
+                                <div class="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                                    <span>{{ $account->updated_at->diffForHumans() }}</span>
+                                    @if ($account->shared_group_id)
+                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Shared sync</span>
+                                    @endif
+                                </div>
                             </div>
 
                             <div class="opacity-0 group-hover:opacity-100 transition">
@@ -52,7 +57,12 @@
                     <div class="flex justify-between items-start mb-8 gap-4">
                         <div class="flex-1 min-w-0">
                             <h2 id="detail-username" class="text-3xl font-semibold truncate" title=""></h2>
-                            <p id="detail-name" class="text-[var(--text-secondary)] mt-1 truncate"></p>
+                            <div class="flex flex-wrap items-center gap-2 mt-1">
+                                <p id="detail-name" class="text-[var(--text-secondary)] truncate"></p>
+                                <span id="detail-shared-badge" class="hidden text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                                    Shared sync
+                                </span>
+                            </div>
                         </div>
 
                         <div class="flex gap-2 flex-shrink-0">

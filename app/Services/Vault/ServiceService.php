@@ -4,6 +4,7 @@ namespace App\Services\Vault;
 
 use App\DTOs\Service\ServiceData;
 use App\Models\Service;
+use App\Models\User;
 use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
@@ -19,7 +20,7 @@ final readonly class ServiceService implements ServiceServiceInterface
     public function create(ServiceData $data): Service
     {
         $domain = $data->domain;
-        if (!$domain) {
+        if (! $domain) {
             $domain = $this->extractDomainFromName($data->name);
         }
 
@@ -27,13 +28,13 @@ final readonly class ServiceService implements ServiceServiceInterface
         $favicon = $domain ? "https://www.google.com/s2/favicons?domain={$domain}&sz=64" : null;
 
         $encrypted = $this->encryptServiceData($data);
-        $analysis  = $this->analyzePassword($data->password);
+        $analysis = $this->analyzePassword($data->password);
 
         return Service::create([
-            'user_id'  => auth()->id(),
-            'name'     => $data->name,
-            'url'      => $url,
-            'favicon'  => $favicon,
+            'user_id' => auth()->id(),
+            'name' => $data->name,
+            'url' => $url,
+            'favicon' => $favicon,
             ...$encrypted,
             ...$analysis,
         ]);
@@ -44,6 +45,9 @@ final readonly class ServiceService implements ServiceServiceInterface
         $updates = $this->prepareUpdateData($service, $data);
 
         $service->update($updates);
+        $service->refresh();
+
+        $this->syncSharedGroup($service, $data, $updates);
 
         return $service->fresh();
     }
@@ -77,8 +81,7 @@ final readonly class ServiceService implements ServiceServiceInterface
             ->orderBy('name')
             ->get();
 
-        $services->transform(fn ($s) => tap($s, fn ($item) =>
-        $item->last_modified = $item->last_modified ? Carbon::parse($item->last_modified) : null
+        $services->transform(fn ($s) => tap($s, fn ($item) => $item->last_modified = $item->last_modified ? Carbon::parse($item->last_modified) : null
         ));
 
         return $services;
@@ -101,21 +104,23 @@ final readonly class ServiceService implements ServiceServiceInterface
         $encNotes = $data->notes ? $this->encryptField($data->notes) : ['ciphertext' => null, 'iv' => null, 'tag' => null];
 
         return [
-            'username'     => $encUsername['ciphertext'],
-            'username_iv'  => $encUsername['iv'],
+            'username' => $encUsername['ciphertext'],
+            'username_iv' => $encUsername['iv'],
             'username_tag' => $encUsername['tag'],
-            'password'     => $encPassword['ciphertext'],
-            'password_iv'  => $encPassword['iv'],
+            'password' => $encPassword['ciphertext'],
+            'password_iv' => $encPassword['iv'],
             'password_tag' => $encPassword['tag'],
-            'notes'        => $encNotes['ciphertext'] ?? null,
-            'notes_iv'     => $encNotes['iv'] ?? null,
-            'notes_tag'    => $encNotes['tag'] ?? null,
+            'notes' => $encNotes['ciphertext'] ?? null,
+            'notes_iv' => $encNotes['iv'] ?? null,
+            'notes_tag' => $encNotes['tag'] ?? null,
         ];
     }
 
-    private function encryptField(string $value): array
+    private function encryptField(string $value, ?User $user = null): array
     {
-        return $this->cryptoService->encryptWithMasterKey($value);
+        return $user
+            ? $this->cryptoService->encryptWithUserMasterKey($value, $user)
+            : $this->cryptoService->encryptWithMasterKey($value);
     }
 
     private function analyzePassword(string $password, ?int $excludeServiceId = null): array
@@ -123,45 +128,50 @@ final readonly class ServiceService implements ServiceServiceInterface
         $result = $this->passwordService->analyze($password, auth()->id(), $excludeServiceId);
 
         return [
-            'strength'    => $result['strength'],
+            'strength' => $result['strength'],
             'compromised' => $result['compromised'],
-            'reused'      => $result['reused'],
+            'reused' => $result['reused'],
         ];
     }
 
-    private function prepareUpdateData(Service $service, ServiceData $data): array
-    {
+    private function prepareUpdateData(
+        Service $service,
+        ServiceData $data,
+        ?User $encryptionUser = null,
+        ?array $passwordAnalysis = null,
+        bool $forceSensitiveEncryption = false
+    ): array {
         $updates = [
-            'name'    => $data->name,
-            'url'     => $data->url,
+            'name' => $data->name,
+            'url' => $data->url,
             'favicon' => $this->getFaviconUrl($data->url),
         ];
 
-        if ($data->username !== $service->getRawOriginal('username')) {
-            $enc = $this->encryptField($data->username);
+        if ($forceSensitiveEncryption || $data->username !== $service->username) {
+            $enc = $this->encryptField($data->username, $encryptionUser);
             $updates += [
-                'username'     => $enc['ciphertext'],
-                'username_iv'  => $enc['iv'],
+                'username' => $enc['ciphertext'],
+                'username_iv' => $enc['iv'],
                 'username_tag' => $enc['tag'],
             ];
         }
 
-        if ($data->password !== $service->getRawOriginal('password')) {
-            $enc = $this->encryptField($data->password);
+        if ($forceSensitiveEncryption || $data->password !== $service->password) {
+            $enc = $this->encryptField($data->password, $encryptionUser);
             $updates += [
-                'password'     => $enc['ciphertext'],
-                'password_iv'  => $enc['iv'],
+                'password' => $enc['ciphertext'],
+                'password_iv' => $enc['iv'],
                 'password_tag' => $enc['tag'],
-                ...$this->analyzePassword($data->password, $service->id),
+                ...($passwordAnalysis ?? $this->analyzePassword($data->password, $service->id)),
             ];
         }
 
-        if ($data->notes !== $service->getRawOriginal('notes')) {
+        if ($forceSensitiveEncryption || $data->notes !== $service->notes) {
             if ($data->notes) {
-                $enc = $this->encryptField($data->notes);
+                $enc = $this->encryptField($data->notes, $encryptionUser);
                 $updates += [
-                    'notes'     => $enc['ciphertext'],
-                    'notes_iv'  => $enc['iv'],
+                    'notes' => $enc['ciphertext'],
+                    'notes_iv' => $enc['iv'],
                     'notes_tag' => $enc['tag'],
                 ];
             } else {
@@ -172,17 +182,57 @@ final readonly class ServiceService implements ServiceServiceInterface
         return $updates;
     }
 
+    private function syncSharedGroup(Service $sourceService, ServiceData $data, array $sourceUpdates): void
+    {
+        if (empty($sourceService->shared_group_id)) {
+            return;
+        }
+
+        $passwordAnalysis = $this->extractPasswordAnalysis($sourceUpdates, $sourceService);
+
+        Service::with('user')
+            ->where('shared_group_id', $sourceService->shared_group_id)
+            ->whereKeyNot($sourceService->id)
+            ->get()
+            ->each(function (Service $sharedService) use ($data, $passwordAnalysis): void {
+                if (! $sharedService->user) {
+                    return;
+                }
+
+                $sharedService->update($this->prepareUpdateData(
+                    service: $sharedService,
+                    data: $data,
+                    encryptionUser: $sharedService->user,
+                    passwordAnalysis: $passwordAnalysis,
+                    forceSensitiveEncryption: true
+                ));
+            });
+    }
+
+    private function extractPasswordAnalysis(array $updates, Service $service): array
+    {
+        return [
+            'strength' => $updates['strength'] ?? $service->strength,
+            'compromised' => $updates['compromised'] ?? $service->compromised,
+            'reused' => $updates['reused'] ?? $service->reused,
+        ];
+    }
+
     private function getFaviconUrl(?string $url): ?string
     {
-        if (!$url) return null;
+        if (! $url) {
+            return null;
+        }
 
         $domain = parse_url($url, PHP_URL_HOST);
+
         return "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
     }
 
     private function extractDomainFromName(string $name): ?string
     {
         $slug = Str::slug($name);
+
         return $slug ? "{$slug}.com" : null;
     }
 }

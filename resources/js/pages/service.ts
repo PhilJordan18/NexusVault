@@ -11,6 +11,7 @@ type Account = {
     strength?: string;          // 'very_weak', 'weak', 'strong', 'very_strong'
     compromised?: boolean;
     reused?: boolean;
+    shared_group_id?: string | null;
 };
 
 // GLOBAL STATE
@@ -43,6 +44,14 @@ function csrfToken(): string {
 
     (document.getElementById('detail-username') as HTMLElement).textContent = account.username;
     (document.getElementById('detail-name') as HTMLElement).textContent = account.name || '';
+
+    const sharedBadge = document.getElementById('detail-shared-badge');
+
+    if (account.shared_group_id) {
+        sharedBadge?.classList.remove('hidden');
+    } else {
+        sharedBadge?.classList.add('hidden');
+    }
 
     const passwordEl = document.getElementById('detail-password') as HTMLElement;
     passwordEl.textContent = '••••••••••••';

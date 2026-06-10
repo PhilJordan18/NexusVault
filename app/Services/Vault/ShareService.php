@@ -14,6 +14,7 @@ use App\Services\Auth\UserKeyService;
 use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\Contracts\ShareServiceInterface;
+use Illuminate\Support\Str;
 
 final readonly class ShareService implements ShareServiceInterface
 {
@@ -27,16 +28,19 @@ final readonly class ShareService implements ShareServiceInterface
 
     public function share(ShareData $data): Share
     {
-        $service   = $this->findService($data->serviceId);
+        $service = $this->findService($data->serviceId);
         $recipient = $this->findRecipient($data->recipientEmail);
 
         $this->validateOwnership($service);
+        $this->validateRecipient($recipient);
+        $service = $this->ensureServiceHasSharedGroup($service);
+
         $publicKey = $this->getValidPublicKey($recipient);
 
-        $aesKey          = $this->generateAesKey();
-        $encryptedData   = $this->encryptSensitiveData($service, $aesKey);
+        $aesKey = $this->generateAesKey();
+        $encryptedData = $this->encryptSensitiveData($service, $aesKey);
         $encryptedAesKey = $this->encryptAesKeyWithRecipientPublicKey($aesKey, $publicKey);
-        $payload         = $this->buildSharePayload($service, $encryptedData, $encryptedAesKey);
+        $payload = $this->buildSharePayload($service, $encryptedData, $encryptedAesKey);
 
         return $this->createShareRecord($service, $recipient, $payload);
     }
@@ -45,14 +49,14 @@ final readonly class ShareService implements ShareServiceInterface
     {
         $this->validateAcceptPermissions($share);
 
-        $payload       = $this->extractPayload($share);
-        $aesKey        = $this->decryptAesKey($payload, auth()->user());
+        $payload = $this->extractPayload($share);
+        $aesKey = $this->decryptAesKey($payload, auth()->user());
         $decryptedData = $this->decryptSensitiveData($payload, $aesKey);
 
         $analysis = $this->passwordService->analyze($decryptedData['password'], auth()->id());
 
-        $reEncrypted   = $this->reEncryptForRecipient($decryptedData);
-        $newService    = $this->createServiceFromSharedData($payload, $reEncrypted, $share, $analysis);
+        $reEncrypted = $this->reEncryptForRecipient($decryptedData);
+        $newService = $this->createServiceFromSharedData($payload, $reEncrypted, $share, $analysis);
 
         $share->update(['accepted_at' => now()]);
 
@@ -84,12 +88,31 @@ final readonly class ShareService implements ShareServiceInterface
         }
     }
 
+    private function validateRecipient(User $recipient): void
+    {
+        if ($recipient->id === auth()->id()) {
+            throw ShareException::cannotShareWithYourself();
+        }
+    }
+
+    private function ensureServiceHasSharedGroup(Service $service): Service
+    {
+        if ($service->shared_group_id) {
+            return $service;
+        }
+
+        $service->forceFill(['shared_group_id' => (string) Str::uuid()])->save();
+
+        return $service->refresh();
+    }
+
     private function getValidPublicKey(User $recipient): string
     {
         $key = trim($recipient->public_key);
-        if (empty($key) || !str_contains($key, 'BEGIN PUBLIC KEY')) {
+        if (empty($key) || ! str_contains($key, 'BEGIN PUBLIC KEY')) {
             throw ShareException::invalidRecipient();
         }
+
         return $key;
     }
 
@@ -103,7 +126,7 @@ final readonly class ShareService implements ShareServiceInterface
         $json = json_encode([
             'username' => $service->username,
             'password' => $service->password,
-            'notes'    => $service->notes,
+            'notes' => $service->notes,
         ]);
 
         return $this->cryptoService->encryptWithCustomKey($json, $aesKey);
@@ -128,17 +151,17 @@ final readonly class ShareService implements ShareServiceInterface
     private function createShareRecord(Service $service, User $recipient, SharePayload $payload): Share
     {
         return Share::create([
-            'service_id'    => $service->id,
-            'from_user_id'  => auth()->id(),
-            'to_user_id'    => $recipient->id,
-            'shared_data'   => json_encode([
+            'service_id' => $service->id,
+            'from_user_id' => auth()->id(),
+            'to_user_id' => $recipient->id,
+            'shared_data' => json_encode([
                 'encrypted_aes_key' => $payload->encryptedAesKey,
-                'encrypted_data'    => $payload->encryptedData,
-                'name'              => $payload->name,
-                'url'               => $payload->url,
-                'favicon'           => $payload->favicon,
+                'encrypted_data' => $payload->encryptedData,
+                'name' => $payload->name,
+                'url' => $payload->url,
+                'favicon' => $payload->favicon,
             ]),
-            'shared_at'     => now(),
+            'shared_at' => now(),
         ]);
     }
 
@@ -152,12 +175,14 @@ final readonly class ShareService implements ShareServiceInterface
     private function extractPayload(Share $share): SharePayload
     {
         $raw = json_decode($share->shared_data, true);
+
         return ShareMapper::toPayload($raw);
     }
 
     private function decryptAesKey(SharePayload $payload, User $recipient): string
     {
         $privateKey = $this->userKeyService->getDecryptedPrivateKey($recipient);
+
         return $this->cryptoService->decryptWithPrivateKey($payload->encryptedAesKey, $privateKey);
     }
 
@@ -169,6 +194,7 @@ final readonly class ShareService implements ShareServiceInterface
             $payload->encryptedData['tag'],
             $aesKey
         );
+
         return json_decode($json, true);
     }
 
@@ -178,36 +204,41 @@ final readonly class ShareService implements ShareServiceInterface
         $password = $this->cryptoService->encryptWithMasterKey($data['password']);
 
         $notes = null;
-        if (!empty($data['notes'])) {
+        if (! empty($data['notes'])) {
             $notes = $this->cryptoService->encryptWithMasterKey($data['notes']);
         }
 
         return [
             'username' => $username,
             'password' => $password,
-            'notes'    => $notes,
+            'notes' => $notes,
         ];
     }
 
-    private function createServiceFromSharedData(SharePayload $payload, array $reEncrypted, Share $share, array $analysis): Service {
+    private function createServiceFromSharedData(SharePayload $payload, array $reEncrypted, Share $share, array $analysis): Service
+    {
+        $sourceService = $this->ensureServiceHasSharedGroup($share->service);
+
         return Service::create([
-            'user_id'        => auth()->id(),
-            'name'           => $payload->name,
-            'url'            => $payload->url,
-            'favicon'        => $payload->favicon,
-            'username'       => $reEncrypted['username']['ciphertext'],
-            'username_iv'    => $reEncrypted['username']['iv'],
-            'username_tag'   => $reEncrypted['username']['tag'],
-            'password'       => $reEncrypted['password']['ciphertext'],
-            'password_iv'    => $reEncrypted['password']['iv'],
-            'password_tag'   => $reEncrypted['password']['tag'],
-            'notes'          => $reEncrypted['notes']['ciphertext'] ?? null,
-            'notes_iv'       => $reEncrypted['notes']['iv'] ?? null,
-            'notes_tag'      => $reEncrypted['notes']['tag'] ?? null,
+            'user_id' => auth()->id(),
+            'name' => $payload->name,
+            'url' => $payload->url,
+            'favicon' => $payload->favicon,
+            'username' => $reEncrypted['username']['ciphertext'],
+            'username_iv' => $reEncrypted['username']['iv'],
+            'username_tag' => $reEncrypted['username']['tag'],
+            'password' => $reEncrypted['password']['ciphertext'],
+            'password_iv' => $reEncrypted['password']['iv'],
+            'password_tag' => $reEncrypted['password']['tag'],
+            'notes' => $reEncrypted['notes']['ciphertext'] ?? null,
+            'notes_iv' => $reEncrypted['notes']['iv'] ?? null,
+            'notes_tag' => $reEncrypted['notes']['tag'] ?? null,
             'shared_user_id' => $share->from_user_id,
-            'strength'    => $analysis['strength'],
+            'shared_at' => $share->shared_at,
+            'shared_group_id' => $sourceService->shared_group_id,
+            'strength' => $analysis['strength'],
             'compromised' => $analysis['compromised'],
-            'reused'      => $analysis['reused'],
+            'reused' => $analysis['reused'],
         ]);
     }
 

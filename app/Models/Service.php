@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Services\Security\CryptoService;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Service extends Model
 {
@@ -15,6 +16,7 @@ class Service extends Model
         'password_iv', 'password_tag',
         'notes_iv', 'notes_tag',
         'shared_user_id', 'shared_at',
+        'shared_group_id',
         'strength',
         'compromised',
         'reused',
@@ -29,6 +31,16 @@ class Service extends Model
     protected $casts = [
         'shared_at' => 'datetime',
     ];
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function sharedFromUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'shared_user_id');
+    }
 
     public function getUsernameAttribute(?string $value): ?string
     {
