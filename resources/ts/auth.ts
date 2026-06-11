@@ -2,6 +2,12 @@ import { WebAuthn } from './WebAuthn';
 
 const webauthn = new WebAuthn();
 
+function t(key: string): string {
+    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+
+    return translations?.[key] ?? key;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initAuthPage();
 });
@@ -71,22 +77,22 @@ async function handlePasskeyLogin() {
         const result = await webauthn.login(credential);
 
         if (result.success && result.redirect) {
-            (window as any).showToast?.('Connected with passkey.', 'success');
+            (window as any).showToast?.(t('Connected with passkey.'), 'success');
             setTimeout(() => {
                 if (result.redirect != null) {
                     window.location.href = result.redirect;
                 }
             }, 300);
         } else {
-            (window as any).showToast?.('Authentication failed with passkey.', 'error');
+            (window as any).showToast?.(t('Authentication failed with passkey.'), 'error');
         }
     } catch (e: any) {
         console.error('Passkey login error:', e);
 
         if (e.name === 'NotAllowedError') {
-            (window as any).showToast?.('Action cancelled.', 'error');
+            (window as any).showToast?.(t('Action cancelled.'), 'error');
         } else {
-            (window as any).showToast?.('Unable to use passkey. Try another method.', 'error');
+            (window as any).showToast?.(t('Unable to use passkey. Try another method.'), 'error');
         }
     }
 }
@@ -120,7 +126,7 @@ async function handleGeneratePassword() {
 
 async function calculateEntropy(password: string) {
     if (password.length < 4) {
-        return { entropy: 0, strength: 'very_weak', label: 'Very weak' };
+        return { entropy: 0, strength: 'very_weak', label: t('Very weak') };
     }
 
     const res = await fetch('/password/entropy', {
@@ -156,15 +162,13 @@ async function handlePasswordInput(e: Event) {
     const percentage = Math.min((result.entropy / 100) * 100, 100);
     bar.style.width = `${percentage}%`;
 
-    const label = result.label.toLowerCase();
-
-    if (label.includes('very strong') || label.includes('strong')) {
+    if (result.strength === 'very_strong' || result.strength === 'strong') {
         bar.style.backgroundColor = '#00ff9d';
-    } else if (label.includes('medium')) {
+    } else if (result.strength === 'medium') {
         bar.style.backgroundColor = '#ffaa00';
     } else {
         bar.style.backgroundColor = '#ff4444';
     }
 
-    text.textContent = result.label;
+    text.textContent = t(result.label);
 }

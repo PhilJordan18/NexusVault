@@ -4,9 +4,15 @@
  * Calcule l'entropie et retourne un objet { entropy, strength, label }.
  * (appel API vers /password/entropy)
  */
+function t(key: string): string {
+    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+
+    return translations?.[key] ?? key;
+}
+
 export async function calculateEntropy(password: string): Promise<{ entropy: number; strength: string; label: string }> {
     if (password.length < 4) {
-        return { entropy: 0, strength: 'very_weak', label: 'Very weak' };
+        return { entropy: 0, strength: 'very_weak', label: t('Very weak') };
     }
 
     const res = await fetch('/password/entropy', {
@@ -101,7 +107,7 @@ return;
         const entropy = result.entropy;
         const percentage = Math.min((entropy / 100) * 100, 100);
         strengthBar.style.width = `${percentage}%`;
-        strengthText.textContent = result.label;
+        strengthText.textContent = t(result.label);
 
         // Couleur
         if (result.strength === 'very_weak' || result.strength === 'weak') {

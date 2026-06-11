@@ -159,6 +159,20 @@
 @include('shares.modal')
 
 <script>
+    window.nexusVaultTranslations = Object.assign(
+        {},
+        window.nexusVaultTranslations || {},
+        {{ Illuminate\Support\Js::from([
+            'Very weak' => __('Very weak'),
+            'Weak' => __('Weak'),
+            'Medium' => __('Medium'),
+            'Strong' => __('Strong'),
+            'Very strong' => __('Very strong'),
+        ]) }}
+    );
+</script>
+
+<script>
     // === SIDEBAR MOBILE ===
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');

@@ -46,6 +46,24 @@
 <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-[200]"></div>
 
 <script>
+    window.nexusVaultTranslations = Object.assign(
+        {},
+        window.nexusVaultTranslations || {},
+        {{ Illuminate\Support\Js::from([
+            'Very weak' => __('Very weak'),
+            'Weak' => __('Weak'),
+            'Medium' => __('Medium'),
+            'Strong' => __('Strong'),
+            'Very strong' => __('Very strong'),
+            'Connected with passkey.' => __('Connected with passkey.'),
+            'Authentication failed with passkey.' => __('Authentication failed with passkey.'),
+            'Action cancelled.' => __('Action cancelled.'),
+            'Unable to use passkey. Try another method.' => __('Unable to use passkey. Try another method.'),
+        ]) }}
+    );
+</script>
+
+<script>
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
         const toast = document.createElement('div');

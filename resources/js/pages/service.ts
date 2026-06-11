@@ -30,6 +30,12 @@ type ShareRecipient = {
 // GLOBAL STATE
 let currentAccount: Account | null = null;
 
+function t(key: string): string {
+    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+
+    return translations?.[key] ?? key;
+}
+
 const itemTypeLabels: Record<ItemType, {
     username: string;
     secret: string;
@@ -38,25 +44,25 @@ const itemTypeLabels: Record<ItemType, {
     editTitle: string;
 }> = {
     login: {
-        username: 'Username / Email',
-        secret: 'Password',
-        notes: 'Notes (optional)',
+        username: t('Username / Email'),
+        secret: t('Password'),
+        notes: t('Notes (optional)'),
         hiddenSecret: '••••••••••••',
-        editTitle: 'Edit Account',
+        editTitle: t('Edit Account'),
     },
     payment_card: {
-        username: 'Cardholder Name',
-        secret: 'Card Number',
-        notes: 'Expiry, CVC, PIN, billing notes',
+        username: t('Cardholder Name'),
+        secret: t('Card Number'),
+        notes: t('Expiry, CVC, PIN, billing notes'),
         hiddenSecret: '•••• •••• •••• ••••',
-        editTitle: 'Edit Card',
+        editTitle: t('Edit Card'),
     },
     secure_note: {
-        username: 'Reference',
-        secret: 'Secure Content',
-        notes: 'Extra Notes',
+        username: t('Reference'),
+        secret: t('Secure Content'),
+        notes: t('Extra Notes'),
         hiddenSecret: '••••••••••••',
-        editTitle: 'Edit Note',
+        editTitle: t('Edit Note'),
     },
 };
 
@@ -162,7 +168,7 @@ function csrfToken(): string {
 
 (window as any).editAccount = () => {
     if (!currentAccount) {
-        alert('Please select an account first.');
+        alert(t('Please select an account first.'));
 
         return;
     }
@@ -217,7 +223,7 @@ function csrfToken(): string {
     const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement).value.trim();
 
     if (!username || !password) {
-        alert('Username and password are required.');
+        alert(t('Username and password are required.'));
 
         return;
     }
@@ -252,17 +258,17 @@ function csrfToken(): string {
             (window as any).hideEditModal();
 
             if ((window as any).showToast) {
-                (window as any).showToast('Account updated successfully!');
+                (window as any).showToast(t('Account updated successfully!'));
             } else {
-                alert('Account updated successfully!');
+                alert(t('Account updated successfully!'));
             }
         } else {
             const error = await response.json();
-            alert('Error: ' + (error.message || 'Failed to update'));
+            alert(`${t('Error')}: ${error.message || t('Failed to update')}`);
         }
     } catch (err) {
         console.error(err);
-        alert('Network error while updating account.');
+        alert(t('Network error while updating account.'));
     } finally {
         buttons.forEach(b => (b.disabled = false));
     }
@@ -279,7 +285,7 @@ function csrfToken(): string {
     if ((window as any).showShareModal) {
         (window as any).showShareModal(currentAccount.id);
     } else {
-        alert('Share feature not available.');
+        alert(t('Share feature not available.'));
     }
 };
 
@@ -288,7 +294,7 @@ async function revokeShare(shareId: number): Promise<void> {
         return;
     }
 
-    if (!confirm('Revoke access for this recipient?')) {
+    if (!confirm(t('Revoke access for this recipient?'))) {
         return;
     }
 
@@ -304,17 +310,17 @@ async function revokeShare(shareId: number): Promise<void> {
         if (!response.ok) {
             const error = await response.json();
 
-            throw new Error(error.message || 'Failed to revoke access.');
+            throw new Error(error.message || t('Failed to revoke access.'));
         }
 
         currentAccount.shared_with = (currentAccount.shared_with ?? []).filter(share => share.id !== shareId);
         const accounts = (window as any).accounts as Record<number, Account>;
         accounts[currentAccount.id] = currentAccount;
         renderShareRecipients(currentAccount);
-        (window as any).showToast?.('Shared access revoked.', 'success');
+        (window as any).showToast?.(t('Shared access revoked.'), 'success');
     } catch (error) {
         console.error(error);
-        (window as any).showToast?.('Failed to revoke shared access.', 'error');
+        (window as any).showToast?.(t('Failed to revoke shared access.'), 'error');
     }
 }
 
@@ -347,7 +353,7 @@ function renderShareRecipients(account: Account): void {
 
         const name = document.createElement('p');
         name.className = 'font-medium truncate';
-        name.textContent = recipient.name || recipient.email || 'Unknown user';
+        name.textContent = recipient.name || recipient.email || t('Unknown user');
 
         const details = document.createElement('p');
         details.className = 'text-xs text-[var(--text-secondary)] truncate';
@@ -362,12 +368,12 @@ function renderShareRecipients(account: Account): void {
         status.className = recipient.status === 'Accepted'
             ? 'text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400'
             : 'text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400';
-        status.textContent = recipient.status;
+        status.textContent = t(recipient.status);
 
         const revokeButton = document.createElement('button');
         revokeButton.type = 'button';
         revokeButton.className = 'text-xs px-3 py-1.5 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition';
-        revokeButton.textContent = 'Revoke';
+        revokeButton.textContent = t('Revoke');
         revokeButton.addEventListener('click', () => void revokeShare(recipient.id));
 
         actions.append(status, revokeButton);
@@ -404,11 +410,11 @@ function renderSecurityFromAccount(account: Account) {
                     <i class="fa-solid fa-triangle-exclamation text-xl"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-red-400">Compromised Password</p>
-                    <p class="text-sm text-white/70 mt-1">This password was found in a data breach. Change it immediately.</p>
+                    <p class="font-semibold text-red-400">${t('Compromised Password')}</p>
+                    <p class="text-sm text-white/70 mt-1">${t('This password was found in a data breach. Change it immediately.')}</p>
                     <button onclick="window.editAccount()"
                             class="mt-4 px-5 py-2 bg-red-500/90 hover:bg-red-600 text-white text-sm rounded-2xl font-medium">
-                        Change Password
+                        ${t('Change Password')}
                     </button>
                 </div>
             </div>
@@ -420,11 +426,11 @@ function renderSecurityFromAccount(account: Account) {
                     <i class="fa-solid fa-exclamation-triangle text-xl"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-yellow-400">Reused Password</p>
-                    <p class="text-sm text-white/70 mt-1">This password is used on multiple accounts. For better security, use a unique one.</p>
+                    <p class="font-semibold text-yellow-400">${t('Reused Password')}</p>
+                    <p class="text-sm text-white/70 mt-1">${t('This password is used on multiple accounts. For better security, use a unique one.')}</p>
                     <button onclick="window.editAccount()"
                             class="mt-4 px-5 py-2 bg-yellow-500/90 hover:bg-yellow-600 text-black text-sm rounded-2xl font-medium">
-                        Change Password
+                        ${t('Change Password')}
                     </button>
                 </div>
             </div>
@@ -436,11 +442,11 @@ function renderSecurityFromAccount(account: Account) {
                     <i class="fa-solid fa-xmark text-xl"></i>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-red-400">Weak Password</p>
-                    <p class="text-sm text-white/70 mt-1">This password is too easy to guess. We recommend using a stronger one.</p>
+                    <p class="font-semibold text-red-400">${t('Weak Password')}</p>
+                    <p class="text-sm text-white/70 mt-1">${t('This password is too easy to guess. We recommend using a stronger one.')}</p>
                     <button onclick="window.editAccount()"
                             class="mt-4 px-5 py-2 bg-red-500/90 hover:bg-red-600 text-white text-sm rounded-2xl font-medium">
-                        Change Password
+                        ${t('Change Password')}
                     </button>
                 </div>
             </div>
@@ -452,8 +458,8 @@ function renderSecurityFromAccount(account: Account) {
                     <i class="fa-solid fa-shield-halved"></i>
                 </div>
                 <div>
-                    <p class="font-semibold text-emerald-400">Very Strong Password</p>
-                    <p class="text-sm text-white/70 mt-0.5">Excellent entropy. This password is highly secure.</p>
+                    <p class="font-semibold text-emerald-400">${t('Very Strong Password')}</p>
+                    <p class="text-sm text-white/70 mt-0.5">${t('Excellent entropy. This password is highly secure.')}</p>
                 </div>
             </div>
         `;
@@ -464,8 +470,8 @@ function renderSecurityFromAccount(account: Account) {
                     <i class="fa-solid fa-check"></i>
                 </div>
                 <div>
-                    <p class="font-semibold text-emerald-400">No Issues Found</p>
-                    <p class="text-sm text-white/70 mt-0.5">This password is strong and secure.</p>
+                    <p class="font-semibold text-emerald-400">${t('No Issues Found')}</p>
+                    <p class="text-sm text-white/70 mt-0.5">${t('This password is strong and secure.')}</p>
                 </div>
             </div>
         `;
@@ -481,10 +487,10 @@ function renderSecurityFromAccount(account: Account) {
     }
 
     const confirmation = currentAccount.shared_group_id && !currentAccount.shared_user_id
-        ? 'Delete this shared account for everyone? This will revoke access for all recipients.'
+        ? t('Delete this shared account for everyone? This will revoke access for all recipients.')
         : currentAccount.shared_group_id
-            ? 'Remove this shared account from your vault? The original will remain available to its owner.'
-            : 'Are you sure you want to delete this account?';
+            ? t('Remove this shared account from your vault? The original will remain available to its owner.')
+            : t('Are you sure you want to delete this account?');
 
     if (!confirm(confirmation)) {
         return;
@@ -502,11 +508,11 @@ function renderSecurityFromAccount(account: Account) {
         if (res.ok) {
             window.location.href = '/dashboard';
         } else {
-            (window as any).showToast?.('Failed to delete account.', 'error');
+            (window as any).showToast?.(t('Failed to delete account.'), 'error');
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-        (window as any).showToast?.('Network error.', 'error');
+        (window as any).showToast?.(t('Network error.'), 'error');
     }
 };
 

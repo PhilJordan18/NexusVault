@@ -33,7 +33,7 @@ final class ServiceController extends Controller
         $data = $this->mapper->fromCreateRequest($request);
         $this->service->create($data);
 
-        return redirect()->route('dashboard')->with('success', 'Service added successfully!');
+        return redirect()->route('dashboard')->with('success', __('Service added successfully!'));
     }
 
     public function show(string $name)
@@ -93,7 +93,7 @@ final class ServiceController extends Controller
             ]);
         }
 
-        return back()->with('success', 'Service updated successfully!');
+        return back()->with('success', __('Service updated successfully!'));
     }
 
     public function destroy(Service $service): JsonResponse|RedirectResponse
@@ -105,8 +105,8 @@ final class ServiceController extends Controller
         $this->service->delete($service);
 
         return request()->expectsJson()
-            ? response()->json(['message' => 'Service deleted'])
-            : redirect()->route('dashboard')->with('success', 'Service deleted');
+            ? response()->json(['message' => __('Service deleted')])
+            : redirect()->route('dashboard')->with('success', __('Service deleted'));
     }
 
     public function suggest(Request $request)

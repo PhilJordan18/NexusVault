@@ -1,22 +1,75 @@
 <x-layouts.app>
+    @php
+        $itemCount = count($accounts);
+        $firstAccount = $accounts->first();
+        $lastUpdated = $firstAccount?->updated_at?->diffForHumans() ?? '';
+        $firstUrl = $firstAccount->url ?? '';
+        $itemType = $firstAccount->type ?? \App\Models\Service::TYPE_LOGIN;
+        $addButtonLabel = $itemType === \App\Models\Service::TYPE_PAYMENT_CARD
+            ? __('Add Card')
+            : ($itemType === \App\Models\Service::TYPE_SECURE_NOTE ? __('Add Note') : __('Add Account'));
+        $serviceTranslations = [
+            'Username / Email' => __('Username / Email'),
+            'Password' => __('Password'),
+            'Notes (optional)' => __('Notes (optional)'),
+            'Edit Account' => __('Edit Account'),
+            'Cardholder Name' => __('Cardholder Name'),
+            'Card Number' => __('Card Number'),
+            'Expiry, CVC, PIN, billing notes' => __('Expiry, CVC, PIN, billing notes'),
+            'Edit Card' => __('Edit Card'),
+            'Reference' => __('Reference'),
+            'Secure Content' => __('Secure Content'),
+            'Extra Notes' => __('Extra Notes'),
+            'Edit Note' => __('Edit Note'),
+            'Please select an account first.' => __('Please select an account first.'),
+            'Username and password are required.' => __('Username and password are required.'),
+            'Account updated successfully!' => __('Account updated successfully!'),
+            'Error' => __('Error'),
+            'Failed to update' => __('Failed to update'),
+            'Network error while updating account.' => __('Network error while updating account.'),
+            'Share feature not available.' => __('Share feature not available.'),
+            'Revoke access for this recipient?' => __('Revoke access for this recipient?'),
+            'Failed to revoke access.' => __('Failed to revoke access.'),
+            'Shared access revoked.' => __('Shared access revoked.'),
+            'Failed to revoke shared access.' => __('Failed to revoke shared access.'),
+            'Unknown user' => __('Unknown user'),
+            'Accepted' => __('Accepted'),
+            'Pending' => __('Pending'),
+            'Revoke' => __('Revoke'),
+            'Compromised Password' => __('Compromised Password'),
+            'This password was found in a data breach. Change it immediately.' => __('This password was found in a data breach. Change it immediately.'),
+            'Reused Password' => __('Reused Password'),
+            'This password is used on multiple accounts. For better security, use a unique one.' => __('This password is used on multiple accounts. For better security, use a unique one.'),
+            'Weak Password' => __('Weak Password'),
+            'This password is too easy to guess. We recommend using a stronger one.' => __('This password is too easy to guess. We recommend using a stronger one.'),
+            'Very Strong Password' => __('Very Strong Password'),
+            'Excellent entropy. This password is highly secure.' => __('Excellent entropy. This password is highly secure.'),
+            'No Issues Found' => __('No Issues Found'),
+            'This password is strong and secure.' => __('This password is strong and secure.'),
+            'Change Password' => __('Change Password'),
+            'Delete this shared account for everyone? This will revoke access for all recipients.' => __('Delete this shared account for everyone? This will revoke access for all recipients.'),
+            'Remove this shared account from your vault? The original will remain available to its owner.' => __('Remove this shared account from your vault? The original will remain available to its owner.'),
+            'Are you sure you want to delete this account?' => __('Are you sure you want to delete this account?'),
+            'Failed to delete account.' => __('Failed to delete account.'),
+            'Network error.' => __('Network error.'),
+        ];
+    @endphp
+
     <div class="max-w-5xl mx-auto">
 
         <!-- Header -->
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-semibold">{{ $name }}</h1>
-                <p class="text-[var(--text-secondary)]">{{ count($accounts) }} items • Last updated {{ $accounts->first()->updated_at->diffForHumans() ?? '' }}</p>
+                <p class="text-[var(--text-secondary)]">
+                    {{ $itemCount }} {{ trans_choice('item_count', $itemCount) }} • {{ __('Last updated') }} {{ $lastUpdated }}
+                </p>
             </div>
-
-            @php
-                $firstUrl = $accounts->first()->url ?? '';
-                $itemType = $accounts->first()->type ?? \App\Models\Service::TYPE_LOGIN;
-            @endphp
 
             <button onclick="showCreateModalForService('{{ $name }}', '{{ $firstUrl }}', '{{ $itemType }}')"
                     class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-medium">
                 <i class="fa-solid fa-plus"></i>
-                <span>{{ $itemType === \App\Models\Service::TYPE_PAYMENT_CARD ? 'Add Card' : ($itemType === \App\Models\Service::TYPE_SECURE_NOTE ? 'Add Note' : 'Add Account') }}</span>
+                <span>{{ $addButtonLabel }}</span>
             </button>
         </div>
 
@@ -38,7 +91,7 @@
                                 <div class="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                                     <span>{{ $account->updated_at->diffForHumans() }}</span>
                                     @if ($account->shared_group_id)
-                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">Shared sync</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">{{ __('Shared sync') }}</span>
                                     @endif
                                 </div>
                             </div>
@@ -61,7 +114,7 @@
                             <div class="flex flex-wrap items-center gap-2 mt-1">
                                 <p id="detail-name" class="text-[var(--text-secondary)] truncate"></p>
                                 <span id="detail-shared-badge" class="hidden text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
-                                    Shared sync
+                                    {{ __('Shared sync') }}
                                 </span>
                             </div>
                         </div>
@@ -70,13 +123,13 @@
                             <button onclick="window.editAccount()"
                                     class="px-4 py-2 text-sm bg-[var(--bg-input)] hover:bg-white/10 rounded-2xl flex items-center gap-2 whitespace-nowrap">
                                 <i class="fa-solid fa-edit"></i>
-                                <span>Edit</span>
+                                <span>{{ __('Edit') }}</span>
                             </button>
 
                             <button id="share-account-button" onclick="window.shareCurrentAccount()"
                                     class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 rounded-2xl flex items-center gap-2 text-white whitespace-nowrap">
                                 <i class="fa-solid fa-share"></i>
-                                <span>Share</span>
+                                <span>{{ __('Share') }}</span>
                             </button>
                         </div>
                     </div>
@@ -84,11 +137,11 @@
                     <!-- Secret -->
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-3">
-                            <div id="detail-secret-label" class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Password</div>
+                            <div id="detail-secret-label" class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">{{ __('Password') }}</div>
                             <button onclick="window.togglePassword()"
                                     class="text-xs flex items-center gap-1.5 text-emerald-500 hover:text-emerald-400">
                                 <i class="fa-solid fa-eye"></i>
-                                <span>Show</span>
+                                <span>{{ __('Show') }}</span>
                             </button>
                         </div>
 
@@ -99,19 +152,19 @@
 
                     <!-- Website -->
                     <div id="detail-url-container" class="mb-8">
-                        <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2">Website</div>
+                        <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2">{{ __('Website') }}</div>
                         <a id="detail-url" target="_blank" class="text-emerald-500 hover:underline break-all"></a>
                     </div>
 
                     <!-- Notes -->
                     <div id="detail-notes-container" class="hidden">
-                        <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2">Notes</div>
+                        <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2">{{ __('Notes') }}</div>
                         <div id="detail-notes" class="text-sm text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-input)] p-4 rounded-2xl"></div>
                     </div>
 
                     <div id="detail-shares-container" class="hidden mt-8">
                         <div class="flex items-center justify-between mb-3">
-                            <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Shared with</div>
+                            <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">{{ __('Shared with') }}</div>
                         </div>
                         <div id="detail-shares-list" class="space-y-3"></div>
                     </div>
@@ -124,7 +177,7 @@
                         <div class="mx-auto w-14 h-14 bg-[var(--bg-input)] rounded-full flex items-center justify-center mb-4">
                             <i class="fa-solid fa-key text-2xl text-[var(--text-secondary)]"></i>
                         </div>
-                        <p class="text-[var(--text-secondary)]">Select an account from the list<br>to view details</p>
+                        <p class="text-[var(--text-secondary)]">{!! __('Select an account from the list<br>to view details') !!}</p>
                     </div>
                 </div>
 
@@ -133,7 +186,7 @@
                 <div id="delete-account-container" class="hidden mt-6 text-center">
                     <button onclick="window.deleteAccount()"
                             class="text-red-500 hover:text-red-600 px-4 py-2 text-sm rounded-2xl hover:bg-red-500/10 transition">
-                        <i class="fa-solid fa-trash mr-2"></i>Delete this account
+                        <i class="fa-solid fa-trash mr-2"></i>{{ __('Delete this account') }}
                     </button>
                 </div>
             </div>
@@ -144,7 +197,7 @@
     <div id="edit-account-modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-[100]">
         <div class="card rounded-3xl w-full max-w-md mx-4 p-8">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-2xl font-semibold">Edit Account</h3>
+                <h3 class="text-2xl font-semibold">{{ __('Edit Account') }}</h3>
                 <button onclick="hideEditModal()" class="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-2xl leading-none">&times;</button>
             </div>
 
@@ -155,14 +208,14 @@
                 <input type="hidden" id="edit-url">
                 <!-- Username / Email -->
                 <div class="mb-5">
-                    <label id="edit-username-label" class="block text-sm text-[var(--text-secondary)] mb-2">Username / Email</label>
+                    <label id="edit-username-label" class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('Username / Email') }}</label>
                     <input type="text" id="edit-username" required
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5">
                 </div>
 
                 <!-- Password -->
                 <div class="mb-5">
-                    <label id="edit-password-label" class="block text-sm text-[var(--text-secondary)] mb-2">Password</label>
+                    <label id="edit-password-label" class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('Password') }}</label>
                     <div class="relative">
                         <input type="password" id="edit-password" required
                                class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5 pr-12 font-mono">
@@ -173,8 +226,8 @@
                     </div>
                     <div id="edit-strength-container" class="mt-2 hidden">
                         <div class="flex justify-between text-xs mb-1">
-                            <span class="text-[var(--text-secondary)]">Password strength</span>
-                            <span id="edit-strength-text" class="font-medium">Very weak</span>
+                            <span class="text-[var(--text-secondary)]">{{ __('Password strength') }}</span>
+                            <span id="edit-strength-text" class="font-medium">{{ __('Very weak') }}</span>
                         </div>
                         <div class="h-1.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
                             <div id="edit-strength-bar" class="h-full w-0 transition-all duration-300 bg-red-500"></div>
@@ -184,7 +237,7 @@
 
                 <!-- Notes -->
                 <div class="mb-6">
-                    <label id="edit-notes-label" class="block text-sm text-[var(--text-secondary)] mb-2">Notes (optional)</label>
+                    <label id="edit-notes-label" class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('Notes (optional)') }}</label>
                     <textarea id="edit-notes" rows="3"
                               class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5 resize-y"></textarea>
                 </div>
@@ -192,17 +245,17 @@
                 <button type="button" id="edit-generate-btn"
                         class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium mb-4 transition">
                     <i class="fa-solid fa-dice"></i>
-                    <span>Generate strong password</span>
+                    <span>{{ __('Generate strong password') }}</span>
                 </button>
 
                 <div class="flex gap-3">
                     <button type="button" onclick="hideEditModal()"
                             class="flex-1 py-3.5 rounded-2xl border border-[var(--border-color)] hover:bg-[var(--bg-input)] transition">
-                        Cancel
+                        {{ __('Cancel') }}
                     </button>
                     <button type="submit"
                             class="flex-1 py-3.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-white font-medium transition">
-                        Save Changes
+                        {{ __('Save Changes') }}
                     </button>
                 </div>
             </form>
@@ -211,5 +264,10 @@
 
     <script>
         window.accounts = @json($accounts->keyBy('id'));
+        window.nexusVaultTranslations = Object.assign(
+            {},
+            window.nexusVaultTranslations || {},
+            {{ Illuminate\Support\Js::from($serviceTranslations) }}
+        );
     </script>
 </x-layouts.app>
