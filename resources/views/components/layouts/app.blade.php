@@ -27,7 +27,7 @@
         </div>
         <div>
             <h1 class="text-2xl font-semibold tracking-tighter">NexusVault</h1>
-            <p class="text-[10px] text-[var(--text-secondary)] -mt-1">Password Manager</p>
+            <p class="text-[10px] text-[var(--text-secondary)] -mt-1">{{ __('Password Manager') }}</p>
         </div>
     </div>
 
@@ -35,27 +35,27 @@
     <nav class="flex-1 px-3 py-6 space-y-1 text-sm">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl nav-active">
             <i class="fa-solid fa-key w-4"></i>
-            <span>All Items</span>
+            <span>{{ __('All Items') }}</span>
             <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems }}</span>
         </a>
 
         <a href="{{ route('passkeys.index') }}"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-fingerprint w-4"></i>
-            <span>Passkeys</span>
+            <span>{{ __('Passkeys') }}</span>
         </a>
 
         <a href="{{ route('settings') }}"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-gear w-4"></i>
-            <span>Settings</span>
+            <span>{{ __('Settings') }}</span>
         </a>
 
         <form method="POST" action="{{ route('logout') }}"
               class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-500/10 text-red-400 text-sm transition">
             @csrf
             <i class="fa-solid fa-sign-out-alt w-4"></i>
-            <button type="submit">Logout</button>
+            <button type="submit">{{ __('Logout') }}</button>
         </form>
     </nav>
 
@@ -98,7 +98,7 @@
                 <div class="relative">
                     <input type="text" id="search-input" autocomplete="off"
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-3xl py-2.5 pl-11 pr-4 text-sm placeholder:text-[var(--text-secondary)] outline-none"
-                           placeholder="Search passwords, services...">
+                           placeholder="{{ __('Search passwords, services...') }}">
                     <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"></i>
                 </div>
                 <div id="search-dropdown"
@@ -109,10 +109,12 @@
 
         <!-- Right side actions -->
         <div class="flex items-center gap-1 md:gap-3 ml-2">
+            @include('partials.language-switch')
+
             <button onclick="showCreateModal()"
                     class="flex items-center gap-2 px-3 md:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
                 <i class="fa-solid fa-plus"></i>
-                <span class="hidden sm:inline">New Item</span>
+                <span class="hidden sm:inline">{{ __('New Item') }}</span>
             </button>
 
             <!-- Notifications -->
@@ -213,7 +215,7 @@
 
         if (nameInput) nameInput.value = '';
         if (domainInput) domainInput.value = '';
-        if (urlPreview) urlPreview.innerHTML = 'Sera généré automatiquement';
+        if (urlPreview) urlPreview.textContent = @json(__('Will be generated automatically'));
         if (suggestions) suggestions.classList.add('hidden');
 
         document.getElementById('create-modal').classList.remove('hidden');
@@ -231,9 +233,13 @@
             try {
                 const urlObj = new URL(serviceUrl);
                 domainInput.value = urlObj.hostname.replace('www.', '');
-                urlPreview.innerHTML = `<span class="text-emerald-400">${serviceUrl}</span>`;
+                const previewUrl = document.createElement('span');
+                previewUrl.className = 'text-emerald-400';
+                previewUrl.textContent = serviceUrl;
+                urlPreview.textContent = '';
+                urlPreview.appendChild(previewUrl);
             } catch (e) {
-                urlPreview.innerHTML = 'Sera généré automatiquement';
+                urlPreview.textContent = @json(__('Will be generated automatically'));
             }
         }
 
@@ -280,11 +286,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    window.showToast('Theme updated successfully', 'success');
+                    window.showToast(@json(__('Theme updated successfully')), 'success');
                 }
             })
             .catch(() => {
-                window.showToast('Failed to update theme', 'error');
+                window.showToast(@json(__('Failed to update theme')), 'error');
             });
     }
 </script>

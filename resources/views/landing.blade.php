@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,16 +43,18 @@
 
         <!-- Desktop Menu -->
         <div class="hidden md:flex items-center gap-10 text-sm font-medium text-white/80">
-            <a href="#features" class="hover:text-white transition">Features</a>
-            <a href="#security" class="hover:text-white transition">Security</a>
-            <a href="#how-it-works" class="hover:text-white transition">How it Works</a>
+            <a href="#features" class="hover:text-white transition">{{ __('Features') }}</a>
+            <a href="#security" class="hover:text-white transition">{{ __('Security') }}</a>
+            <a href="#how-it-works" class="hover:text-white transition">{{ __('How it Works') }}</a>
         </div>
 
         <!-- Auth buttons -->
         <div class="hidden md:flex items-center gap-4">
-            <a href="{{ route('login') }}" class="px-5 py-2.5 text-sm font-medium text-white/90 hover:text-white transition">Log in</a>
+            @include('partials.language-switch', ['variant' => 'landing'])
+
+            <a href="{{ route('login') }}" class="px-5 py-2.5 text-sm font-medium text-white/90 hover:text-white transition">{{ __('Log in') }}</a>
             <a href="{{ route('register') }}" class="px-6 py-2.5 bg-white text-zinc-950 font-semibold text-sm rounded-3xl hover:bg-emerald-400 hover:text-white transition flex items-center gap-2">
-                Get started free
+                {{ __('Get started free') }}
             </a>
         </div>
 
@@ -66,12 +68,13 @@
     <!-- Mobile Menu -->
     <div x-show="open" x-transition class="md:hidden bg-zinc-950 border-t border-white/10 px-6 py-6">
         <div class="flex flex-col gap-4 text-sm font-medium">
-            <a href="#features" @click="open = false" class="py-2 hover:text-emerald-400">Features</a>
-            <a href="#security" @click="open = false" class="py-2 hover:text-emerald-400">Security</a>
-            <a href="#how-it-works" @click="open = false" class="py-2 hover:text-emerald-400">How it Works</a>
+            <a href="#features" @click="open = false" class="py-2 hover:text-emerald-400">{{ __('Features') }}</a>
+            <a href="#security" @click="open = false" class="py-2 hover:text-emerald-400">{{ __('Security') }}</a>
+            <a href="#how-it-works" @click="open = false" class="py-2 hover:text-emerald-400">{{ __('How it Works') }}</a>
             <div class="pt-4 border-t border-white/10 flex flex-col gap-3">
-                <a href="{{ route('login') }}" class="py-3 text-center border border-white/20 rounded-2xl hover:bg-white/5">Log in</a>
-                <a href="{{ route('register') }}" class="py-3 text-center bg-white text-zinc-950 font-semibold rounded-2xl hover:bg-emerald-400 hover:text-white">Get started free</a>
+                @include('partials.language-switch', ['variant' => 'landing'])
+                <a href="{{ route('login') }}" class="py-3 text-center border border-white/20 rounded-2xl hover:bg-white/5">{{ __('Log in') }}</a>
+                <a href="{{ route('register') }}" class="py-3 text-center bg-white text-zinc-950 font-semibold rounded-2xl hover:bg-emerald-400 hover:text-white">{{ __('Get started free') }}</a>
             </div>
         </div>
     </div>
@@ -94,39 +97,39 @@
         <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/5 border border-white/10 mb-6"
              data-aos="fade-down" data-aos-delay="100">
             <div class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></div>
-            <span class="text-xs font-medium tracking-[2px] text-emerald-400">NEW: PASSKEYS + SECURE SHARING 2.0</span>
+            <span class="text-xs font-medium tracking-[2px] text-emerald-400">{{ __('NEW: PASSKEYS + SECURE SHARING 2.0') }}</span>
         </div>
 
         <!-- Titre -->
         <h1 class="text-7xl md:text-8xl font-semibold tracking-tighter leading-none mb-6" data-aos="fade-up" data-aos-delay="200">
-            Your vault.<br>
-            <span class="bg-gradient-to-r from-emerald-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">Truly secure.</span>
+            {{ __('Your vault.') }}<br>
+            <span class="bg-gradient-to-r from-emerald-400 via-indigo-400 to-purple-400 bg-clip-text text-transparent">{{ __('Truly secure.') }}</span>
         </h1>
 
         <!-- Description -->
         <p class="max-w-2xl mx-auto text-2xl text-white/70 mb-10" data-aos="fade-up" data-aos-delay="350">
-            End-to-end encryption • Secure sharing • Passkeys & MFA.<br>
-            Zero knowledge. Zero compromise.
+            {{ __('End-to-end encryption • Secure sharing • Passkeys & MFA.') }}<br>
+            {{ __('Zero knowledge. Zero compromise.') }}
         </p>
 
         <!-- Boutons -->
         <div class="flex flex-col sm:flex-row gap-4 justify-center" data-aos="fade-up" data-aos-delay="500">
             <a href="{{ route('register') }}"
                class="px-10 py-4 bg-emerald-500 hover:bg-emerald-600 text-lg font-semibold rounded-3xl transition flex items-center justify-center gap-3">
-                Get started for free <span class="text-xl">→</span>
+                {{ __('Get started for free') }} <span class="text-xl">→</span>
             </a>
             <a href="{{ route('login') }}"
                class="px-10 py-4 border border-white/20 hover:bg-white/5 text-lg font-medium rounded-3xl transition">
-                Log in
+                {{ __('Log in') }}
             </a>
         </div>
 
-        <p class="mt-6 text-xs text-white/50" data-aos="fade-up" data-aos-delay="650">No credit card required • 14-day Pro trial included</p>
+        <p class="mt-6 text-xs text-white/50" data-aos="fade-up" data-aos-delay="650">{{ __('No credit card required • 14-day Pro trial included') }}</p>
     </div>
 
     <!-- Scroll Indicator -->
     <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center" data-aos="fade-up" data-aos-delay="800">
-        <span class="text-[10px] tracking-[2px] text-white/40 mb-1">SCROLL TO DISCOVER</span>
+        <span class="text-[10px] tracking-[2px] text-white/40 mb-1">{{ __('SCROLL TO DISCOVER') }}</span>
         <div class="w-px h-8 bg-gradient-to-b from-white/40 to-transparent animate-bounce"></div>
     </div>
 </div>
@@ -134,18 +137,18 @@
 <!-- FEATURES -->
 <div id="features" class="max-w-7xl mx-auto px-6 py-24">
     <div class="text-center mb-16" data-aos="fade-up">
-        <span class="text-emerald-400 text-sm font-semibold tracking-[3px]">WHY PEOPLE SWITCH TO NEXUSVAULT</span>
-        <h2 class="text-5xl font-semibold tracking-tight mt-3">Everything you need.<br>Nothing you don’t.</h2>
+        <span class="text-emerald-400 text-sm font-semibold tracking-[3px]">{{ __('WHY PEOPLE SWITCH TO NEXUSVAULT') }}</span>
+        <h2 class="text-5xl font-semibold tracking-tight mt-3">{{ __('Everything you need.') }}<br>{{ __('Nothing you don’t.') }}</h2>
     </div>
 
     <div class="grid md:grid-cols-3 gap-6">
         @foreach([
-            ['icon' => '🔐', 'title' => 'AES-256-GCM Encryption', 'desc' => 'Military-grade encryption used by banks and governments.'],
-            ['icon' => '🔄', 'title' => 'Secure Sharing', 'desc' => 'Share passwords without ever revealing them.'],
-            ['icon' => '🔑', 'title' => 'Passkeys & MFA', 'desc' => 'Passwordless login + two-factor authentication.'],
-            ['icon' => '⚡', 'title' => 'Smart Generator', 'desc' => 'Strong passwords generated locally in one click.'],
-            ['icon' => '📱', 'title' => 'Multi-Device Recovery', 'desc' => 'Switch phones? Restore everything in 30 seconds.'],
-            ['icon' => '🛡️', 'title' => 'Zero-Knowledge', 'desc' => 'Even if we get hacked, your data stays unreadable.'],
+            ['icon' => '🔐', 'title' => __('AES-256-GCM Encryption'), 'desc' => __('Military-grade encryption used by banks and governments.')],
+            ['icon' => '🔄', 'title' => __('Secure Sharing'), 'desc' => __('Share passwords without ever revealing them.')],
+            ['icon' => '🔑', 'title' => __('Passkeys & MFA'), 'desc' => __('Passwordless login + two-factor authentication.')],
+            ['icon' => '⚡', 'title' => __('Smart Generator'), 'desc' => __('Strong passwords generated locally in one click.')],
+            ['icon' => '📱', 'title' => __('Multi-Device Recovery'), 'desc' => __('Switch phones? Restore everything in 30 seconds.')],
+            ['icon' => '🛡️', 'title' => __('Zero-Knowledge'), 'desc' => __('Even if we get hacked, your data stays unreadable.')],
         ] as $feature)
             <div class="bg-zinc-900 border border-white/10 rounded-3xl p-8 hover:border-emerald-500/50 transition group"
                  data-aos="fade-up" data-aos-delay="{{ $loop->index * 70 }}">
@@ -162,12 +165,12 @@
     <div class="max-w-5xl mx-auto px-6">
         <div class="grid md:grid-cols-2 gap-16 items-center">
             <div data-aos="fade-right">
-                <span class="text-emerald-400 font-semibold">BANK-LEVEL SECURITY</span>
-                <h2 class="text-6xl font-semibold tracking-tighter mt-4 leading-none">We don’t store your passwords.<br>We store noise.</h2>
+                <span class="text-emerald-400 font-semibold">{{ __('BANK-LEVEL SECURITY') }}</span>
+                <h2 class="text-6xl font-semibold tracking-tighter mt-4 leading-none">{{ __('We don’t store your passwords.') }}<br>{{ __('We store noise.') }}</h2>
                 <div class="mt-10 space-y-6 text-lg text-white/70">
-                    <p>All your data is encrypted <strong>locally</strong> on your device with your Master Key before it ever leaves your browser.</p>
-                    <p>When you share a password, we use <strong>asymmetric RSA encryption</strong>. The recipient gets a key encrypted with <strong>their</strong> public key.</p>
-                    <p class="font-medium text-white">Result: Even if our servers are breached, attackers find only unreadable data.</p>
+                    <p>{!! __('All your data is encrypted <strong>locally</strong> on your device with your Master Key before it ever leaves your browser.') !!}</p>
+                    <p>{!! __('When you share a password, we use <strong>asymmetric RSA encryption</strong>. The recipient gets a key encrypted with <strong>their</strong> public key.') !!}</p>
+                    <p class="font-medium text-white">{{ __('Result: Even if our servers are breached, attackers find only unreadable data.') }}</p>
                 </div>
             </div>
 
@@ -178,7 +181,7 @@
                 <div class="mb-4">→ Key derivation: <span class="text-white">Argon2id</span></div>
                 <div>→ Authentication: <span class="text-white">WebAuthn (Passkeys) + TOTP</span></div>
                 <div class="mt-8 pt-8 border-t border-white/10 text-xs text-white/40">
-                    Audited by cryptography experts • GDPR compliant • Hosted in Europe
+                    {{ __('Audited by cryptography experts • GDPR compliant • Hosted in Europe') }}
                 </div>
             </div>
         </div>
@@ -188,14 +191,14 @@
 <!-- HOW IT WORKS -->
 <div id="how-it-works" class="max-w-5xl mx-auto px-6 py-24">
     <div class="text-center mb-16" data-aos="fade-up">
-        <h2 class="text-5xl font-semibold tracking-tight">3 minutes to secure your entire digital life.</h2>
+        <h2 class="text-5xl font-semibold tracking-tight">{{ __('3 minutes to secure your entire digital life.') }}</h2>
     </div>
 
     <div class="grid md:grid-cols-3 gap-8">
         @foreach([
-            ['num' => '01', 'title' => 'Create your account', 'desc' => 'Sign up in 20 seconds with email or Passkey.'],
-            ['num' => '02', 'title' => 'Add your accounts', 'desc' => 'Import from Chrome, LastPass, or enter them manually.'],
-            ['num' => '03', 'title' => 'Enjoy the peace of mind', 'desc' => 'Auto-fill, secure sharing, and breach alerts.'],
+            ['num' => '01', 'title' => __('Create your account'), 'desc' => __('Sign up in 20 seconds with email or Passkey.')],
+            ['num' => '02', 'title' => __('Add your accounts'), 'desc' => __('Import from Chrome, LastPass, or enter them manually.')],
+            ['num' => '03', 'title' => __('Enjoy the peace of mind'), 'desc' => __('Auto-fill, secure sharing, and breach alerts.')],
         ] as $step)
             <div class="relative pl-16" data-aos="fade-up" data-aos-delay="{{ $loop->index * 120 }}">
                 <div class="absolute left-0 top-1 text-[80px] font-black text-white/5">{{ $step['num'] }}</div>
@@ -210,14 +213,14 @@
 <div class="bg-gradient-to-br from-emerald-950 via-zinc-950 to-indigo-950 py-20 border-t border-white/10"
      data-aos="zoom-in-up">
     <div class="max-w-2xl mx-auto text-center px-6">
-        <h2 class="text-6xl font-semibold tracking-tighter">Ready to take back control?</h2>
-        <p class="mt-4 text-xl text-white/70">Join thousands of people who already sleep better at night.</p>
+        <h2 class="text-6xl font-semibold tracking-tighter">{{ __('Ready to take back control?') }}</h2>
+        <p class="mt-4 text-xl text-white/70">{{ __('Join thousands of people who already sleep better at night.') }}</p>
 
         <a href="{{ route('register') }}"
            class="mt-10 inline-flex px-14 py-4 bg-white text-zinc-950 font-semibold text-xl rounded-3xl hover:bg-emerald-400 hover:text-white transition">
-            Create my vault for free
+            {{ __('Create my vault for free') }}
         </a>
-        <p class="mt-4 text-xs text-white/50">No credit card • Cancel anytime</p>
+        <p class="mt-4 text-xs text-white/50">{{ __('No credit card • Cancel anytime') }}</p>
     </div>
 </div>
 
@@ -231,23 +234,23 @@
                 </div>
                 <span class="font-semibold text-2xl">NexusVault</span>
             </div>
-            <p class="text-white/50 max-w-xs">The only password manager that actually respects you.</p>
+            <p class="text-white/50 max-w-xs">{{ __('The only password manager that actually respects you.') }}</p>
         </div>
 
         <div class="md:col-span-3">
-            <div class="font-semibold mb-4">Product</div>
+            <div class="font-semibold mb-4">{{ __('Product') }}</div>
             <div class="space-y-2 text-white/70 text-sm">
-                <div>Features</div><div>Security</div><div>Pricing</div><div>Changelog</div>
+                <div>{{ __('Features') }}</div><div>{{ __('Security') }}</div><div>{{ __('Pricing') }}</div><div>{{ __('Changelog') }}</div>
             </div>
         </div>
 
         <div class="md:col-span-4 text-right md:text-left">
-            <div class="font-semibold mb-4">Legal</div>
+            <div class="font-semibold mb-4">{{ __('Legal') }}</div>
             <div class="space-y-2 text-white/70 text-sm">
-                <div>Privacy</div><div>Terms</div><div>GDPR</div>
+                <div>{{ __('Privacy') }}</div><div>{{ __('Terms') }}</div><div>{{ __('GDPR') }}</div>
             </div>
             <div class="mt-10 text-xs text-white/40">
-                © {{ date('Y') }} NexusVault. Built with ❤️ and strong cryptography.
+                {{ __('© :year NexusVault. Built with love and strong cryptography.', ['year' => date('Y')]) }}
             </div>
         </div>
     </div>

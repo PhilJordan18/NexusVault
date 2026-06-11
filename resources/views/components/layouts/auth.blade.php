@@ -23,11 +23,15 @@
             <span class="text-2xl font-semibold tracking-tighter">NexusVault</span>
         </a>
 
-        <a href="{{ route('home') }}"
-           class="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2">
-            <i class="fa-solid fa-arrow-left text-xs"></i>
-            <span>Back to home</span>
-        </a>
+        <div class="flex items-center gap-3">
+            @include('partials.language-switch')
+
+            <a href="{{ route('home') }}"
+               class="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left text-xs"></i>
+                <span class="hidden sm:inline">{{ __('Back to home') }}</span>
+            </a>
+        </div>
     </div>
 </nav>
 
@@ -85,11 +89,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    window.showToast('Theme updated successfully', 'success');
+                    window.showToast(@json(__('Theme updated successfully')), 'success');
                 }
             })
             .catch(() => {
-                window.showToast('Failed to update theme', 'error');
+                window.showToast(@json(__('Failed to update theme')), 'error');
             });
     }
 </script>

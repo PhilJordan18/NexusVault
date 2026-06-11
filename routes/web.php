@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
@@ -22,6 +23,8 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return view('landing');
 })->name('home');
+
+Route::post('/locale', LocaleController::class)->name('locale.update');
 
 // Password Routes
 Route::post('/password/entropy', [PasswordController::class, 'entropy'])->name('password.entropy');

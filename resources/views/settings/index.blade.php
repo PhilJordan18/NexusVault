@@ -2,20 +2,31 @@
 
     <div class="max-w-3xl mx-auto space-y-8">
 
-        <h1 class="text-3xl font-semibold mb-2">Settings</h1>
-        <p class="text-[var(--text-secondary)]">Manage your account security and preferences</p>
+        <h1 class="text-3xl font-semibold mb-2">{{ __('Settings') }}</h1>
+        <p class="text-[var(--text-secondary)]">{{ __('Manage your account security and preferences') }}</p>
+
+        <div class="card rounded-3xl p-6">
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold">{{ __('Language') }}</h3>
+                    <p class="text-sm text-[var(--text-secondary)]">{{ __('Choose the language used by NexusVault.') }}</p>
+                </div>
+
+                @include('partials.language-switch')
+            </div>
+        </div>
 
         <!-- Two-Factor Authentication -->
         <div class="card rounded-3xl p-8">
             <h2 class="text-xl font-medium mb-6 flex items-center gap-3">
                 <i class="fa-solid fa-shield-halved text-emerald-500"></i>
-                Two-Factor Authentication
+                {{ __('Two-Factor Authentication') }}
             </h2>
             @if(auth()->user()->mfa_enabled)
                 <div class="flex justify-between items-center">
                     <div>
-                        <p class="text-[var(--text-primary)]">MFA is enabled with TOTP</p>
-                        <p class="text-sm text-[var(--text-secondary)]">Your account is protected with a 6-digit code</p>
+                        <p class="text-[var(--text-primary)]">{{ __('MFA is enabled with TOTP') }}</p>
+                        <p class="text-sm text-[var(--text-secondary)]">{{ __('Your account is protected with a 6-digit code') }}</p>
                     </div>
                     <form method="POST" action="{{ route('mfa.disable') }}">
                         @csrf
@@ -26,7 +37,7 @@
                 <a href="{{ route('mfa.setup') }}"
                    class="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-2xl transition">
                     <i class="fa-solid fa-qrcode"></i>
-                    <span>Enable MFA</span>
+                        <span>{{ __('Enable MFA') }}</span>
                 </a>
             @endif
         </div>
@@ -38,11 +49,11 @@
                 <div>
                     <h2 class="text-2xl font-semibold mb-2 flex items-center gap-3">
                         <i class="fa-solid fa-fingerprint text-emerald-500"></i>
-                        Passkeys
+                        {{ __('Passkeys') }}
                     </h2>
                     <p class="text-[var(--text-secondary)] max-w-md">
-                        Use your fingerprint, Face ID or security key to sign in without a password.
-                        Manage your passkeys on a dedicated page.
+                        {{ __('Use your fingerprint, Face ID or security key to sign in without a password.') }}
+                        {{ __('Manage your passkeys on a dedicated page.') }}
                     </p>
                 </div>
                 <div class="text-emerald-500 group-hover:translate-x-1 transition">
@@ -50,7 +61,7 @@
                 </div>
             </div>
             <div class="mt-6 inline-flex items-center gap-2 text-sm text-emerald-500 font-medium">
-                Manage Passkeys
+                {{ __('Manage Passkeys') }}
                 <i class="fa-solid fa-chevron-right text-xs"></i>
             </div>
         </a>
@@ -215,8 +226,8 @@
         <!-- Theme Toggle -->
         <div class="card rounded-3xl p-6">
             <div class="mb-5">
-                <h3 class="text-lg font-semibold">Appearance</h3>
-                <p class="text-sm text-[var(--text-secondary)]">Choose how NexusVault looks</p>
+                <h3 class="text-lg font-semibold">{{ __('Appearance') }}</h3>
+                <p class="text-sm text-[var(--text-secondary)]">{{ __('Choose how NexusVault looks') }}</p>
             </div>
 
             <div class="grid grid-cols-2 gap-3">
@@ -227,8 +238,8 @@
                         id="theme-dark">
                     <i class="fa-solid fa-moon text-3xl text-emerald-500"></i>
                     <div>
-                        <div class="font-medium">Dark</div>
-                        <div class="text-xs text-[var(--text-secondary)]">Default</div>
+                        <div class="font-medium">{{ __('Dark') }}</div>
+                        <div class="text-xs text-[var(--text-secondary)]">{{ __('Default') }}</div>
                     </div>
                 </button>
 
@@ -239,8 +250,8 @@
                         id="theme-light">
                     <i class="fa-solid fa-sun text-3xl text-amber-500"></i>
                     <div>
-                        <div class="font-medium">Light</div>
-                        <div class="text-xs text-[var(--text-secondary)]">Clean & bright</div>
+                        <div class="font-medium">{{ __('Light') }}</div>
+                        <div class="text-xs text-[var(--text-secondary)]">{{ __('Clean & bright') }}</div>
                     </div>
                 </button>
             </div>

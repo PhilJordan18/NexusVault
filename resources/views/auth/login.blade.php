@@ -7,14 +7,14 @@
             </div>
         </div>
 
-        <h1 class="text-3xl font-semibold text-center mb-1">Sign In</h1>
-        <p class="text-[var(--text-secondary)] text-center mb-8">Keep it all together</p>
+        <h1 class="text-3xl font-semibold text-center mb-1">{{ __('Sign In') }}</h1>
+        <p class="text-[var(--text-secondary)] text-center mb-8">{{ __('Keep it all together') }}</p>
 
         <form method="POST" action="{{ route('login.authenticate.email') }}" id="login-form">
             @csrf
 
             <div class="mb-5">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">Email address</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Email address') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]">
                         <i class="fa-solid fa-envelope"></i>
@@ -30,19 +30,19 @@
 
             <button type="submit"
                     class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-2xl text-lg transition">
-                Next →
+                {{ __('Next') }} →
             </button>
         </form>
 
         <button id="passkey-btn"
                 class="mt-4 w-full flex items-center justify-center gap-3 border border-[var(--border-color)] hover:border-emerald-500/50 rounded-2xl py-4 text-[var(--text-primary)] transition">
             <i class="fa-solid fa-fingerprint text-2xl text-emerald-500"></i>
-            <span class="font-medium">Sign in using passkey</span>
+            <span class="font-medium">{{ __('Sign in using passkey') }}</span>
         </button>
 
         <div class="my-4 flex items-center gap-4">
             <div class="flex-1 h-px bg-[var(--border-color)]"></div>
-            <span class="text-[var(--text-secondary)] text-sm">Or</span>
+            <span class="text-[var(--text-secondary)] text-sm">{{ __('Or') }}</span>
             <div class="flex-1 h-px bg-[var(--border-color)]"></div>
         </div>
 
@@ -68,7 +68,7 @@
         </div>
 
         <p class="text-center text-[var(--text-secondary)] mt-8">
-            Don't have an account? <a href="{{ route('register') }}" class="text-emerald-500 hover:text-emerald-400">Sign Up</a>
+            {{ __("Don't have an account?") }} <a href="{{ route('register') }}" class="text-emerald-500 hover:text-emerald-400">{{ __('Sign Up') }}</a>
         </p>
     </div>
 </x-layouts.auth>

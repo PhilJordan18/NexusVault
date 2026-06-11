@@ -7,14 +7,14 @@
             </div>
         </div>
 
-        <h1 class="text-3xl font-semibold text-center mb-1">Create account</h1>
-        <p class="text-[var(--text-secondary)] text-center mb-8">Get started in seconds</p>
+        <h1 class="text-3xl font-semibold text-center mb-1">{{ __('Create account') }}</h1>
+        <p class="text-[var(--text-secondary)] text-center mb-8">{{ __('Get started in seconds') }}</p>
 
         <form method="POST" action="{{ route('register') }}" id="register-form">
             @csrf
 
             <div class="mb-5">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">Full name</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Full name') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-user"></i></span>
                     <input type="text" name="name" id="name"
@@ -24,7 +24,7 @@
             </div>
 
             <div class="mb-5">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">Email address</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Email address') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-envelope"></i></span>
                     <input type="email" name="email" id="email"
@@ -34,7 +34,7 @@
             </div>
 
             <div class="mb-5">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">Password</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Password') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-key"></i></span>
                     <input type="password" name="password" id="password"
@@ -48,8 +48,8 @@
 
                 <div id="strength-container" class="mt-3 hidden">
                     <div class="flex justify-between text-xs mb-1">
-                        <span class="text-[var(--text-secondary)]">Password strength</span>
-                        <span id="strength-text" class="font-medium">Calculating...</span>
+                        <span class="text-[var(--text-secondary)]">{{ __('Password strength') }}</span>
+                        <span id="strength-text" class="font-medium">{{ __('Calculating...') }}</span>
                     </div>
                     <div class="h-2 bg-[var(--bg-input)] rounded-2xl overflow-hidden">
                         <div id="strength-bar" class="h-2 w-0 transition-all duration-300 bg-emerald-500"></div>
@@ -58,7 +58,7 @@
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">Confirm password</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Confirm password') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-key"></i></span>
                     <input type="password" name="password_confirmation" id="password_confirmation"
@@ -70,18 +70,18 @@
             <button type="button" id="generate-password"
                     class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium mb-6 transition">
                 <i class="fa-solid fa-dice"></i>
-                <span>Generate strong password</span>
+                <span>{{ __('Generate strong password') }}</span>
             </button>
 
             <button type="submit"
                     class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-4 rounded-2xl text-lg transition">
-                Create account
+                {{ __('Create account') }}
             </button>
         </form>
 
         <div class="my-4 flex items-center gap-4">
             <div class="flex-1 h-px bg-[var(--border-color)]"></div>
-            <span class="text-[var(--text-secondary)] text-sm">Or</span>
+            <span class="text-[var(--text-secondary)] text-sm">{{ __('Or') }}</span>
             <div class="flex-1 h-px bg-[var(--border-color)]"></div>
         </div>
 
@@ -107,7 +107,7 @@
         </div>
 
         <p class="text-center text-[var(--text-secondary)] mt-8">
-            Already have an account? <a href="{{ route('login') }}" class="text-emerald-500 hover:text-emerald-400">Sign in</a>
+            {{ __('Already have an account?') }} <a href="{{ route('login') }}" class="text-emerald-500 hover:text-emerald-400">{{ __('Sign in') }}</a>
         </p>
     </div>
 </x-layouts.auth>
