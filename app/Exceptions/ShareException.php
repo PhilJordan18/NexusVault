@@ -20,4 +20,9 @@ class ShareException extends RuntimeException
     {
         return new self('You cannot share a service with yourself.');
     }
+
+    public static function alreadyShared(): self
+    {
+        return new self('This service is already actively shared with this user.');
+    }
 }

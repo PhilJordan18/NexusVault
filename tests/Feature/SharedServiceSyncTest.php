@@ -2,12 +2,15 @@
 
 use App\DTOs\Service\ServiceData;
 use App\DTOs\Share\ShareData;
+use App\Models\Service;
+use App\Models\Share;
 use App\Models\User;
 use App\Services\Auth\UserKeyService;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
 use App\Services\Vault\Contracts\ShareServiceInterface;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
 
 function createVaultUserForSharedSync(string $email): User
 {
@@ -29,7 +32,8 @@ function createVaultUserForSharedSync(string $email): User
     ]);
 }
 
-test('accepted shared services stay synchronized when a participant edits them', function () {
+function createAcceptedSharedServiceForSync(TestCase $testCase): array
+{
     Http::fake([
         'api.pwnedpasswords.com/*' => Http::response('', 200),
     ]);
@@ -37,7 +41,7 @@ test('accepted shared services stay synchronized when a participant edits them',
     $owner = createVaultUserForSharedSync('owner@nexusvault.test');
     $recipient = createVaultUserForSharedSync('recipient@nexusvault.test');
 
-    $this->actingAs($owner);
+    $testCase->actingAs($owner);
     app(UserKeyService::class)->storeMasterKey($owner, 'password');
 
     $service = app(ServiceServiceInterface::class)->create(new ServiceData(
@@ -54,10 +58,16 @@ test('accepted shared services stay synchronized when a participant edits them',
         recipientEmail: $recipient->email
     ));
 
-    $this->actingAs($recipient);
+    $testCase->actingAs($recipient);
     app(UserKeyService::class)->storeMasterKey($recipient, 'password');
 
     $acceptedService = app(ShareServiceInterface::class)->accept($share->refresh())->service;
+
+    return [$owner, $recipient, $service->refresh(), $share->refresh(), $acceptedService->refresh()];
+}
+
+test('accepted shared services stay synchronized when a participant edits them', function () {
+    [$owner, $recipient, $service, $share, $acceptedService] = createAcceptedSharedServiceForSync($this);
 
     expect($acceptedService->shared_group_id)->toBe($service->refresh()->shared_group_id)
         ->and($acceptedService->username)->toBe('owner@nexusvault.test');
@@ -84,4 +94,45 @@ test('accepted shared services stay synchronized when a participant edits them',
     expect($service->username)->toBe('sync@nexusvault.test')
         ->and($service->password)->toBe('Updated-password-456!')
         ->and($service->notes)->toBe('Updated from recipient');
+});
+
+test('owner deletion removes every copy in the shared group', function () {
+    [$owner, $recipient, $service, $share, $acceptedService] = createAcceptedSharedServiceForSync($this);
+    $sharedGroupId = $service->shared_group_id;
+
+    $this->actingAs($owner);
+    app(UserKeyService::class)->storeMasterKey($owner, 'password');
+
+    app(ServiceServiceInterface::class)->delete($service->refresh());
+
+    expect(Service::where('shared_group_id', $sharedGroupId)->exists())->toBeFalse()
+        ->and(Service::whereKey($service->id)->exists())->toBeFalse()
+        ->and(Service::whereKey($acceptedService->id)->exists())->toBeFalse()
+        ->and(Share::whereKey($share->id)->exists())->toBeFalse();
+});
+
+test('recipient deletion only removes their own shared access', function () {
+    [$owner, $recipient, $service, $share, $acceptedService] = createAcceptedSharedServiceForSync($this);
+
+    $this->actingAs($recipient);
+    app(UserKeyService::class)->storeMasterKey($recipient, 'password');
+
+    app(ServiceServiceInterface::class)->delete($acceptedService->refresh());
+
+    expect(Service::whereKey($service->id)->exists())->toBeTrue()
+        ->and(Service::whereKey($acceptedService->id)->exists())->toBeFalse()
+        ->and($share->refresh()->revoked_at)->not->toBeNull();
+});
+
+test('owner can revoke an accepted share without deleting the original service', function () {
+    [$owner, $recipient, $service, $share, $acceptedService] = createAcceptedSharedServiceForSync($this);
+
+    $this->actingAs($owner);
+    app(UserKeyService::class)->storeMasterKey($owner, 'password');
+
+    app(ShareServiceInterface::class)->revoke($share->refresh());
+
+    expect(Service::whereKey($service->id)->exists())->toBeTrue()
+        ->and(Service::whereKey($acceptedService->id)->exists())->toBeFalse()
+        ->and($share->refresh()->revoked_at)->not->toBeNull();
 });

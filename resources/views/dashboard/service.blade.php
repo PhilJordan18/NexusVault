@@ -108,6 +108,13 @@
                         <div id="detail-notes" class="text-sm text-[var(--text-secondary)] leading-relaxed bg-[var(--bg-input)] p-4 rounded-2xl"></div>
                     </div>
 
+                    <div id="detail-shares-container" class="hidden mt-8">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Shared with</div>
+                        </div>
+                        <div id="detail-shares-list" class="space-y-3"></div>
+                    </div>
+
                 </div>
 
                 <!-- Empty State -->

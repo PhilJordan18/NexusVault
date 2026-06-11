@@ -34,6 +34,7 @@ final readonly class ShareService implements ShareServiceInterface
         $this->validateOwnership($service);
         $this->validateRecipient($recipient);
         $service = $this->ensureServiceHasSharedGroup($service);
+        $this->validateShareIsNotActive($service, $recipient);
 
         $publicKey = $this->getValidPublicKey($recipient);
 
@@ -69,6 +70,19 @@ final readonly class ShareService implements ShareServiceInterface
         $share->update(['rejected' => true]);
     }
 
+    public function revoke(Share $share): void
+    {
+        $this->validateRevokePermissions($share);
+
+        $sourceService = $this->ensureServiceHasSharedGroup($share->service);
+
+        Service::where('shared_group_id', $sourceService->shared_group_id)
+            ->where('user_id', $share->to_user_id)
+            ->delete();
+
+        $share->update(['revoked_at' => now()]);
+    }
+
     // ==================== PRIVATE HELPERS ====================
 
     private function findService(int $serviceId): Service
@@ -92,6 +106,22 @@ final readonly class ShareService implements ShareServiceInterface
     {
         if ($recipient->id === auth()->id()) {
             throw ShareException::cannotShareWithYourself();
+        }
+    }
+
+    private function validateShareIsNotActive(Service $service, User $recipient): void
+    {
+        $isAlreadyShared = Share::where('to_user_id', $recipient->id)
+            ->where('rejected', false)
+            ->whereNull('revoked_at')
+            ->where(function ($query) use ($service): void {
+                $query->where('service_id', $service->id)
+                    ->orWhereHas('service', fn ($serviceQuery) => $serviceQuery->where('shared_group_id', $service->shared_group_id));
+            })
+            ->exists();
+
+        if ($isAlreadyShared) {
+            throw ShareException::alreadyShared();
         }
     }
 
@@ -167,7 +197,7 @@ final readonly class ShareService implements ShareServiceInterface
 
     private function validateAcceptPermissions(Share $share): void
     {
-        if ($share->to_user_id !== auth()->id() || $share->accepted_at || $share->rejected) {
+        if ($share->to_user_id !== auth()->id() || $share->accepted_at || $share->rejected || $share->revoked_at) {
             throw ShareException::unauthorized();
         }
     }
@@ -244,7 +274,14 @@ final readonly class ShareService implements ShareServiceInterface
 
     private function validateRejectPermissions(Share $share): void
     {
-        if ($share->to_user_id !== auth()->id()) {
+        if ($share->to_user_id !== auth()->id() || $share->revoked_at) {
+            throw ShareException::unauthorized();
+        }
+    }
+
+    private function validateRevokePermissions(Share $share): void
+    {
+        if ($share->from_user_id !== auth()->id() || $share->rejected || $share->revoked_at) {
             throw ShareException::unauthorized();
         }
     }

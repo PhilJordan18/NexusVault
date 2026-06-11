@@ -8,10 +8,20 @@ type Account = {
     url?: string;
     notes?: string;
     name?: string;
+    shared_user_id?: number | null;
     strength?: string;          // 'very_weak', 'weak', 'strong', 'very_strong'
     compromised?: boolean;
     reused?: boolean;
     shared_group_id?: string | null;
+    shared_with?: ShareRecipient[];
+};
+
+type ShareRecipient = {
+    id: number;
+    name?: string | null;
+    email?: string | null;
+    status: 'Accepted' | 'Pending';
+    shared_at?: string | null;
 };
 
 // GLOBAL STATE
@@ -78,6 +88,7 @@ function csrfToken(): string {
         notesContainer.classList.add('hidden');
     }
 
+    renderShareRecipients(account);
     renderSecurityFromAccount(account);
 };
 
@@ -208,6 +219,99 @@ function csrfToken(): string {
     }
 };
 
+async function revokeShare(shareId: number): Promise<void> {
+    if (!currentAccount) {
+        return;
+    }
+
+    if (!confirm('Revoke access for this recipient?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/shares/${shareId}/revoke`, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken(),
+                'Accept': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+
+            throw new Error(error.message || 'Failed to revoke access.');
+        }
+
+        currentAccount.shared_with = (currentAccount.shared_with ?? []).filter(share => share.id !== shareId);
+        const accounts = (window as any).accounts as Record<number, Account>;
+        accounts[currentAccount.id] = currentAccount;
+        renderShareRecipients(currentAccount);
+        (window as any).showToast?.('Shared access revoked.', 'success');
+    } catch (error) {
+        console.error(error);
+        (window as any).showToast?.('Failed to revoke shared access.', 'error');
+    }
+}
+
+function renderShareRecipients(account: Account): void {
+    const container = document.getElementById('detail-shares-container');
+    const list = document.getElementById('detail-shares-list');
+
+    if (!container || !list) {
+        return;
+    }
+
+    list.replaceChildren();
+
+    const recipients = account.shared_with ?? [];
+
+    if (recipients.length === 0) {
+        container.classList.add('hidden');
+
+        return;
+    }
+
+    container.classList.remove('hidden');
+
+    recipients.forEach(recipient => {
+        const row = document.createElement('div');
+        row.className = 'flex items-center justify-between gap-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl px-4 py-3';
+
+        const identity = document.createElement('div');
+        identity.className = 'min-w-0';
+
+        const name = document.createElement('p');
+        name.className = 'font-medium truncate';
+        name.textContent = recipient.name || recipient.email || 'Unknown user';
+
+        const details = document.createElement('p');
+        details.className = 'text-xs text-[var(--text-secondary)] truncate';
+        details.textContent = `${recipient.email ?? ''}${recipient.shared_at ? ` • ${recipient.shared_at}` : ''}`;
+
+        identity.append(name, details);
+
+        const actions = document.createElement('div');
+        actions.className = 'flex items-center gap-2 flex-shrink-0';
+
+        const status = document.createElement('span');
+        status.className = recipient.status === 'Accepted'
+            ? 'text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400'
+            : 'text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400';
+        status.textContent = recipient.status;
+
+        const revokeButton = document.createElement('button');
+        revokeButton.type = 'button';
+        revokeButton.className = 'text-xs px-3 py-1.5 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition';
+        revokeButton.textContent = 'Revoke';
+        revokeButton.addEventListener('click', () => void revokeShare(recipient.id));
+
+        actions.append(status, revokeButton);
+        row.append(identity, actions);
+        list.append(row);
+    });
+}
+
 // ===== SÉCURITÉ (basée sur les données stockées) =====
 
 function renderSecurityFromAccount(account: Account) {
@@ -305,7 +409,13 @@ function renderSecurityFromAccount(account: Account) {
         return;
     }
 
-    if (!confirm('Are you sure you want to delete this account?')) {
+    const confirmation = currentAccount.shared_group_id && !currentAccount.shared_user_id
+        ? 'Delete this shared account for everyone? This will revoke access for all recipients.'
+        : currentAccount.shared_group_id
+            ? 'Remove this shared account from your vault? The original will remain available to its owner.'
+            : 'Are you sure you want to delete this account?';
+
+    if (!confirm(confirmation)) {
         return;
     }
 

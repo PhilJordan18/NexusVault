@@ -143,10 +143,12 @@ Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::post('/shares', [ShareController::class, 'store'])->name('shares.store');
     Route::post('/shares/{share}/accept', [ShareController::class, 'accept'])->name('shares.accept');
     Route::post('/shares/{share}/reject', [ShareController::class, 'reject'])->name('shares.reject');
+    Route::delete('/shares/{share}/revoke', [ShareController::class, 'revoke'])->name('shares.revoke');
     Route::get('/notifications', function () {
         $pendingShares = Share::with(['service', 'fromUser'])
             ->where('to_user_id', auth()->id())
             ->whereNull('accepted_at')
+            ->whereNull('revoked_at')
             ->where('rejected', false)
             ->latest()
             ->get();

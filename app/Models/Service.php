@@ -6,6 +6,7 @@ use App\Services\Security\CryptoService;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
@@ -40,6 +41,11 @@ class Service extends Model
     public function sharedFromUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'shared_user_id');
+    }
+
+    public function shares(): HasMany
+    {
+        return $this->hasMany(Share::class);
     }
 
     public function getUsernameAttribute(?string $value): ?string

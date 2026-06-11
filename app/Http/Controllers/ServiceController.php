@@ -6,6 +6,7 @@ use App\Http\Requests\CreateServiceRequest;
 use App\Http\Requests\UpdateServiceRequest;
 use App\Mappers\ServiceMapper;
 use App\Models\Service;
+use App\Models\Share;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -19,6 +20,7 @@ final class ServiceController extends Controller
     public function index()
     {
         $grouped = $this->service->getGroupedByName(auth()->id());
+
         return view('dashboard.index', compact('grouped'));
     }
 
@@ -33,6 +35,26 @@ final class ServiceController extends Controller
     public function show(string $name)
     {
         $accounts = $this->service->getAccountsByName($name, auth()->id());
+        $sharesByService = Share::with('toUser')
+            ->where('from_user_id', auth()->id())
+            ->whereIn('service_id', $accounts->pluck('id'))
+            ->where('rejected', false)
+            ->whereNull('revoked_at')
+            ->latest()
+            ->get()
+            ->groupBy('service_id')
+            ->map(fn ($shares) => $shares->map(fn (Share $share) => [
+                'id' => $share->id,
+                'name' => $share->toUser?->name,
+                'email' => $share->toUser?->email,
+                'status' => $share->accepted_at ? 'Accepted' : 'Pending',
+                'shared_at' => $share->shared_at?->diffForHumans(),
+            ])->values());
+
+        $accounts->each(function (Service $account) use ($sharesByService): void {
+            $account->setAttribute('shared_with', $sharesByService->get($account->id, collect())->values());
+        });
+
         return view('dashboard.service', compact('accounts', 'name'));
     }
 
@@ -47,12 +69,12 @@ final class ServiceController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'id'         => $updated->id,
-                'name'       => $updated->name,
-                'url'        => $updated->url,
-                'username'   => $updated->username,
-                'password'   => $updated->password,
-                'notes'      => $updated->notes,
+                'id' => $updated->id,
+                'name' => $updated->name,
+                'url' => $updated->url,
+                'username' => $updated->username,
+                'password' => $updated->password,
+                'notes' => $updated->notes,
                 'updated_at' => $updated->updated_at->diffForHumans(),
             ]);
         }
@@ -102,23 +124,25 @@ final class ServiceController extends Controller
                         $domain = substr($domain, 4);
                     }
                 }
+
                 return [
-                    'name'    => $service->name,
-                    'url'     => $service->url,
-                    'favicon' => $service->favicon ?? 'https://www.google.com/s2/favicons?domain=' . ($domain ?? 'example.com') . '&sz=64',
-                    'domain'  => $domain,
+                    'name' => $service->name,
+                    'url' => $service->url,
+                    'favicon' => $service->favicon ?? 'https://www.google.com/s2/favicons?domain='.($domain ?? 'example.com').'&sz=64',
+                    'domain' => $domain,
                 ];
             });
 
         if ($results->isEmpty() && $userServices->isEmpty()) {
-            $domain = Str::slug($query) . '.com';
+            $domain = Str::slug($query).'.com';
             $url = "https://www.{$domain}";
             $favicon = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
+
             return response()->json([[
-                'name'    => ucfirst($query),
-                'url'     => $url,
+                'name' => ucfirst($query),
+                'url' => $url,
                 'favicon' => $favicon,
-                'domain'  => $domain,
+                'domain' => $domain,
             ]]);
         }
 
@@ -129,6 +153,7 @@ final class ServiceController extends Controller
                 $domain = $item['domain'] ?? 'example.com';
                 $item['favicon'] = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
             }
+
             return $item;
         });
 

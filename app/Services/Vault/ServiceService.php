@@ -4,6 +4,7 @@ namespace App\Services\Vault;
 
 use App\DTOs\Service\ServiceData;
 use App\Models\Service;
+use App\Models\Share;
 use App\Models\User;
 use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
@@ -54,7 +55,15 @@ final readonly class ServiceService implements ServiceServiceInterface
 
     public function delete(Service $service): bool
     {
-        return $service->delete();
+        if (empty($service->shared_group_id)) {
+            return $service->delete();
+        }
+
+        if ($service->shared_user_id) {
+            return $this->deleteRecipientSharedCopy($service);
+        }
+
+        return $this->deleteSharedGroup($service);
     }
 
     public function getAllForUser(int $userId): Collection
@@ -207,6 +216,30 @@ final readonly class ServiceService implements ServiceServiceInterface
                     forceSensitiveEncryption: true
                 ));
             });
+    }
+
+    private function deleteRecipientSharedCopy(Service $service): bool
+    {
+        return DB::transaction(function () use ($service): bool {
+            Share::where('to_user_id', $service->user_id)
+                ->where('from_user_id', $service->shared_user_id)
+                ->whereNull('revoked_at')
+                ->whereHas('service', fn ($query) => $query->where('shared_group_id', $service->shared_group_id))
+                ->update(['revoked_at' => now()]);
+
+            return (bool) $service->delete();
+        });
+    }
+
+    private function deleteSharedGroup(Service $service): bool
+    {
+        return DB::transaction(function () use ($service): bool {
+            $serviceIds = Service::where('shared_group_id', $service->shared_group_id)->pluck('id');
+
+            Share::whereIn('service_id', $serviceIds)->delete();
+
+            return Service::whereKey($serviceIds)->delete() > 0;
+        });
     }
 
     private function extractPasswordAnalysis(array $updates, Service $service): array

@@ -14,6 +14,7 @@ class Share extends Model
         'shared_at',
         'accepted_at',
         'rejected',
+        'revoked_at',
         'shared_data',
     ];
 
@@ -21,6 +22,7 @@ class Share extends Model
         'shared_at' => 'datetime',
         'accepted_at' => 'datetime',
         'rejected' => 'boolean',
+        'revoked_at' => 'datetime',
     ];
 
     public function service(): BelongsTo
