@@ -91,6 +91,7 @@
 
 <script>
     let debounceTimer;
+    const defaultServiceIcon = @json(asset('logo/LogoMonogramme.svg'));
 
     const nameInput = document.getElementById('service-name');
     const suggestionsBox = document.getElementById('name-suggestions');
@@ -120,24 +121,47 @@
                             const div = document.createElement('div');
                             div.className = 'px-4 py-3 hover:bg-white/5 cursor-pointer flex items-center gap-3 text-sm';
 
-                            const favicon = service.favicon || 'https://www.google.com/s2/favicons?domain=example.com&sz=32';
+                            const favicon = service.favicon || defaultServiceIcon;
 
-                            div.innerHTML = `
-                            <img src="${favicon}" class="w-5 h-5 rounded flex-shrink-0" alt="">
-                            <div>
-                                <div class="font-medium">${service.name}</div>
-                                ${service.url ? `<div class="text-xs text-[var(--text-secondary)]">${service.url}</div>` : ''}
-                            </div>
-                        `;
+                            const img = document.createElement('img');
+                            img.src = favicon;
+                            img.alt = '';
+                            img.className = 'w-5 h-5 rounded flex-shrink-0';
+                            img.onerror = () => {
+                                img.onerror = null;
+                                img.src = defaultServiceIcon;
+                            };
+
+                            const content = document.createElement('div');
+                            const serviceName = document.createElement('div');
+                            serviceName.className = 'font-medium';
+                            serviceName.textContent = service.name;
+                            content.appendChild(serviceName);
+
+                            if (service.url) {
+                                const serviceUrl = document.createElement('div');
+                                serviceUrl.className = 'text-xs text-[var(--text-secondary)]';
+                                serviceUrl.textContent = service.url;
+                                content.appendChild(serviceUrl);
+                            }
+
+                            div.append(img, content);
 
                             div.onclick = () => {
                                 nameInput.value = service.name;
                                 document.getElementById('service-domain').value = service.domain || '';
 
                                 const preview = document.getElementById('service-url-preview');
-                                preview.innerHTML = service.url
-                                    ? `<span class="text-emerald-400">${service.url}</span>`
-                                    : 'Will be generated automatically';
+                                preview.textContent = '';
+
+                                if (service.url) {
+                                    const previewUrl = document.createElement('span');
+                                    previewUrl.className = 'text-emerald-400';
+                                    previewUrl.textContent = service.url;
+                                    preview.appendChild(previewUrl);
+                                } else {
+                                    preview.textContent = 'Will be generated automatically';
+                                }
 
                                 suggestionsBox.classList.add('hidden');
                             };

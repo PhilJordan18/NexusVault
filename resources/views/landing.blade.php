@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NexusVault • Secure Password Manager</title>
+    @include('partials.favicons')
     @vite(['resources/css/app.css'])
 
     <!-- AOS -->
@@ -34,10 +35,8 @@
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V9a4 4 0 00-8 0v2" />
-                </svg>
+            <div class="w-9 h-9 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-6 h-6">
             </div>
             <span class="text-2xl font-semibold tracking-tighter text-white">NexusVault</span>
         </div>
@@ -227,8 +226,8 @@
     <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-12 gap-y-12">
         <div class="md:col-span-5">
             <div class="flex items-center gap-3 mb-6">
-                <div class="w-8 h-8 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                    <span class="text-white text-xl">🔒</span>
+                <div class="w-8 h-8 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                    <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-5 h-5">
                 </div>
                 <span class="font-semibold text-2xl">NexusVault</span>
             </div>

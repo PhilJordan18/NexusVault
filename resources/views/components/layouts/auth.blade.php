@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ config('app.name') }} • {{ $title ?? 'Auth' }}</title>
+    @include('partials.favicons')
     @vite(['resources/css/app.css', 'resources/ts/auth.ts'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -16,8 +17,8 @@
     <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
         <!-- Logo -->
         <a href="{{ route('home') }}" class="flex items-center gap-3">
-            <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                <span class="text-white font-bold text-2xl">N</span>
+            <div class="w-9 h-9 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl flex items-center justify-center">
+                <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-6 h-6">
             </div>
             <span class="text-2xl font-semibold tracking-tighter">NexusVault</span>
         </a>

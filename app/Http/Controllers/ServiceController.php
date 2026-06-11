@@ -8,14 +8,18 @@ use App\Mappers\ServiceMapper;
 use App\Models\Service;
 use App\Models\Share;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
+use App\Services\Vault\FaviconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 
 final class ServiceController extends Controller
 {
-    public function __construct(private readonly ServiceServiceInterface $service, private readonly ServiceMapper $mapper) {}
+    public function __construct(
+        private readonly ServiceServiceInterface $service,
+        private readonly ServiceMapper $mapper,
+        private readonly FaviconService $faviconService
+    ) {}
 
     public function index()
     {
@@ -107,6 +111,18 @@ final class ServiceController extends Controller
 
         $results = $predefined->filter(function ($item) use ($query) {
             return str_contains(mb_strtolower($item['name']), $query);
+        })->map(function (array $item): array {
+            $domain = $this->faviconService->normalizeDomain($item['domain'] ?? null)
+                ?? $this->faviconService->domainFromUrl($item['url'] ?? null);
+
+            $url = $this->faviconService->urlFor($item['url'] ?? null, $domain);
+
+            return [
+                'name' => $item['name'],
+                'url' => $url,
+                'favicon' => $this->faviconService->iconFor($url, $domain),
+                'domain' => $domain,
+            ];
         })->values();
 
         $userServices = Service::where('user_id', auth()->id())
@@ -115,33 +131,25 @@ final class ServiceController extends Controller
             ->distinct()
             ->limit(5)
             ->get()
-            ->map(function ($service) {
-                $domain = null;
-                if ($service->url) {
-                    $parsed = parse_url($service->url);
-                    $domain = $parsed['host'] ?? null;
-                    if ($domain && str_starts_with($domain, 'www.')) {
-                        $domain = substr($domain, 4);
-                    }
-                }
+            ->map(function (Service $service) {
+                $domain = $this->faviconService->domainFromUrl($service->url);
 
                 return [
                     'name' => $service->name,
                     'url' => $service->url,
-                    'favicon' => $service->favicon ?? 'https://www.google.com/s2/favicons?domain='.($domain ?? 'example.com').'&sz=64',
+                    'favicon' => $service->favicon ?: $this->faviconService->iconFor($service->url, $domain),
                     'domain' => $domain,
                 ];
             });
 
         if ($results->isEmpty() && $userServices->isEmpty()) {
-            $domain = Str::slug($query).'.com';
-            $url = "https://www.{$domain}";
-            $favicon = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
+            $domain = $this->faviconService->domainFromName($query);
+            $url = $this->faviconService->urlFor(null, $domain);
 
             return response()->json([[
                 'name' => ucfirst($query),
                 'url' => $url,
-                'favicon' => $favicon,
+                'favicon' => $this->faviconService->iconFor($url, $domain),
                 'domain' => $domain,
             ]]);
         }
@@ -150,8 +158,7 @@ final class ServiceController extends Controller
 
         $merged = $merged->map(function ($item) {
             if (empty($item['favicon'])) {
-                $domain = $item['domain'] ?? 'example.com';
-                $item['favicon'] = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
+                $item['favicon'] = $this->faviconService->iconFor($item['url'] ?? null, $item['domain'] ?? null);
             }
 
             return $item;

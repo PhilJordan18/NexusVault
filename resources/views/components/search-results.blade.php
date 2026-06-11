@@ -5,7 +5,8 @@
                 <a href="{{ route('services.show', $service->name) }}"
                    class="flex items-center gap-3 px-4 py-3 hover:bg-white/10 transition rounded-xl cursor-pointer">
                     @if($service->favicon)
-                        <img src="{{ $service->favicon }}" class="w-8 h-8 rounded-lg" alt="">
+                        <img src="{{ $service->favicon }}" class="w-8 h-8 rounded-lg object-contain bg-white/5 p-1" alt=""
+                             onerror="this.onerror=null;this.src='{{ asset('logo/LogoMonogramme.svg') }}';">
                     @else
                         <div class="w-8 h-8 bg-white/10 rounded-lg flex items-center justify-center text-sm">
                             {{ strtoupper(substr($service->name, 0, 1)) }}

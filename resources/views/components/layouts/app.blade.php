@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NexusVault • {{ $title ?? 'Dashboard' }}</title>
+    @include('partials.favicons')
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -21,8 +22,8 @@
 
     <!-- Logo -->
     <div class="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
-        <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
-            <span class="text-white font-bold text-2xl">N</span>
+        <div class="w-9 h-9 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl flex items-center justify-center">
+            <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-6 h-6">
         </div>
         <div>
             <h1 class="text-2xl font-semibold tracking-tighter">NexusVault</h1>
@@ -118,7 +119,7 @@
             <div class="relative">
                 @php
                     $pendingShares = \App\Models\Share::where('to_user_id', auth()->id())
-                        ->whereNull('accepted_at')->where('rejected', false)->count();
+                        ->whereNull('accepted_at')->whereNull('revoked_at')->where('rejected', false)->count();
                 @endphp
                 <button onclick="window.location.href='{{ route('notifications.index') }}'"
                         class="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-2xl transition relative">

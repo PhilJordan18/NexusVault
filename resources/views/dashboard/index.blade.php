@@ -70,7 +70,8 @@
                 <div class="flex items-start justify-between">
                     <div class="flex items-center gap-4">
                         @if ($service->favicon)
-                            <img src="{{ $service->favicon }}" alt="" class="w-11 h-11 rounded-2xl object-contain bg-[var(--bg-input)] p-1">
+                            <img src="{{ $service->favicon }}" alt="" class="w-11 h-11 rounded-2xl object-contain bg-[var(--bg-input)] p-1"
+                                 onerror="this.onerror=null;this.src='{{ asset('logo/LogoMonogramme.svg') }}';">
                         @else
                             <div class="w-11 h-11 bg-[var(--bg-input)] rounded-2xl flex items-center justify-center text-2xl">
                                 {{ strtoupper(substr($service->name, 0, 1)) }}

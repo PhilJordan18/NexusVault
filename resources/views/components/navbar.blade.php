@@ -4,10 +4,8 @@
         <!-- Logo -->
         <a href="{{ route('home') }}">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V9a4 4 0 00-8 0v2" />
-                    </svg>
+                <div class="w-9 h-9 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center">
+                    <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-6 h-6">
                 </div>
                 <span class="text-2xl font-semibold tracking-tighter text-white">NexusVault</span>
 

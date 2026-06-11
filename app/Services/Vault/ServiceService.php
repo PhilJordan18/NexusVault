@@ -12,30 +12,26 @@ use App\Services\Vault\Contracts\ServiceServiceInterface;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 final readonly class ServiceService implements ServiceServiceInterface
 {
-    public function __construct(private CryptoService $cryptoService, private PasswordService $passwordService) {}
+    public function __construct(
+        private CryptoService $cryptoService,
+        private PasswordService $passwordService,
+        private FaviconService $faviconService
+    ) {}
 
     public function create(ServiceData $data): Service
     {
-        $domain = $data->domain;
-        if (! $domain) {
-            $domain = $this->extractDomainFromName($data->name);
-        }
-
-        $url = $domain ? "https://www.{$domain}" : null;
-        $favicon = $domain ? "https://www.google.com/s2/favicons?domain={$domain}&sz=64" : null;
-
+        $branding = $this->resolveServiceBranding($data);
         $encrypted = $this->encryptServiceData($data);
         $analysis = $this->analyzePassword($data->password);
 
         return Service::create([
             'user_id' => auth()->id(),
             'name' => $data->name,
-            'url' => $url,
-            'favicon' => $favicon,
+            'url' => $branding['url'],
+            'favicon' => $branding['favicon'],
             ...$encrypted,
             ...$analysis,
         ]);
@@ -150,10 +146,12 @@ final readonly class ServiceService implements ServiceServiceInterface
         ?array $passwordAnalysis = null,
         bool $forceSensitiveEncryption = false
     ): array {
+        $branding = $this->resolveServiceBranding($data);
+
         $updates = [
             'name' => $data->name,
-            'url' => $data->url,
-            'favicon' => $this->getFaviconUrl($data->url),
+            'url' => $branding['url'],
+            'favicon' => $branding['favicon'],
         ];
 
         if ($forceSensitiveEncryption || $data->username !== $service->username) {
@@ -189,6 +187,23 @@ final readonly class ServiceService implements ServiceServiceInterface
         }
 
         return $updates;
+    }
+
+    /**
+     * @return array{url: string|null, favicon: string}
+     */
+    private function resolveServiceBranding(ServiceData $data): array
+    {
+        $domain = $data->domain
+            ?: $this->faviconService->domainFromUrl($data->url)
+            ?: $this->faviconService->domainFromName($data->name);
+
+        $url = $this->faviconService->urlFor($data->url, $domain);
+
+        return [
+            'url' => $url,
+            'favicon' => $this->faviconService->iconFor($url, $domain),
+        ];
     }
 
     private function syncSharedGroup(Service $sourceService, ServiceData $data, array $sourceUpdates): void
@@ -249,23 +264,5 @@ final readonly class ServiceService implements ServiceServiceInterface
             'compromised' => $updates['compromised'] ?? $service->compromised,
             'reused' => $updates['reused'] ?? $service->reused,
         ];
-    }
-
-    private function getFaviconUrl(?string $url): ?string
-    {
-        if (! $url) {
-            return null;
-        }
-
-        $domain = parse_url($url, PHP_URL_HOST);
-
-        return "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
-    }
-
-    private function extractDomainFromName(string $name): ?string
-    {
-        $slug = Str::slug($name);
-
-        return $slug ? "{$slug}.com" : null;
     }
 }
