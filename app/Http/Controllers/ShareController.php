@@ -19,21 +19,21 @@ final class ShareController extends Controller
         $sharedData = ShareMapper::fromRequest($request->validated());
         $this->shareService->share($sharedData);
 
-        return back()->with('success', 'Share sent successfully!');
+        return back()->with('success', __('Share sent successfully!'));
     }
 
     public function accept(Share $share): RedirectResponse
     {
         $this->shareService->accept($share);
 
-        return redirect()->route('dashboard')->with('success', 'Service added to your vault with success!');
+        return redirect()->route('dashboard')->with('success', __('Service added to your vault with success!'));
     }
 
     public function reject(Share $share): RedirectResponse
     {
         $this->shareService->reject($share);
 
-        return redirect()->route('dashboard')->with('info', 'Sharing rejected!');
+        return redirect()->route('dashboard')->with('info', __('Sharing rejected!'));
     }
 
     public function revoke(Share $share): JsonResponse|RedirectResponse
@@ -41,7 +41,7 @@ final class ShareController extends Controller
         $this->shareService->revoke($share);
 
         return request()->expectsJson()
-            ? response()->json(['message' => 'Shared access revoked.'])
-            : back()->with('success', 'Shared access revoked.');
+            ? response()->json(['message' => __('Shared access revoked.')])
+            : back()->with('success', __('Shared access revoked.'));
     }
 }

@@ -4,6 +4,7 @@ namespace App\Mappers;
 
 use App\DTOs\Share\ShareData;
 use App\DTOs\Share\SharePayload;
+use App\Models\Service;
 use App\Models\Share;
 
 final class ShareMapper
@@ -23,17 +24,18 @@ final class ShareMapper
             encryptedData: $data['encrypted_data'],
             name: $data['name'],
             url: $data['url'] ?? null,
-            favicon: $data['favicon'] ?? null
+            favicon: $data['favicon'] ?? null,
+            type: $data['type'] ?? Service::TYPE_LOGIN
         );
     }
 
     public static function fromModel(Share $share): array
     {
         return [
-            'id'           => $share->id,
+            'id' => $share->id,
             'service_name' => $share->service?->name,
-            'from'         => $share->fromUser?->name,
-            'shared_at'    => $share->shared_at?->diffForHumans(),
+            'from' => $share->fromUser?->name,
+            'shared_at' => $share->shared_at?->diffForHumans(),
         ];
     }
 }

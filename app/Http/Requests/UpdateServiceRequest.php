@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Service;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateServiceRequest extends FormRequest
 {
@@ -22,12 +24,16 @@ class UpdateServiceRequest extends FormRequest
      */
     public function rules(): array
     {
+        $type = $this->input('type', Service::TYPE_LOGIN);
+        $secretMinLength = $type === Service::TYPE_LOGIN ? 6 : 1;
+
         return [
-            'name'     => 'sometimes|required|string|max:255',
-            'url'      => 'nullable|url',
+            'type' => ['sometimes', 'required', 'string', Rule::in(Service::types())],
+            'name' => 'sometimes|required|string|max:255',
+            'url' => ['nullable', 'url'],
             'username' => 'sometimes|required|string|max:255',
-            'password' => 'sometimes|required|string|min:6',
-            'notes'    => 'nullable|string',
+            'password' => "sometimes|required|string|min:{$secretMinLength}",
+            'notes' => 'nullable|string',
         ];
     }
 }

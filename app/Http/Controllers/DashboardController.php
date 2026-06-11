@@ -14,15 +14,16 @@ final class DashboardController extends Controller
             ->get();
 
         $stats = [
-            'compromised' => $services->where('compromised', true)->count(),
-            'reused' => $services->where('reused', true)->count(),
-            'weak' => $services->whereIn('strength', ['very_weak', 'weak'])->count(),
-            'secure' => $services->whereIn('strength', ['strong', 'very_strong'])->count(),
+            'compromised' => $services->where('type', Service::TYPE_LOGIN)->where('compromised', true)->count(),
+            'reused' => $services->where('type', Service::TYPE_LOGIN)->where('reused', true)->count(),
+            'weak' => $services->where('type', Service::TYPE_LOGIN)->whereIn('strength', ['very_weak', 'weak'])->count(),
+            'cards' => $services->where('type', Service::TYPE_PAYMENT_CARD)->count(),
         ];
 
-        $grouped = $services->groupBy('name')->map(function ($items, $name) {
+        $grouped = $services->groupBy(fn (Service $service) => $service->type.'|'.$service->name)->map(function ($items) {
             return (object) [
-                'name' => $name,
+                'name' => $items->first()->name,
+                'type' => $items->first()->type,
                 'favicon' => $items->firstWhere('favicon', '!=', null)->favicon ?? null,
                 'url' => $items->firstWhere('url', '!=', null)->url ?? null,
                 'account_count' => $items->count(),

@@ -10,8 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Service extends Model
 {
+    public const TYPE_LOGIN = 'login';
+
+    public const TYPE_PAYMENT_CARD = 'payment_card';
+
+    public const TYPE_SECURE_NOTE = 'secure_note';
+
     protected $fillable = [
-        'user_id', 'name', 'url', 'favicon',
+        'user_id', 'type', 'name', 'url', 'favicon',
         'username', 'password', 'notes',
         'username_iv', 'username_tag',
         'password_iv', 'password_tag',
@@ -31,7 +37,23 @@ class Service extends Model
 
     protected $casts = [
         'shared_at' => 'datetime',
+        'compromised' => 'boolean',
+        'reused' => 'boolean',
     ];
+
+    public static function types(): array
+    {
+        return [
+            self::TYPE_LOGIN,
+            self::TYPE_PAYMENT_CARD,
+            self::TYPE_SECURE_NOTE,
+        ];
+    }
+
+    public function isLogin(): bool
+    {
+        return ($this->type ?? self::TYPE_LOGIN) === self::TYPE_LOGIN;
+    }
 
     public function user(): BelongsTo
     {

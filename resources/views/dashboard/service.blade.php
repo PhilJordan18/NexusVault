@@ -5,17 +5,18 @@
         <div class="flex items-center justify-between mb-8">
             <div>
                 <h1 class="text-3xl font-semibold">{{ $name }}</h1>
-                <p class="text-[var(--text-secondary)]">{{ count($accounts) }} accounts • Last updated {{ $accounts->first()->updated_at->diffForHumans() ?? '' }}</p>
+                <p class="text-[var(--text-secondary)]">{{ count($accounts) }} items • Last updated {{ $accounts->first()->updated_at->diffForHumans() ?? '' }}</p>
             </div>
 
             @php
                 $firstUrl = $accounts->first()->url ?? '';
+                $itemType = $accounts->first()->type ?? \App\Models\Service::TYPE_LOGIN;
             @endphp
 
-            <button onclick="showCreateModalForService('{{ $name }}', '{{ $firstUrl }}')"
+            <button onclick="showCreateModalForService('{{ $name }}', '{{ $firstUrl }}', '{{ $itemType }}')"
                     class="flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-medium">
                 <i class="fa-solid fa-plus"></i>
-                <span>Add Account</span>
+                <span>{{ $itemType === \App\Models\Service::TYPE_PAYMENT_CARD ? 'Add Card' : ($itemType === \App\Models\Service::TYPE_SECURE_NOTE ? 'Add Note' : 'Add Account') }}</span>
             </button>
         </div>
 
@@ -72,7 +73,7 @@
                                 <span>Edit</span>
                             </button>
 
-                            <button onclick="window.shareCurrentAccount()"
+                            <button id="share-account-button" onclick="window.shareCurrentAccount()"
                                     class="px-4 py-2 text-sm bg-emerald-600 hover:bg-emerald-700 rounded-2xl flex items-center gap-2 text-white whitespace-nowrap">
                                 <i class="fa-solid fa-share"></i>
                                 <span>Share</span>
@@ -80,10 +81,10 @@
                         </div>
                     </div>
 
-                    <!-- Password -->
+                    <!-- Secret -->
                     <div class="mb-8">
                         <div class="flex items-center justify-between mb-3">
-                            <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Password</div>
+                            <div id="detail-secret-label" class="text-xs uppercase tracking-widest text-[var(--text-secondary)]">Password</div>
                             <button onclick="window.togglePassword()"
                                     class="text-xs flex items-center gap-1.5 text-emerald-500 hover:text-emerald-400">
                                 <i class="fa-solid fa-eye"></i>
@@ -97,7 +98,7 @@
                     </div>
 
                     <!-- Website -->
-                    <div class="mb-8">
+                    <div id="detail-url-container" class="mb-8">
                         <div class="text-xs uppercase tracking-widest text-[var(--text-secondary)] mb-2">Website</div>
                         <a id="detail-url" target="_blank" class="text-emerald-500 hover:underline break-all"></a>
                     </div>
@@ -149,18 +150,19 @@
 
             <form id="edit-account-form" onsubmit="submitEditAccount(event)">
                 <input type="hidden" id="edit-service-id">
+                <input type="hidden" id="edit-type">
                 <input type="hidden" id="edit-name">
                 <input type="hidden" id="edit-url">
                 <!-- Username / Email -->
                 <div class="mb-5">
-                    <label class="block text-sm text-[var(--text-secondary)] mb-2">Username / Email</label>
+                    <label id="edit-username-label" class="block text-sm text-[var(--text-secondary)] mb-2">Username / Email</label>
                     <input type="text" id="edit-username" required
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5">
                 </div>
 
                 <!-- Password -->
                 <div class="mb-5">
-                    <label class="block text-sm text-[var(--text-secondary)] mb-2">Password</label>
+                    <label id="edit-password-label" class="block text-sm text-[var(--text-secondary)] mb-2">Password</label>
                     <div class="relative">
                         <input type="password" id="edit-password" required
                                class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5 pr-12 font-mono">
@@ -182,7 +184,7 @@
 
                 <!-- Notes -->
                 <div class="mb-6">
-                    <label class="block text-sm text-[var(--text-secondary)] mb-2">Notes (optional)</label>
+                    <label id="edit-notes-label" class="block text-sm text-[var(--text-secondary)] mb-2">Notes (optional)</label>
                     <textarea id="edit-notes" rows="3"
                               class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5 resize-y"></textarea>
                 </div>

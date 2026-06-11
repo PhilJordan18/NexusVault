@@ -1,4 +1,8 @@
 <x-layouts.app>
+    @php
+        $groupedCount = count($grouped);
+        $accountCount = $grouped->sum('account_count') ?? 0;
+    @endphp
 
     <!-- STATS ROW -->
     <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
@@ -9,7 +13,7 @@
             </div>
             <div>
                 <p class="text-3xl font-semibold">{{ $stats['compromised'] }}</p>
-                <p class="text-sm text-[var(--text-secondary)]">Compromised</p>
+                <p class="text-sm text-[var(--text-secondary)]">{{ __('Compromised') }}</p>
             </div>
         </div>
 
@@ -20,7 +24,7 @@
             </div>
             <div>
                 <p class="text-3xl font-semibold">{{ $stats['reused'] }}</p>
-                <p class="text-sm text-[var(--text-secondary)]">Reused Passwords</p>
+                <p class="text-sm text-[var(--text-secondary)]">{{ __('Reused Passwords') }}</p>
             </div>
         </div>
 
@@ -31,18 +35,18 @@
             </div>
             <div>
                 <p class="text-3xl font-semibold">{{ $stats['weak'] }}</p>
-                <p class="text-sm text-[var(--text-secondary)]">Weak Passwords</p>
+                <p class="text-sm text-[var(--text-secondary)]">{{ __('Weak Passwords') }}</p>
             </div>
         </div>
 
-        <!-- Secure -->
+        <!-- Cards -->
         <div class="card rounded-3xl p-5 flex items-center gap-4">
             <div class="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center">
-                <i class="fa-solid fa-check-circle text-emerald-500 text-xl"></i>
+                <i class="fa-solid fa-credit-card text-emerald-500 text-xl"></i>
             </div>
             <div>
-                <p class="text-3xl font-semibold">{{ $stats['secure'] }}</p>
-                <p class="text-sm text-[var(--text-secondary)]">Secure Items</p>
+                <p class="text-3xl font-semibold">{{ $stats['cards'] }}</p>
+                <p class="text-sm text-[var(--text-secondary)]">{{ __('Payment Cards') }}</p>
             </div>
         </div>
     </div>
@@ -50,13 +54,16 @@
     <!-- SERVICES SECTION -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-semibold">All Services</h2>
-            <p class="text-sm text-[var(--text-secondary)]">{{ count($grouped) }} services • {{ $grouped->sum('account_count') ?? 0 }} accounts</p>
+            <h2 class="text-2xl font-semibold">{{ __('All Services') }}</h2>
+            <p class="text-sm text-[var(--text-secondary)]">
+                {{ $groupedCount }} {{ trans_choice('service_count', $groupedCount) }} •
+                {{ $accountCount }} {{ trans_choice('account_count', $accountCount) }}
+            </p>
         </div>
 
         <div class="flex items-center gap-3">
             <div class="text-xs px-3 py-1 bg-[var(--bg-input)] rounded-full text-[var(--text-secondary)]">
-                Last synced just now
+                {{ __('Last synced just now') }}
             </div>
         </div>
     </div>
@@ -64,12 +71,20 @@
     <!-- SERVICES GRID -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
         @foreach ($grouped as $service)
-            <a href="{{ route('services.show', $service->name) }}"
+            <a href="{{ route('services.show', ['name' => $service->name, 'type' => $service->type]) }}"
                class="group card hover:border-emerald-500/40 rounded-3xl p-5 transition-all duration-200 hover:-translate-y-0.5">
 
                 <div class="flex items-start justify-between">
                     <div class="flex items-center gap-4">
-                        @if ($service->favicon)
+                        @if ($service->type === \App\Models\Service::TYPE_PAYMENT_CARD)
+                            <div class="w-11 h-11 bg-emerald-500/10 rounded-2xl flex items-center justify-center text-emerald-500">
+                                <i class="fa-solid fa-credit-card text-xl"></i>
+                            </div>
+                        @elseif ($service->type === \App\Models\Service::TYPE_SECURE_NOTE)
+                            <div class="w-11 h-11 bg-indigo-500/10 rounded-2xl flex items-center justify-center text-indigo-400">
+                                <i class="fa-solid fa-note-sticky text-xl"></i>
+                            </div>
+                        @elseif ($service->favicon)
                             <img src="{{ $service->favicon }}" alt="" class="w-11 h-11 rounded-2xl object-contain bg-[var(--bg-input)] p-1"
                                  onerror="this.onerror=null;this.src='{{ asset('logo/LogoMonogramme.svg') }}';">
                         @else
@@ -80,12 +95,14 @@
 
                         <div>
                             <p class="font-semibold text-lg group-hover:text-emerald-500 transition">{{ $service->name }}</p>
-                            <p class="text-xs text-[var(--text-secondary)]">{{ $service->account_count }} accounts</p>
+                            <p class="text-xs text-[var(--text-secondary)]">
+                                {{ $service->type === \App\Models\Service::TYPE_PAYMENT_CARD ? __('Payment card') : ($service->type === \App\Models\Service::TYPE_SECURE_NOTE ? __('Secure note') : $service->account_count.' '.trans_choice('account_count', $service->account_count)) }}
+                            </p>
                         </div>
                     </div>
 
                     <div class="text-right">
-                        <div class="text-xs text-[var(--text-secondary)]">Last used</div>
+                        <div class="text-xs text-[var(--text-secondary)]">{{ __('Last used') }}</div>
                         <div class="text-xs font-medium">{{ $service->last_modified?->diffForHumans() ?? '—' }}</div>
                     </div>
                 </div>
@@ -96,7 +113,7 @@
                             <div class="w-6 h-6 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-full flex items-center justify-center text-[10px]">{{ $i }}</div>
                         @endfor
                     </div>
-                    <span class="text-emerald-500 group-hover:underline">View all →</span>
+                    <span class="text-emerald-500 group-hover:underline">{{ __('View all') }} →</span>
                 </div>
             </a>
         @endforeach
@@ -107,10 +124,10 @@
             <div class="mx-auto w-16 h-16 bg-[var(--bg-input)] rounded-full flex items-center justify-center mb-4">
                 <i class="fa-solid fa-key text-3xl text-[var(--text-secondary)]"></i>
             </div>
-            <h3 class="text-xl font-medium mb-2">No services yet</h3>
-            <p class="text-[var(--text-secondary)] mb-6">Start by adding your first password or login</p>
+            <h3 class="text-xl font-medium mb-2">{{ __('No services yet') }}</h3>
+            <p class="text-[var(--text-secondary)] mb-6">{{ __('Start by adding your first password or login') }}</p>
             <button onclick="showCreateModal()" class="px-8 py-3 bg-emerald-600 hover:bg-emerald-700 rounded-2xl text-sm font-medium">
-                Add your first item
+                {{ __('Add your first item') }}
             </button>
         </div>
     @endif

@@ -208,6 +208,8 @@
         const form = document.getElementById('create-service-form');
         if (form) form.reset();
 
+        if (window.setCreateItemType) window.setCreateItemType('login');
+
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
         const urlPreview = document.getElementById('service-url-preview');
@@ -221,15 +223,16 @@
         document.getElementById('create-modal').classList.remove('hidden');
     }
 
-    function showCreateModalForService(serviceName, serviceUrl = '') {
+    function showCreateModalForService(serviceName, serviceUrl = '', type = 'login') {
         const modal = document.getElementById('create-modal');
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
         const urlPreview = document.getElementById('service-url-preview');
 
+        if (window.setCreateItemType) window.setCreateItemType(type);
         if (nameInput) nameInput.value = serviceName || '';
 
-        if (serviceUrl && domainInput && urlPreview) {
+        if (type === 'login' && serviceUrl && domainInput && urlPreview) {
             try {
                 const urlObj = new URL(serviceUrl);
                 domainInput.value = urlObj.hostname.replace('www.', '');

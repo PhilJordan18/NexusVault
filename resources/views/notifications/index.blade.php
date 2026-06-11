@@ -1,11 +1,17 @@
 <x-layouts.app>
+    @php
+        $pendingCount = $pendingShares->count();
+    @endphp
+
     <div class="max-w-4xl mx-auto">
         <div class="flex items-center justify-between mb-8">
             <div>
-                <h1 class="text-3xl font-semibold">Notifications</h1>
-                <p class="text-[var(--text-secondary)]">Pending share requests</p>
+                <h1 class="text-3xl font-semibold">{{ __('Notifications') }}</h1>
+                <p class="text-[var(--text-secondary)]">{{ __('Pending share requests') }}</p>
             </div>
-            <span class="text-sm text-[var(--text-secondary)]">{{ $pendingShares->count() }} pending</span>
+            <span class="text-sm text-[var(--text-secondary)]">
+                {{ $pendingCount }} {{ trans_choice('pending_share_count', $pendingCount) }}
+            </span>
         </div>
 
         @if($pendingShares->isEmpty())
@@ -13,8 +19,8 @@
                 <div class="w-16 h-16 bg-emerald-500/10 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <i class="fa-solid fa-bell text-4xl text-emerald-500"></i>
                 </div>
-                <h3 class="text-xl font-semibold mb-2">All caught up!</h3>
-                <p class="text-[var(--text-secondary)]">You have no pending share requests.</p>
+                <h3 class="text-xl font-semibold mb-2">{{ __('All caught up!') }}</h3>
+                <p class="text-[var(--text-secondary)]">{{ __('You have no pending share requests.') }}</p>
             </div>
         @else
             <div class="space-y-4">
@@ -28,11 +34,11 @@
 
                             <div>
                                 <div class="flex items-center gap-3">
-                                    <p class="font-semibold">{{ $share->service->name ?? 'Unknown Service' }}</p>
-                                    <span class="text-xs bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full">New Share</span>
+                                    <p class="font-semibold">{{ $share->service->name ?? __('Unknown Service') }}</p>
+                                    <span class="text-xs bg-emerald-500/20 text-emerald-500 px-2 py-0.5 rounded-full">{{ __('New Share') }}</span>
                                 </div>
                                 <p class="text-sm text-[var(--text-secondary)]">
-                                    From <span class="font-medium text-[var(--text-primary)]">{{ $share->fromUser->name }}</span> • {{ $share->shared_at->diffForHumans() }}
+                                    {{ __('From') }} <span class="font-medium text-[var(--text-primary)]">{{ $share->fromUser->name }}</span> • {{ $share->shared_at->diffForHumans() }}
                                 </p>
                             </div>
                         </div>
@@ -42,9 +48,9 @@
                             <form action="{{ route('shares.accept', $share) }}" method="POST">
                                 @csrf
                                 <button type="submit"
-                                        class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium flex items-center gap-2 transition">
+                                    class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium flex items-center gap-2 transition">
                                     <i class="fa-solid fa-check"></i>
-                                    <span>Accept</span>
+                                    <span>{{ __('Accept') }}</span>
                                 </button>
                             </form>
 
@@ -52,9 +58,9 @@
                             <form action="{{ route('shares.reject', $share) }}" method="POST">
                                 @csrf
                                 <button type="submit"
-                                        class="px-6 py-2.5 bg-[var(--bg-input)] hover:bg-white/20 text-[var(--text-primary)] rounded-2xl text-sm font-medium flex items-center gap-2 transition">
+                                    class="px-6 py-2.5 bg-[var(--bg-input)] hover:bg-white/20 text-[var(--text-primary)] rounded-2xl text-sm font-medium flex items-center gap-2 transition">
                                     <i class="fa-solid fa-times"></i>
-                                    <span>Reject</span>
+                                    <span>{{ __('Reject') }}</span>
                                 </button>
                             </form>
                         </div>

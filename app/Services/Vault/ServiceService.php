@@ -25,10 +25,11 @@ final readonly class ServiceService implements ServiceServiceInterface
     {
         $branding = $this->resolveServiceBranding($data);
         $encrypted = $this->encryptServiceData($data);
-        $analysis = $this->analyzePassword($data->password);
+        $analysis = $this->analysisFor($data);
 
         return Service::create([
             'user_id' => auth()->id(),
+            'type' => $data->type,
             'name' => $data->name,
             'url' => $branding['url'],
             'favicon' => $branding['favicon'],
@@ -76,13 +77,14 @@ final readonly class ServiceService implements ServiceServiceInterface
     {
         $services = Service::select([
             'name',
+            'type',
             'favicon',
             'url',
             DB::raw('COUNT(*) as account_count'),
             DB::raw('MAX(updated_at) as last_modified'),
         ])
             ->where('user_id', $userId)
-            ->groupBy('name', 'favicon', 'url')
+            ->groupBy('name', 'type', 'favicon', 'url')
             ->orderBy('name')
             ->get();
 
@@ -92,12 +94,17 @@ final readonly class ServiceService implements ServiceServiceInterface
         return $services;
     }
 
-    public function getAccountsByName(string $name, int $userId): Collection
+    public function getAccountsByName(string $name, int $userId, ?string $type = null): Collection
     {
-        return Service::where('user_id', $userId)
+        $query = Service::where('user_id', $userId)
             ->where('name', $name)
-            ->orderBy('updated_at', 'desc')
-            ->get();
+            ->orderBy('updated_at', 'desc');
+
+        if ($type) {
+            $query->where('type', $type);
+        }
+
+        return $query->get();
     }
 
     // ==================== PRIVATE HELPERS (très courtes) ====================
@@ -149,6 +156,7 @@ final readonly class ServiceService implements ServiceServiceInterface
         $branding = $this->resolveServiceBranding($data);
 
         $updates = [
+            'type' => $data->type,
             'name' => $data->name,
             'url' => $branding['url'],
             'favicon' => $branding['favicon'],
@@ -169,7 +177,7 @@ final readonly class ServiceService implements ServiceServiceInterface
                 'password' => $enc['ciphertext'],
                 'password_iv' => $enc['iv'],
                 'password_tag' => $enc['tag'],
-                ...($passwordAnalysis ?? $this->analyzePassword($data->password, $service->id)),
+                ...($passwordAnalysis ?? $this->analysisFor($data, $service->id)),
             ];
         }
 
@@ -194,6 +202,13 @@ final readonly class ServiceService implements ServiceServiceInterface
      */
     private function resolveServiceBranding(ServiceData $data): array
     {
+        if (! $data->isLogin()) {
+            return [
+                'url' => null,
+                'favicon' => null,
+            ];
+        }
+
         $domain = $data->domain
             ?: $this->faviconService->domainFromUrl($data->url)
             ?: $this->faviconService->domainFromName($data->name);
@@ -204,6 +219,19 @@ final readonly class ServiceService implements ServiceServiceInterface
             'url' => $url,
             'favicon' => $this->faviconService->iconFor($url, $domain),
         ];
+    }
+
+    private function analysisFor(ServiceData $data, ?int $excludeServiceId = null): array
+    {
+        if (! $data->isLogin()) {
+            return [
+                'strength' => null,
+                'compromised' => false,
+                'reused' => false,
+            ];
+        }
+
+        return $this->analyzePassword($data->password, $excludeServiceId);
     }
 
     private function syncSharedGroup(Service $sourceService, ServiceData $data, array $sourceUpdates): void

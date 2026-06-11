@@ -21,7 +21,7 @@ final class SearchController extends Controller
                         ->orWhere('username', 'like', "%{$query}%");
                 })
                 ->orderBy('name')
-                ->select('id', 'name', 'url', 'favicon', 'username')
+                ->select('id', 'type', 'name', 'url', 'favicon', 'username')
                 ->limit(20)
                 ->get();
         }

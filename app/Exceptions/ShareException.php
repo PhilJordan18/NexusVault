@@ -25,4 +25,9 @@ class ShareException extends RuntimeException
     {
         return new self('This service is already actively shared with this user.');
     }
+
+    public static function sharedAccessCannotBeReshared(): self
+    {
+        return new self('Shared items can only be shared by their original owner.');
+    }
 }

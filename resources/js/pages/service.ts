@@ -3,6 +3,7 @@ import { bindPasswordStrength } from '../../ts/utils/password-utils';
 // Types
 type Account = {
     id: number;
+    type?: ItemType;
     username: string;
     password: string;
     url?: string;
@@ -16,6 +17,8 @@ type Account = {
     shared_with?: ShareRecipient[];
 };
 
+type ItemType = 'login' | 'payment_card' | 'secure_note';
+
 type ShareRecipient = {
     id: number;
     name?: string | null;
@@ -26,6 +29,44 @@ type ShareRecipient = {
 
 // GLOBAL STATE
 let currentAccount: Account | null = null;
+
+const itemTypeLabels: Record<ItemType, {
+    username: string;
+    secret: string;
+    notes: string;
+    hiddenSecret: string;
+    editTitle: string;
+}> = {
+    login: {
+        username: 'Username / Email',
+        secret: 'Password',
+        notes: 'Notes (optional)',
+        hiddenSecret: '••••••••••••',
+        editTitle: 'Edit Account',
+    },
+    payment_card: {
+        username: 'Cardholder Name',
+        secret: 'Card Number',
+        notes: 'Expiry, CVC, PIN, billing notes',
+        hiddenSecret: '•••• •••• •••• ••••',
+        editTitle: 'Edit Card',
+    },
+    secure_note: {
+        username: 'Reference',
+        secret: 'Secure Content',
+        notes: 'Extra Notes',
+        hiddenSecret: '••••••••••••',
+        editTitle: 'Edit Note',
+    },
+};
+
+function typeOf(account: Account): ItemType {
+    return account.type ?? 'login';
+}
+
+function labelsFor(account: Account) {
+    return itemTypeLabels[typeOf(account)];
+}
 
 // Helper CSRF
 function csrfToken(): string {
@@ -45,6 +86,7 @@ function csrfToken(): string {
     }
 
     currentAccount = account;
+    const labels = labelsFor(account);
 
     const panel = document.getElementById('detail-panel')!;
     panel.classList.remove('hidden');
@@ -54,6 +96,7 @@ function csrfToken(): string {
 
     (document.getElementById('detail-username') as HTMLElement).textContent = account.username;
     (document.getElementById('detail-name') as HTMLElement).textContent = account.name || '';
+    (document.getElementById('detail-secret-label') as HTMLElement).textContent = labels.secret;
 
     const sharedBadge = document.getElementById('detail-shared-badge');
 
@@ -63,19 +106,25 @@ function csrfToken(): string {
         sharedBadge?.classList.add('hidden');
     }
 
+    document.getElementById('share-account-button')?.classList.toggle(
+        'hidden',
+        account.shared_user_id !== null && account.shared_user_id !== undefined
+    );
+
     const passwordEl = document.getElementById('detail-password') as HTMLElement;
-    passwordEl.textContent = '••••••••••••';
+    passwordEl.textContent = labels.hiddenSecret;
     passwordEl.dataset.hidden = 'true';
     passwordEl.dataset.realPassword = account.password || '';
 
     const urlEl = document.getElementById('detail-url') as HTMLAnchorElement;
+    const urlContainer = document.getElementById('detail-url-container');
 
-    if (account.url) {
+    if (account.url && typeOf(account) === 'login') {
         urlEl.href = account.url;
         urlEl.textContent = account.url;
-        urlEl.style.display = '';
+        urlContainer?.classList.remove('hidden');
     } else {
-        urlEl.style.display = 'none';
+        urlContainer?.classList.add('hidden');
     }
 
     const notesContainer = document.getElementById('detail-notes-container')!;
@@ -104,7 +153,7 @@ function csrfToken(): string {
         el.textContent = currentAccount.password;
         el.dataset.hidden = 'false';
     } else {
-        el.textContent = '••••••••••••';
+        el.textContent = labelsFor(currentAccount).hiddenSecret;
         el.dataset.hidden = 'true';
     }
 };
@@ -118,12 +167,25 @@ function csrfToken(): string {
         return;
     }
 
+    const labels = labelsFor(currentAccount);
     (document.getElementById('edit-service-id') as HTMLInputElement).value = currentAccount.id.toString();
+    (document.getElementById('edit-type') as HTMLInputElement).value = typeOf(currentAccount);
     (document.getElementById('edit-username') as HTMLInputElement).value = currentAccount.username;
     (document.getElementById('edit-password') as HTMLInputElement).value = currentAccount.password;
     (document.getElementById('edit-notes') as HTMLTextAreaElement).value = currentAccount.notes || '';
     (document.getElementById('edit-name') as HTMLInputElement).value = currentAccount.name ?? '';
     (document.getElementById('edit-url') as HTMLInputElement).value = currentAccount.url ?? '';
+    (document.getElementById('edit-username-label') as HTMLElement).textContent = labels.username;
+    (document.getElementById('edit-password-label') as HTMLElement).textContent = labels.secret;
+    (document.getElementById('edit-notes-label') as HTMLElement).textContent = labels.notes;
+    document.querySelector('#edit-account-modal h3')!.textContent = labels.editTitle;
+
+    const editPassword = document.getElementById('edit-password') as HTMLInputElement;
+    const isLogin = typeOf(currentAccount) === 'login';
+    editPassword.type = isLogin ? 'password' : 'text';
+    editPassword.dataset.passwordStrengthDisabled = isLogin ? 'false' : 'true';
+    document.getElementById('edit-generate-btn')?.classList.toggle('hidden', !isLogin);
+    document.getElementById('edit-strength-container')?.classList.toggle('hidden', !isLogin);
 
     document.getElementById('edit-account-modal')!.classList.remove('hidden');
 };
@@ -149,6 +211,7 @@ function csrfToken(): string {
     e.preventDefault();
 
     const serviceId = Number((document.getElementById('edit-service-id') as HTMLInputElement).value);
+    const type = (document.getElementById('edit-type') as HTMLInputElement).value as ItemType;
     const username = (document.getElementById('edit-username') as HTMLInputElement).value.trim();
     const password = (document.getElementById('edit-password') as HTMLInputElement).value.trim();
     const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement).value.trim();
@@ -172,6 +235,7 @@ function csrfToken(): string {
             },
             body: JSON.stringify({
                 name: (document.getElementById('edit-name') as HTMLInputElement).value,
+                type,
                 url: (document.getElementById('edit-url') as HTMLInputElement).value || null,
                 username,
                 password,
@@ -318,6 +382,13 @@ function renderSecurityFromAccount(account: Account) {
     const panel = document.getElementById('security-panel');
 
     if (!panel) {
+        return;
+    }
+
+    if (typeOf(account) !== 'login') {
+        panel.classList.add('hidden');
+        panel.replaceChildren();
+
         return;
     }
 

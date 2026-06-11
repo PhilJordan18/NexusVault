@@ -54,7 +54,7 @@ final readonly class ShareService implements ShareServiceInterface
         $aesKey = $this->decryptAesKey($payload, auth()->user());
         $decryptedData = $this->decryptSensitiveData($payload, $aesKey);
 
-        $analysis = $this->passwordService->analyze($decryptedData['password'], auth()->id());
+        $analysis = $this->analysisForPayload($payload, $decryptedData);
 
         $reEncrypted = $this->reEncryptForRecipient($decryptedData);
         $newService = $this->createServiceFromSharedData($payload, $reEncrypted, $share, $analysis);
@@ -99,6 +99,10 @@ final readonly class ShareService implements ShareServiceInterface
     {
         if ($service->user_id !== auth()->id()) {
             throw ShareException::unauthorized();
+        }
+
+        if ($service->shared_user_id !== null) {
+            throw ShareException::sharedAccessCannotBeReshared();
         }
     }
 
@@ -174,7 +178,8 @@ final readonly class ShareService implements ShareServiceInterface
             encryptedData: $encryptedData,
             name: $service->name,
             url: $service->url,
-            favicon: $service->favicon
+            favicon: $service->favicon,
+            type: $service->type ?? Service::TYPE_LOGIN
         );
     }
 
@@ -190,6 +195,7 @@ final readonly class ShareService implements ShareServiceInterface
                 'name' => $payload->name,
                 'url' => $payload->url,
                 'favicon' => $payload->favicon,
+                'type' => $payload->type,
             ]),
             'shared_at' => now(),
         ]);
@@ -251,6 +257,7 @@ final readonly class ShareService implements ShareServiceInterface
 
         return Service::create([
             'user_id' => auth()->id(),
+            'type' => $payload->type,
             'name' => $payload->name,
             'url' => $payload->url,
             'favicon' => $payload->favicon,
@@ -270,6 +277,23 @@ final readonly class ShareService implements ShareServiceInterface
             'compromised' => $analysis['compromised'],
             'reused' => $analysis['reused'],
         ]);
+    }
+
+    /**
+     * @param  array{password: string}  $decryptedData
+     * @return array{strength: string|null, compromised: bool, reused: bool}
+     */
+    private function analysisForPayload(SharePayload $payload, array $decryptedData): array
+    {
+        if ($payload->type !== Service::TYPE_LOGIN) {
+            return [
+                'strength' => null,
+                'compromised' => false,
+                'reused' => false,
+            ];
+        }
+
+        return $this->passwordService->analyze($decryptedData['password'], auth()->id());
     }
 
     private function validateRejectPermissions(Share $share): void

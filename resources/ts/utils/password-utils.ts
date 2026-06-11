@@ -88,8 +88,14 @@ return;
     // Entropy on input
     passwordInput.addEventListener('input', async () => {
         if (!strengthContainer || !strengthBar || !strengthText) {
-return;
-}
+            return;
+        }
+
+        if (passwordInput.dataset.passwordStrengthDisabled === 'true') {
+            strengthContainer.classList.add('hidden');
+
+            return;
+        }
 
         const result = await calculateEntropy(passwordInput.value);
         const entropy = result.entropy;
@@ -115,6 +121,10 @@ return;
 
         if (generateBtn) {
             generateBtn.addEventListener('click', async () => {
+                if (passwordInput.dataset.passwordStrengthDisabled === 'true') {
+                    return;
+                }
+
                 const newPassword = await generatePassword();
                 passwordInput.value = newPassword;
                 // Déclencher l'événement input pour mettre à jour la force

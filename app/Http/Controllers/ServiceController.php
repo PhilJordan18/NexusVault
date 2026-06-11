@@ -38,7 +38,13 @@ final class ServiceController extends Controller
 
     public function show(string $name)
     {
-        $accounts = $this->service->getAccountsByName($name, auth()->id());
+        $type = request('type');
+
+        if ($type && ! in_array($type, Service::types(), true)) {
+            abort(404);
+        }
+
+        $accounts = $this->service->getAccountsByName($name, auth()->id(), $type);
         $sharesByService = Share::with('toUser')
             ->where('from_user_id', auth()->id())
             ->whereIn('service_id', $accounts->pluck('id'))
@@ -74,11 +80,15 @@ final class ServiceController extends Controller
         if ($request->wantsJson()) {
             return response()->json([
                 'id' => $updated->id,
+                'type' => $updated->type,
                 'name' => $updated->name,
                 'url' => $updated->url,
                 'username' => $updated->username,
                 'password' => $updated->password,
                 'notes' => $updated->notes,
+                'strength' => $updated->strength,
+                'compromised' => $updated->compromised,
+                'reused' => $updated->reused,
                 'updated_at' => $updated->updated_at->diffForHumans(),
             ]);
         }
@@ -119,6 +129,7 @@ final class ServiceController extends Controller
 
             return [
                 'name' => $item['name'],
+                'type' => Service::TYPE_LOGIN,
                 'url' => $url,
                 'favicon' => $this->faviconService->iconFor($url, $domain),
                 'domain' => $domain,
@@ -127,7 +138,7 @@ final class ServiceController extends Controller
 
         $userServices = Service::where('user_id', auth()->id())
             ->whereRaw('LOWER(name) like ?', ["%{$query}%"])
-            ->select('name', 'url', 'favicon')
+            ->select('name', 'type', 'url', 'favicon')
             ->distinct()
             ->limit(5)
             ->get()
@@ -136,6 +147,7 @@ final class ServiceController extends Controller
 
                 return [
                     'name' => $service->name,
+                    'type' => $service->type,
                     'url' => $service->url,
                     'favicon' => $service->favicon ?: $this->faviconService->iconFor($service->url, $domain),
                     'domain' => $domain,
@@ -148,6 +160,7 @@ final class ServiceController extends Controller
 
             return response()->json([[
                 'name' => ucfirst($query),
+                'type' => Service::TYPE_LOGIN,
                 'url' => $url,
                 'favicon' => $this->faviconService->iconFor($url, $domain),
                 'domain' => $domain,

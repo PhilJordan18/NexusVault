@@ -4,11 +4,30 @@
 
         <form action="{{ route('services.store') }}" method="POST" id="create-service-form">
             @csrf
+            <input type="hidden" name="type" id="service-type" value="login">
 
             <div class="space-y-5">
+                <div>
+                    <label class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('Item Type') }}</label>
+                    <div class="grid grid-cols-3 gap-2">
+                        <button type="button" data-service-type="login"
+                                class="item-type-btn active border-emerald-500 bg-emerald-500/10 rounded-2xl border px-3 py-3 text-sm font-medium">
+                            <i class="fa-solid fa-key mr-1"></i>{{ __('Login') }}
+                        </button>
+                        <button type="button" data-service-type="payment_card"
+                                class="item-type-btn border-[var(--border-color)] rounded-2xl border px-3 py-3 text-sm font-medium">
+                            <i class="fa-solid fa-credit-card mr-1"></i>{{ __('Card') }}
+                        </button>
+                        <button type="button" data-service-type="secure_note"
+                                class="item-type-btn border-[var(--border-color)] rounded-2xl border px-3 py-3 text-sm font-medium">
+                            <i class="fa-solid fa-note-sticky mr-1"></i>{{ __('Note') }}
+                        </button>
+                    </div>
+                </div>
+
                 <!-- Service Name + Autocomplete -->
                 <div class="relative">
-                    <label class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Service Name') }}</label>
+                    <label id="service-name-label" class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Service Name') }}</label>
                     <input type="text"
                            name="name"
                            id="service-name"
@@ -26,7 +45,7 @@
                 </div>
 
                 <!-- URL -->
-                <div>
+                <div id="service-url-section">
                     <label class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('URL') }}</label>
                     <div id="service-url-preview"
                          class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl px-5 py-4 text-[var(--text-secondary)] text-sm">
@@ -36,14 +55,14 @@
 
                 <!-- Username -->
                 <div>
-                    <label class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Username / Email') }}</label>
+                    <label id="service-username-label" class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Username / Email') }}</label>
                     <input type="text" name="username" required
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-4">
                 </div>
 
                 <!-- Password -->
                 <div>
-                    <label class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Password') }}</label>
+                    <label id="service-password-label" class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Password') }}</label>
                     <div class="relative">
                         <input type="password" name="password" id="create-password" required
                                class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-4 pr-12">
@@ -65,7 +84,7 @@
                 </div>
 
                 <div>
-                    <label class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Notes') }}</label>
+                    <label id="service-notes-label" class="block text-sm text-[var(--text-secondary)] mb-1">{{ __('Notes') }}</label>
                     <textarea name="notes" rows="3"
                               class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-4"></textarea>
                 </div>
@@ -95,13 +114,91 @@
 
     const nameInput = document.getElementById('service-name');
     const suggestionsBox = document.getElementById('name-suggestions');
+    const typeInput = document.getElementById('service-type');
+    const urlSection = document.getElementById('service-url-section');
+    const usernameInput = document.querySelector('#create-service-form input[name="username"]');
+    const passwordInput = document.getElementById('create-password');
+    const notesInput = document.querySelector('#create-service-form textarea[name="notes"]');
+    const createStrengthContainer = document.getElementById('create-strength-container');
+    const createGenerateButton = document.getElementById('create-generate-btn');
+    const createTypeLabels = {
+        login: {
+            name: {{ Illuminate\Support\Js::from(__('Service Name')) }},
+            username: {{ Illuminate\Support\Js::from(__('Username / Email')) }},
+            password: {{ Illuminate\Support\Js::from(__('Password')) }},
+            notes: {{ Illuminate\Support\Js::from(__('Notes')) }},
+            namePlaceholder: 'Ex: Hetzner, Netflix, GitHub...',
+            usernamePlaceholder: '',
+            passwordPlaceholder: '',
+            notesPlaceholder: '',
+        },
+        payment_card: {
+            name: {{ Illuminate\Support\Js::from(__('Card Name')) }},
+            username: {{ Illuminate\Support\Js::from(__('Cardholder Name')) }},
+            password: {{ Illuminate\Support\Js::from(__('Card Number')) }},
+            notes: {{ Illuminate\Support\Js::from(__('Expiry, CVC, PIN, billing notes')) }},
+            namePlaceholder: 'Ex: Visa Desjardins, Mastercard Scotia...',
+            usernamePlaceholder: 'Name printed on card',
+            passwordPlaceholder: '4111 1111 1111 1111',
+            notesPlaceholder: 'MM/YY, CVC, PIN, billing address...',
+        },
+        secure_note: {
+            name: {{ Illuminate\Support\Js::from(__('Note Title')) }},
+            username: {{ Illuminate\Support\Js::from(__('Reference')) }},
+            password: {{ Illuminate\Support\Js::from(__('Secure Content')) }},
+            notes: {{ Illuminate\Support\Js::from(__('Extra Notes')) }},
+            namePlaceholder: 'Ex: Recovery codes, server notes...',
+            usernamePlaceholder: 'Optional reference',
+            passwordPlaceholder: 'Private note content',
+            notesPlaceholder: 'Extra context...',
+        },
+    };
+
+    function setCreateItemType(type) {
+        const labels = createTypeLabels[type] || createTypeLabels.login;
+        const isLogin = type === 'login';
+
+        typeInput.value = type;
+        document.getElementById('service-name-label').textContent = labels.name;
+        document.getElementById('service-username-label').textContent = labels.username;
+        document.getElementById('service-password-label').textContent = labels.password;
+        document.getElementById('service-notes-label').textContent = labels.notes;
+
+        nameInput.placeholder = labels.namePlaceholder;
+        usernameInput.placeholder = labels.usernamePlaceholder;
+        passwordInput.placeholder = labels.passwordPlaceholder;
+        notesInput.placeholder = labels.notesPlaceholder;
+        passwordInput.type = isLogin ? 'password' : 'text';
+        passwordInput.dataset.passwordStrengthDisabled = isLogin ? 'false' : 'true';
+        urlSection.classList.toggle('hidden', !isLogin);
+        createGenerateButton.classList.toggle('hidden', !isLogin);
+
+        if (!isLogin) {
+            suggestionsBox.classList.add('hidden');
+            document.getElementById('service-domain').value = '';
+            createStrengthContainer.classList.add('hidden');
+        }
+
+        document.querySelectorAll('.item-type-btn').forEach(button => {
+            button.classList.toggle('border-emerald-500', button.dataset.serviceType === type);
+            button.classList.toggle('bg-emerald-500/10', button.dataset.serviceType === type);
+            button.classList.toggle('active', button.dataset.serviceType === type);
+            button.classList.toggle('border-[var(--border-color)]', button.dataset.serviceType !== type);
+        });
+    }
+
+    window.setCreateItemType = setCreateItemType;
+
+    document.querySelectorAll('.item-type-btn').forEach(button => {
+        button.addEventListener('click', () => setCreateItemType(button.dataset.serviceType || 'login'));
+    });
 
     if (nameInput) {
         nameInput.addEventListener('input', function() {
             clearTimeout(debounceTimer);
             const query = this.value.trim();
 
-            if (query.length < 2) {
+            if (typeInput.value !== 'login' || query.length < 2) {
                 suggestionsBox.classList.add('hidden');
                 return;
             }
@@ -160,7 +257,7 @@
                                     previewUrl.textContent = service.url;
                                     preview.appendChild(previewUrl);
                                 } else {
-                                    preview.textContent = 'Will be generated automatically';
+                                    preview.textContent = {{ Illuminate\Support\Js::from(__('Will be generated automatically')) }};
                                 }
 
                                 suggestionsBox.classList.add('hidden');
