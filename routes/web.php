@@ -27,26 +27,38 @@ Route::get('/', function () {
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
 // Password Routes
-Route::post('/password/entropy', [PasswordController::class, 'entropy'])->name('password.entropy');
-Route::post('/password/generate', [PasswordController::class, 'generate'])->name('password.generate');
+Route::post('/password/entropy', [PasswordController::class, 'entropy'])
+    ->middleware('throttle:60,1')
+    ->name('password.entropy');
+Route::post('/password/generate', [PasswordController::class, 'generate'])
+    ->middleware('throttle:30,1')
+    ->name('password.generate');
 
 // Regular Auth
 Route::get('/register', [RegisterController::class, 'index'])->name('register');
-Route::post('/register', [RegisterController::class, 'register']);
+Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
 
 Route::get('/login', [LoginController::class, 'index'])->name('login');
-Route::post('/login', [LoginController::class, 'authenticateEmail'])->name('login.authenticate.email');
+Route::post('/login', [LoginController::class, 'authenticateEmail'])
+    ->middleware('throttle:10,1')
+    ->name('login.authenticate.email');
 Route::get('/login/password', [LoginController::class, 'password'])->name('login.password');
-Route::post('/login/password', [LoginController::class, 'authenticate'])->name('login.authenticate.password');
+Route::post('/login/password', [LoginController::class, 'authenticate'])
+    ->middleware('throttle:5,1')
+    ->name('login.authenticate.password');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Forgot Password
 Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
-Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])->name('password.email');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+    ->middleware('throttle:6,1')
+    ->name('password.email');
 
 // Reset Password
 Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
-Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
+    ->middleware('throttle:6,1')
+    ->name('password.update');
 
 // OAuth
 Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
@@ -59,8 +71,8 @@ Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
 });
 
-Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options']);
-Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login']);
+Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options'])->middleware('throttle:20,1');
+Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login'])->middleware('throttle:20,1');
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::delete('/webauthn/credentials/{webauthn_credential}',
         [SettingsController::class, 'destroyPasskey']
@@ -91,10 +103,14 @@ Route::middleware('auth')->group(function () {
 // MFA
 Route::middleware('auth')->group(function () {
     Route::get('/mfa/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
-    Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])->name('mfa.setup.verify');
+    Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])
+        ->middleware('throttle:6,1')
+        ->name('mfa.setup.verify');
 
     Route::get('/mfa/verify', fn () => view('auth.mfa.verify'))->name('mfa.verify.login');
-    Route::post('/mfa/verify', [MfaController::class, 'verifyLogin'])->name('mfa.verify');
+    Route::post('/mfa/verify', [MfaController::class, 'verifyLogin'])
+        ->middleware('throttle:6,1')
+        ->name('mfa.verify');
 
     Route::post('/mfa/disable', [MfaController::class, 'disableMfa'])
         ->middleware(['mfa', 'master_key'])
