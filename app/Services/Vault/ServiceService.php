@@ -111,6 +111,21 @@ final readonly class ServiceService implements ServiceServiceInterface
 
     private function encryptServiceData(ServiceData $data): array
     {
+        if ($data->clientEncrypted) {
+            return [
+                'username' => $data->username,
+                'username_iv' => $data->usernameIv,
+                'username_tag' => $data->usernameTag,
+                'password' => $data->password,
+                'password_iv' => $data->passwordIv,
+                'password_tag' => $data->passwordTag,
+                'notes' => $data->notes,
+                'notes_iv' => $data->notes ? $data->notesIv : null,
+                'notes_tag' => $data->notes ? $data->notesTag : null,
+                'client_encrypted' => true,
+            ];
+        }
+
         $encUsername = $this->encryptField($data->username);
         $encPassword = $this->encryptField($data->password);
         $encNotes = $data->notes ? $this->encryptField($data->notes) : ['ciphertext' => null, 'iv' => null, 'tag' => null];
@@ -125,6 +140,7 @@ final readonly class ServiceService implements ServiceServiceInterface
             'notes' => $encNotes['ciphertext'] ?? null,
             'notes_iv' => $encNotes['iv'] ?? null,
             'notes_tag' => $encNotes['tag'] ?? null,
+            'client_encrypted' => false,
         ];
     }
 
@@ -161,6 +177,22 @@ final readonly class ServiceService implements ServiceServiceInterface
             'url' => $branding['url'],
             'favicon' => $branding['favicon'],
         ];
+
+        if ($data->clientEncrypted) {
+            return $updates + [
+                'username' => $data->username,
+                'username_iv' => $data->usernameIv,
+                'username_tag' => $data->usernameTag,
+                'password' => $data->password,
+                'password_iv' => $data->passwordIv,
+                'password_tag' => $data->passwordTag,
+                'notes' => $data->notes,
+                'notes_iv' => $data->notes ? $data->notesIv : null,
+                'notes_tag' => $data->notes ? $data->notesTag : null,
+                'client_encrypted' => true,
+                ...($passwordAnalysis ?? $this->analysisFor($data, $service->id)),
+            ];
+        }
 
         if ($forceSensitiveEncryption || $data->username !== $service->username) {
             $enc = $this->encryptField($data->username, $encryptionUser);
@@ -223,7 +255,7 @@ final readonly class ServiceService implements ServiceServiceInterface
 
     private function analysisFor(ServiceData $data, ?int $excludeServiceId = null): array
     {
-        if (! $data->isLogin()) {
+        if ($data->clientEncrypted || ! $data->isLogin()) {
             return [
                 'strength' => null,
                 'compromised' => false,
@@ -237,6 +269,12 @@ final readonly class ServiceService implements ServiceServiceInterface
     private function syncSharedGroup(Service $sourceService, ServiceData $data, array $sourceUpdates): void
     {
         if (empty($sourceService->shared_group_id)) {
+            return;
+        }
+
+        if ($data->clientEncrypted) {
+            $this->syncClientEncryptedSharedGroup($sourceService, $data);
+
             return;
         }
 
@@ -259,6 +297,36 @@ final readonly class ServiceService implements ServiceServiceInterface
                     forceSensitiveEncryption: true
                 ));
             });
+    }
+
+    private function syncClientEncryptedSharedGroup(Service $sourceService, ServiceData $data): void
+    {
+        if (empty($sourceService->shared_key_envelope)) {
+            return;
+        }
+
+        Service::where('shared_group_id', $sourceService->shared_group_id)
+            ->whereKeyNot($sourceService->id)
+            ->update([
+                'type' => $sourceService->type,
+                'name' => $sourceService->name,
+                'url' => $sourceService->url,
+                'favicon' => $sourceService->favicon,
+                'username' => $data->username,
+                'username_iv' => $data->usernameIv,
+                'username_tag' => $data->usernameTag,
+                'password' => $data->password,
+                'password_iv' => $data->passwordIv,
+                'password_tag' => $data->passwordTag,
+                'notes' => $data->notes,
+                'notes_iv' => $data->notes ? $data->notesIv : null,
+                'notes_tag' => $data->notes ? $data->notesTag : null,
+                'client_encrypted' => true,
+                'strength' => null,
+                'compromised' => false,
+                'reused' => false,
+                'updated_at' => now(),
+            ]);
     }
 
     private function deleteRecipientSharedCopy(Service $service): bool

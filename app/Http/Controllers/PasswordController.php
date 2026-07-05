@@ -10,7 +10,8 @@ final class PasswordController extends Controller
 {
     public function __construct(private readonly PasswordService $passwordService) {}
 
-    public function generate(Request $request) {
+    public function generate(Request $request)
+    {
         $password = $this->passwordService->generate(
             length: (int) $request->get('length', 16),
             upper: $request->boolean('upper', true),
@@ -25,9 +26,7 @@ final class PasswordController extends Controller
     public function entropy(Request $request): JsonResponse
     {
         $password = $request->get('password', '');
-        $userId = auth()->id();
 
-        $result = $this->passwordService->analyze($password, $userId ?? 0);
-        return response()->json($result);
+        return response()->json($this->passwordService->calculateEntropy($password));
     }
 }

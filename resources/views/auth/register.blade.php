@@ -10,7 +10,7 @@
         <h1 class="text-3xl font-semibold text-center mb-1">{{ __('Create account') }}</h1>
         <p class="text-[var(--text-secondary)] text-center mb-8">{{ __('Get started in seconds') }}</p>
 
-        <form method="POST" action="{{ route('register') }}" id="register-form">
+        <form method="POST" action="{{ route('register') }}" id="register-form" data-validation-url="{{ route('register.validate') }}">
             @csrf
 
             <div class="mb-5">
@@ -34,13 +34,65 @@
             </div>
 
             <div class="mb-5">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Password') }}</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Login password') }}</label>
                 <div class="relative">
                     <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-key"></i></span>
                     <input type="password" name="password" id="password"
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl py-4 pl-11 pr-12 outline-none transition"
-                           placeholder="••••••••" required>
+                           placeholder="••••••••"
+                           autocomplete="new-password"
+                           minlength="8"
+                           required>
                     <button type="button" id="toggle-password"
+                            data-confirm-target="password_confirmation"
+                            class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-emerald-500 transition">
+                        <i class="fa-solid fa-eye"></i>
+                    </button>
+                </div>
+
+                @error('password')
+                    <p class="text-red-500 text-sm mt-2">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="mb-5">
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Confirm login password') }}</label>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-key"></i></span>
+                    <input type="password" name="password_confirmation" id="password_confirmation"
+                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl py-4 pl-11 pr-12 outline-none transition"
+                           placeholder="••••••••"
+                           autocomplete="new-password"
+                           minlength="8"
+                           required>
+                </div>
+            </div>
+
+            <button type="button" id="generate-login-password"
+                    data-password-generate
+                    data-password-target="password"
+                    data-password-confirm-target="password_confirmation"
+                    data-password-min-length="8"
+                    class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium mb-6 transition">
+                <i class="fa-solid fa-dice"></i>
+                <span>{{ __('Generate strong login password') }}</span>
+            </button>
+
+            <div class="mb-5">
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Vault password') }}</label>
+                <p class="text-xs text-[var(--text-secondary)] mb-2">
+                    {{ __('This password encrypts your vault and must be different from your login password.') }}
+                </p>
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" id="vault_password"
+                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl py-4 pl-11 pr-12 outline-none transition"
+                           placeholder="••••••••"
+                           autocomplete="new-password"
+                           minlength="12"
+                           required>
+                    <button type="button" id="toggle-password-vault"
+                            data-confirm-target="vault_password_confirmation"
                             class="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-emerald-500 transition">
                         <i class="fa-solid fa-eye"></i>
                     </button>
@@ -48,7 +100,7 @@
 
                 <div id="strength-container" class="mt-3 hidden">
                     <div class="flex justify-between text-xs mb-1">
-                        <span class="text-[var(--text-secondary)]">{{ __('Password strength') }}</span>
+                        <span class="text-[var(--text-secondary)]">{{ __('Vault password strength') }}</span>
                         <span id="strength-text" class="font-medium">{{ __('Calculating...') }}</span>
                     </div>
                     <div class="h-2 bg-[var(--bg-input)] rounded-2xl overflow-hidden">
@@ -58,19 +110,26 @@
             </div>
 
             <div class="mb-6">
-                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Confirm password') }}</label>
+                <label class="block text-sm text-[var(--text-secondary)] mb-1.5">{{ __('Confirm vault password') }}</label>
                 <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-key"></i></span>
-                    <input type="password" name="password_confirmation" id="password_confirmation"
-                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl py-4 pl-11 pr-4 outline-none transition"
-                           placeholder="••••••••" required>
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"><i class="fa-solid fa-lock"></i></span>
+                    <input type="password" id="vault_password_confirmation"
+                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl py-4 pl-11 pr-12 outline-none transition"
+                           placeholder="••••••••"
+                           autocomplete="new-password"
+                           minlength="12"
+                           required>
                 </div>
             </div>
 
-            <button type="button" id="generate-password"
+            <button type="button" id="generate-vault-password"
+                    data-password-generate
+                    data-password-target="vault_password"
+                    data-password-confirm-target="vault_password_confirmation"
+                    data-password-min-length="12"
                     class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium mb-6 transition">
                 <i class="fa-solid fa-dice"></i>
-                <span>{{ __('Generate strong password') }}</span>
+                <span>{{ __('Generate strong vault password') }}</span>
             </button>
 
             <button type="submit"

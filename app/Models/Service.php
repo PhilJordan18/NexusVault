@@ -24,6 +24,8 @@ class Service extends Model
         'notes_iv', 'notes_tag',
         'shared_user_id', 'shared_at',
         'shared_group_id',
+        'shared_key_envelope',
+        'client_encrypted',
         'strength',
         'compromised',
         'reused',
@@ -37,6 +39,8 @@ class Service extends Model
 
     protected $casts = [
         'shared_at' => 'datetime',
+        'shared_key_envelope' => 'array',
+        'client_encrypted' => 'boolean',
         'compromised' => 'boolean',
         'reused' => 'boolean',
     ];
@@ -72,6 +76,10 @@ class Service extends Model
 
     public function getUsernameAttribute(?string $value): ?string
     {
+        if ($this->client_encrypted) {
+            return $value;
+        }
+
         if (empty($value) || empty($this->username_iv) || empty($this->username_tag)) {
             return null;
         }
@@ -87,6 +95,10 @@ class Service extends Model
 
     public function getPasswordAttribute(?string $value): ?string
     {
+        if ($this->client_encrypted) {
+            return $value;
+        }
+
         if (empty($value) || empty($this->password_iv) || empty($this->password_tag)) {
             return null;
         }
@@ -102,6 +114,10 @@ class Service extends Model
 
     public function getNotesAttribute(?string $value): ?string
     {
+        if ($this->client_encrypted) {
+            return $value;
+        }
+
         if (empty($value) || empty($this->notes_iv) || empty($this->notes_tag)) {
             return null;
         }

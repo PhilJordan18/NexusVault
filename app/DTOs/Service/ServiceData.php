@@ -13,7 +13,14 @@ final readonly class ServiceData
         public string $password,
         public ?string $notes = null,
         public ?string $domain = null,
-        public string $type = Service::TYPE_LOGIN
+        public string $type = Service::TYPE_LOGIN,
+        public bool $clientEncrypted = false,
+        public ?string $usernameIv = null,
+        public ?string $usernameTag = null,
+        public ?string $passwordIv = null,
+        public ?string $passwordTag = null,
+        public ?string $notesIv = null,
+        public ?string $notesTag = null
     ) {}
 
     public static function fromArray(array $data): self
@@ -25,7 +32,14 @@ final readonly class ServiceData
             password: $data['password'],
             notes: $data['notes'] ?? null,
             domain: $data['domain'] ?? null,
-            type: $data['type'] ?? Service::TYPE_LOGIN
+            type: $data['type'] ?? Service::TYPE_LOGIN,
+            clientEncrypted: (bool) ($data['client_encrypted'] ?? false),
+            usernameIv: $data['username_iv'] ?? null,
+            usernameTag: $data['username_tag'] ?? null,
+            passwordIv: $data['password_iv'] ?? null,
+            passwordTag: $data['password_tag'] ?? null,
+            notesIv: $data['notes_iv'] ?? null,
+            notesTag: $data['notes_tag'] ?? null
         );
     }
 

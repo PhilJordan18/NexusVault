@@ -1,19 +1,36 @@
 import { bindPasswordStrength } from '../../ts/utils/password-utils';
+import {
+    decryptSharedKeyFromVault,
+    decryptSharedVaultString,
+    decryptVaultString,
+    encryptSharedItemFields,
+    encryptVaultString,
+    hasStoredVaultKey,
+} from '../../ts/zero-knowledge';
+import type { EncryptedString, SharedKeyEnvelope } from '../../ts/zero-knowledge';
 
 // Types
 type Account = {
     id: number;
     type?: ItemType;
     username: string;
+    username_iv?: string | null;
+    username_tag?: string | null;
     password: string;
+    password_iv?: string | null;
+    password_tag?: string | null;
     url?: string;
     notes?: string;
+    notes_iv?: string | null;
+    notes_tag?: string | null;
     name?: string;
+    client_encrypted?: boolean;
     shared_user_id?: number | null;
     strength?: string;          // 'very_weak', 'weak', 'strong', 'very_strong'
     compromised?: boolean;
     reused?: boolean;
     shared_group_id?: string | null;
+    shared_key_envelope?: SharedKeyEnvelope | null;
     shared_with?: ShareRecipient[];
 };
 
@@ -81,6 +98,122 @@ function csrfToken(): string {
     return meta?.content || '';
 }
 
+function usesClientEncryption(): boolean {
+    return Boolean((window as any).nexusVaultUsesClientEncryption);
+}
+
+async function decryptAccount(account: Account): Promise<Account> {
+    if (!account.client_encrypted) {
+        return account;
+    }
+
+    if (!hasStoredVaultKey()) {
+        window.location.href = '/vault/unlock';
+
+        return account;
+    }
+
+    const sharedKey = account.shared_key_envelope
+        ? await decryptSharedKeyFromVault(account.shared_key_envelope)
+        : null;
+    const decryptString = sharedKey
+        ? (encrypted: EncryptedString) => decryptSharedVaultString(encrypted, sharedKey)
+        : decryptVaultString;
+
+    const username = await decryptString({
+        ciphertext: account.username,
+        iv: account.username_iv ?? '',
+        tag: account.username_tag ?? '',
+    });
+
+    const password = await decryptString({
+        ciphertext: account.password,
+        iv: account.password_iv ?? '',
+        tag: account.password_tag ?? '',
+    });
+
+    const notes = account.notes && account.notes_iv && account.notes_tag
+        ? await decryptString({
+            ciphertext: account.notes,
+            iv: account.notes_iv,
+            tag: account.notes_tag,
+        })
+        : undefined;
+
+    return {
+        ...account,
+        username,
+        password,
+        notes,
+        client_encrypted: false,
+    };
+}
+
+async function decryptLoadedAccounts(): Promise<void> {
+    const accounts = (window as any).accounts as Record<number, Account> | undefined;
+
+    if (!accounts || !usesClientEncryption()) {
+        return;
+    }
+
+    const entries = await Promise.all(
+        Object.entries(accounts).map(async ([id, account]) => [id, await decryptAccount(account)] as const)
+    );
+
+    (window as any).accounts = Object.fromEntries(entries);
+    entries.forEach(([, account]) => updateAccountListItem(account));
+}
+
+async function encryptEditableFields(account: Account, username: string, password: string, notes: string | null): Promise<{
+    username: EncryptedString;
+    password: EncryptedString;
+    notes: EncryptedString | null;
+}> {
+    if (account.shared_key_envelope) {
+        const sharedKey = await decryptSharedKeyFromVault(account.shared_key_envelope);
+        const sharedFields = await encryptSharedItemFields({ username, password, notes }, sharedKey);
+
+        return {
+            username: sharedFields.username,
+            password: sharedFields.password,
+            notes: sharedFields.notes ?? null,
+        };
+    }
+
+    return {
+        username: await encryptVaultString(username),
+        password: await encryptVaultString(password),
+        notes: notes ? await encryptVaultString(notes) : null,
+    };
+}
+
+function accountListLabel(account: Account): string {
+    return account.username?.trim() || account.name?.trim() || t('Encrypted item');
+}
+
+function accountListInitial(account: Account): string {
+    return accountListLabel(account).trim().charAt(0).toUpperCase() || '•';
+}
+
+function updateAccountListItem(account: Account): void {
+    const label = document.querySelector<HTMLElement>(`[data-account-list-label="${account.id}"]`);
+    const icon = document.querySelector<HTMLElement>(`[data-account-list-icon="${account.id}"]`);
+
+    if (label) {
+        label.textContent = accountListLabel(account);
+    }
+
+    if (icon) {
+        icon.textContent = accountListInitial(account);
+    }
+}
+
+function updateSelectedListItem(id: number): void {
+    document.querySelectorAll<HTMLElement>('[data-account-list-item]').forEach(item => {
+        item.classList.toggle('bg-[var(--bg-input)]', item.dataset.accountListItem === id.toString());
+    });
+}
+
 // ===== PUBLIC API =====
 
 (window as any).selectAccount = (id: number) => {
@@ -92,7 +225,9 @@ function csrfToken(): string {
     }
 
     currentAccount = account;
+    (window as any).nexusVaultCurrentAccount = account;
     const labels = labelsFor(account);
+    updateSelectedListItem(id);
 
     const panel = document.getElementById('detail-panel')!;
     panel.classList.remove('hidden');
@@ -107,7 +242,10 @@ function csrfToken(): string {
     const sharedBadge = document.getElementById('detail-shared-badge');
 
     if (account.shared_group_id) {
-        sharedBadge?.classList.remove('hidden');
+        if (sharedBadge) {
+            sharedBadge.classList.remove('hidden');
+            sharedBadge.textContent = account.shared_key_envelope ? t('Shared sync') : t('Shared copy');
+        }
     } else {
         sharedBadge?.classList.add('hidden');
     }
@@ -191,6 +329,7 @@ function csrfToken(): string {
     editPassword.type = isLogin ? 'password' : 'text';
     editPassword.dataset.passwordStrengthDisabled = isLogin ? 'false' : 'true';
     document.getElementById('edit-generate-btn')?.classList.toggle('hidden', !isLogin);
+    document.querySelector('[data-password-generator-controls-for="edit-generate-btn"]')?.classList.toggle('hidden', !isLogin);
     document.getElementById('edit-strength-container')?.classList.toggle('hidden', !isLogin);
 
     document.getElementById('edit-account-modal')!.classList.remove('hidden');
@@ -216,6 +355,12 @@ function csrfToken(): string {
 (window as any).submitEditAccount = async (e: Event) => {
     e.preventDefault();
 
+    if (!currentAccount) {
+        alert(t('Please select an account first.'));
+
+        return;
+    }
+
     const serviceId = Number((document.getElementById('edit-service-id') as HTMLInputElement).value);
     const type = (document.getElementById('edit-type') as HTMLInputElement).value as ItemType;
     const username = (document.getElementById('edit-username') as HTMLInputElement).value.trim();
@@ -232,6 +377,10 @@ function csrfToken(): string {
     buttons.forEach(b => (b.disabled = true));
 
     try {
+        const encryptedFields = usesClientEncryption()
+            ? await encryptEditableFields(currentAccount, username, password, notes || null)
+            : null;
+
         const response = await fetch(`/services/${serviceId}`, {
             method: 'PUT',
             headers: {
@@ -243,9 +392,16 @@ function csrfToken(): string {
                 name: (document.getElementById('edit-name') as HTMLInputElement).value,
                 type,
                 url: (document.getElementById('edit-url') as HTMLInputElement).value || null,
-                username,
-                password,
-                notes: notes || null,
+                username: encryptedFields?.username.ciphertext ?? username,
+                username_iv: encryptedFields?.username.iv,
+                username_tag: encryptedFields?.username.tag,
+                password: encryptedFields?.password.ciphertext ?? password,
+                password_iv: encryptedFields?.password.iv,
+                password_tag: encryptedFields?.password.tag,
+                notes: encryptedFields?.notes?.ciphertext ?? (notes || null),
+                notes_iv: encryptedFields?.notes?.iv,
+                notes_tag: encryptedFields?.notes?.tag,
+                client_encrypted: encryptedFields ? 1 : 0,
             }),
         });
 
@@ -253,7 +409,15 @@ function csrfToken(): string {
             const updated = await response.json();
             const accounts = (window as any).accounts as Record<number, Account>;
 
-            accounts[serviceId] = { ...accounts[serviceId], ...updated };
+            accounts[serviceId] = {
+                ...accounts[serviceId],
+                ...updated,
+                username,
+                password,
+                notes: notes || undefined,
+                client_encrypted: false,
+            };
+            updateAccountListItem(accounts[serviceId]);
             (window as any).selectAccount(serviceId);
             (window as any).hideEditModal();
 
@@ -279,6 +443,17 @@ function csrfToken(): string {
 (window as any).shareCurrentAccount = () => {
 
     if (!currentAccount) {
+        const accounts = (window as any).accounts as Record<number, Account> | undefined;
+        const firstId = accounts ? Number(Object.keys(accounts)[0]) : Number.NaN;
+
+        if (Number.isFinite(firstId)) {
+            (window as any).selectAccount(firstId);
+        }
+    }
+
+    if (!currentAccount) {
+        alert(t('Please select an account first.'));
+
         return;
     }
 
@@ -517,17 +692,20 @@ function renderSecurityFromAccount(account: Account) {
 };
 
 // ===== INITIALISATION =====
-document.addEventListener('DOMContentLoaded', () => {
+function initServicePage(): void {
     const accounts = (window as any).accounts as Record<number, Account> | undefined;
 
-    if (accounts) {
+    void decryptLoadedAccounts().then(() => {
+        if (!accounts) {
+            return;
+        }
 
         const firstId = Object.keys(accounts)[0];
 
         if (firstId) {
             setTimeout(() => (window as any).selectAccount(firstId), 80);
         }
-    }
+    });
 
     if (document.getElementById('edit-password')) {
         bindPasswordStrength(
@@ -539,4 +717,10 @@ document.addEventListener('DOMContentLoaded', () => {
             'edit-generate-btn'
         );
     }
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initServicePage);
+} else {
+    initServicePage();
+}

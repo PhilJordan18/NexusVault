@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Service;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 final class DashboardController extends Controller
@@ -34,9 +35,16 @@ final class DashboardController extends Controller
         return view('dashboard.index', compact('grouped', 'stats'));
     }
 
-    public function show(string $serviceName)
+    public function show(string $serviceName): View|RedirectResponse
     {
         $accounts = Service::where('user_id', auth()->id())->where('name', $serviceName)->orderBy('updated_at', 'desc')->get();
+
+        if ($accounts->isEmpty()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('error', __('This service is no longer available.'));
+        }
+
         $name = $serviceName;
 
         return view('dashboard.service', compact('accounts', 'name'));

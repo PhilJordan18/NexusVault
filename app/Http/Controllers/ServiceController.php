@@ -12,6 +12,7 @@ use App\Services\Vault\FaviconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 final class ServiceController extends Controller
 {
@@ -36,7 +37,7 @@ final class ServiceController extends Controller
         return redirect()->route('dashboard')->with('success', __('Service added successfully!'));
     }
 
-    public function show(string $name)
+    public function show(string $name): View|RedirectResponse
     {
         $type = request('type');
 
@@ -45,6 +46,22 @@ final class ServiceController extends Controller
         }
 
         $accounts = $this->service->getAccountsByName($name, auth()->id(), $type);
+
+        if ($accounts->isEmpty()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('error', __('This service is no longer available.'));
+        }
+
+        $accounts->makeVisible([
+            'username_iv',
+            'username_tag',
+            'password_iv',
+            'password_tag',
+            'notes_iv',
+            'notes_tag',
+        ]);
+
         $sharesByService = Share::with('toUser')
             ->where('from_user_id', auth()->id())
             ->whereIn('service_id', $accounts->pluck('id'))
@@ -84,8 +101,17 @@ final class ServiceController extends Controller
                 'name' => $updated->name,
                 'url' => $updated->url,
                 'username' => $updated->username,
+                'username_iv' => $updated->username_iv,
+                'username_tag' => $updated->username_tag,
                 'password' => $updated->password,
+                'password_iv' => $updated->password_iv,
+                'password_tag' => $updated->password_tag,
                 'notes' => $updated->notes,
+                'notes_iv' => $updated->notes_iv,
+                'notes_tag' => $updated->notes_tag,
+                'client_encrypted' => $updated->client_encrypted,
+                'shared_group_id' => $updated->shared_group_id,
+                'shared_key_envelope' => $updated->shared_key_envelope,
                 'strength' => $updated->strength,
                 'compromised' => $updated->compromised,
                 'reused' => $updated->reused,

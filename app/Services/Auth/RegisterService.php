@@ -4,20 +4,33 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use App\Services\Auth\Contracts\RegisterServiceInterface;
-use App\Services\Auth\Contracts\UserKeyServiceInterface;
 use Illuminate\Support\Facades\Hash;
-use Random\RandomException;
 
 final readonly class RegisterService implements RegisterServiceInterface
 {
-    public function __construct(private UserKeyServiceInterface $service) {}
-
     public function register(array $data): User
     {
-        $keys = $this->service->provisionKey($data['password']);
-       $password = Hash::make($data['password']);
-       $user = User::create(['name' => $data['name'], 'email' => $data['email'], 'password' => $password, 'salt' => $keys['salt'], 'public_key' => $keys['public_key'], 'private_key' => base64_encode($keys['private_key']), 'private_nonce' => $keys['private_nonce'], 'encrypted_master_key' => $keys['encrypted_master_key'], 'mfa_enabled' => false, 'totp_secret' => null]);
-       $user->sendEmailVerificationNotification();
-       return $user;
+        $password = Hash::make($data['password']);
+        $vaultKeyEnvelope = json_decode($data['vault_key_envelope'], true, 512, JSON_THROW_ON_ERROR);
+        $vaultRecoveryEnvelope = json_decode($data['vault_recovery_envelope'], true, 512, JSON_THROW_ON_ERROR);
+
+        $user = User::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => $password,
+            'salt' => bin2hex(random_bytes(SODIUM_CRYPTO_PWHASH_SALTBYTES)),
+            'public_key' => $data['public_key'],
+            'private_key' => $data['encrypted_private_key'],
+            'private_nonce' => null,
+            'encrypted_master_key' => null,
+            'vault_key_envelope' => $vaultKeyEnvelope,
+            'vault_recovery_envelope' => $vaultRecoveryEnvelope,
+            'mfa_enabled' => false,
+            'totp_secret' => null,
+        ]);
+
+        $user->sendEmailVerificationNotification();
+
+        return $user;
     }
 }

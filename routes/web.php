@@ -13,6 +13,9 @@ use App\Http\Controllers\SearchController;
 use App\Http\Controllers\ServiceController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ShareController;
+use App\Http\Controllers\VaultResetController;
+use App\Http\Controllers\VaultSetupController;
+use App\Http\Controllers\VaultUnlockController;
 use App\Http\Controllers\WebAuthn\WebAuthnLoginController;
 use App\Http\Controllers\WebAuthn\WebAuthnRegisterController;
 use App\Models\Share;
@@ -36,6 +39,9 @@ Route::post('/password/generate', [PasswordController::class, 'generate'])
 
 // Regular Auth
 Route::get('/register', [RegisterController::class, 'index'])->name('register');
+Route::post('/register/validate', [RegisterController::class, 'validateRegistration'])
+    ->middleware('throttle:20,1')
+    ->name('register.validate');
 Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
 
 Route::get('/login', [LoginController::class, 'index'])->name('login');
@@ -117,6 +123,22 @@ Route::middleware('auth')->group(function () {
         ->name('mfa.disable');
 });
 
+// Vault Unlock
+Route::middleware(['auth', 'mfa'])->group(function () {
+    Route::get('/vault/setup', [VaultSetupController::class, 'show'])->name('vault.setup');
+    Route::post('/vault/setup', [VaultSetupController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('vault.setup.store');
+    Route::get('/vault/unlock', [VaultUnlockController::class, 'show'])->name('vault.unlock');
+    Route::post('/vault/unlock', [VaultUnlockController::class, 'unlock'])
+        ->middleware('throttle:20,1')
+        ->name('vault.unlock.store');
+    Route::post('/vault/reset', [VaultResetController::class, 'store'])
+        ->middleware('throttle:3,1')
+        ->name('vault.reset.store');
+    Route::post('/vault/lock', [VaultUnlockController::class, 'lock'])->name('vault.lock');
+});
+
 // Dashboard
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -159,6 +181,7 @@ Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
 
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
 
+    Route::post('/shares/prepare', [ShareController::class, 'prepare'])->name('shares.prepare');
     Route::post('/shares', [ShareController::class, 'store'])->name('shares.store');
     Route::post('/shares/{share}/accept', [ShareController::class, 'accept'])->name('shares.accept');
     Route::post('/shares/{share}/reject', [ShareController::class, 'reject'])->name('shares.reject');

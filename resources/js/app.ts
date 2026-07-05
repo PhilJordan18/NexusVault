@@ -19,11 +19,15 @@ async function bootBrowserModules(): Promise<void> {
     const [
         { initPasskeys },
         { showShareModal, hideShareModal },
-        { bindPasswordStrength },
+        { bindPasswordGeneratorCustomization, bindPasswordStrength },
+        { bindZeroKnowledgeCreateForm },
+        { bindZeroKnowledgeSharing },
     ] = await Promise.all([
         import('../ts/passkey'),
         import('../ts/utils/modals'),
         import('../ts/utils/password-utils'),
+        import('../ts/zero-knowledge-forms'),
+        import('../ts/zero-knowledge-sharing'),
         import('../ts/search'),
         import('../ts/sessions'),
         import('./pages/service'),
@@ -33,6 +37,8 @@ async function bootBrowserModules(): Promise<void> {
     (window as any).hideShareModal = hideShareModal;
 
     initPasskeys();
+    bindZeroKnowledgeCreateForm();
+    bindZeroKnowledgeSharing();
     bindPasswordStrength(
         'create-password',
         'create-password-toggle',
@@ -41,6 +47,7 @@ async function bootBrowserModules(): Promise<void> {
         'create-strength-text',
         'create-generate-btn'
     );
+    bindPasswordGeneratorCustomization();
 }
 
 if (typeof window !== 'undefined') {

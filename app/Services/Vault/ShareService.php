@@ -14,6 +14,7 @@ use App\Services\Auth\UserKeyService;
 use App\Services\PasswordService;
 use App\Services\Security\CryptoService;
 use App\Services\Vault\Contracts\ShareServiceInterface;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 final readonly class ShareService implements ShareServiceInterface
@@ -46,6 +47,61 @@ final readonly class ShareService implements ShareServiceInterface
         return $this->createShareRecord($service, $recipient, $payload);
     }
 
+    public function prepareClientEncryptedShare(ShareData $data): array
+    {
+        $service = $this->findService($data->serviceId);
+        $recipient = $this->findRecipient($data->recipientEmail);
+
+        $this->validateClientEncryptedOwnership($service);
+        $this->validateClientEncryptedRecipient($recipient);
+        $this->validateShareIsNotActive($service, $recipient);
+
+        return [
+            'recipient' => [
+                'name' => $recipient->name,
+                'email' => $recipient->email,
+                'public_key' => $this->getValidPublicKey($recipient),
+            ],
+        ];
+    }
+
+    public function shareClientEncrypted(ShareData $data, array $payload): Share
+    {
+        $service = $this->findService($data->serviceId);
+        $recipient = $this->findRecipient($data->recipientEmail);
+
+        $this->validateClientEncryptedOwnership($service);
+        $this->validateClientEncryptedRecipient($recipient);
+        $this->getValidPublicKey($recipient);
+        $service = $this->ensureServiceHasSharedGroup($service);
+        $this->validateShareIsNotActive($service, $recipient);
+
+        if (($payload['mode'] ?? null) === 'client-encrypted-sync') {
+            $this->validateClientEncryptedSyncPayload($payload);
+
+            return $this->shareClientEncryptedSync($service, $recipient, $payload);
+        }
+
+        $this->validateClientEncryptedPayload($payload);
+
+        return Share::create([
+            'service_id' => $service->id,
+            'from_user_id' => auth()->id(),
+            'to_user_id' => $recipient->id,
+            'shared_data' => json_encode([
+                'version' => 1,
+                'mode' => 'client-encrypted',
+                'encrypted_aes_key' => $payload['encrypted_aes_key'],
+                'encrypted_data' => $payload['encrypted_data'],
+                'name' => $service->name,
+                'url' => $service->url,
+                'favicon' => $service->favicon,
+                'type' => $service->type ?? Service::TYPE_LOGIN,
+            ]),
+            'shared_at' => now(),
+        ]);
+    }
+
     public function accept(Share $share): AcceptedShareResult
     {
         $this->validateAcceptPermissions($share);
@@ -58,6 +114,48 @@ final readonly class ShareService implements ShareServiceInterface
 
         $reEncrypted = $this->reEncryptForRecipient($decryptedData);
         $newService = $this->createServiceFromSharedData($payload, $reEncrypted, $share, $analysis);
+
+        $share->update(['accepted_at' => now()]);
+
+        return new AcceptedShareResult($newService);
+    }
+
+    public function acceptClientEncrypted(Share $share, array $encryptedFields): AcceptedShareResult
+    {
+        $this->validateAcceptPermissions($share);
+
+        $payload = $this->extractClientEncryptedPayload($share);
+
+        if (($payload['mode'] ?? null) === 'client-encrypted-sync') {
+            return $this->acceptClientEncryptedSync($share, $payload, $encryptedFields);
+        }
+
+        $this->validateClientEncryptedAcceptPayload($encryptedFields);
+        $sourceService = $this->ensureServiceHasSharedGroup($share->service);
+
+        $newService = Service::create([
+            'user_id' => auth()->id(),
+            'type' => $payload['type'] ?? Service::TYPE_LOGIN,
+            'name' => $payload['name'],
+            'url' => $payload['url'] ?? null,
+            'favicon' => $payload['favicon'] ?? null,
+            'username' => $encryptedFields['username'],
+            'username_iv' => $encryptedFields['username_iv'],
+            'username_tag' => $encryptedFields['username_tag'],
+            'password' => $encryptedFields['password'],
+            'password_iv' => $encryptedFields['password_iv'],
+            'password_tag' => $encryptedFields['password_tag'],
+            'notes' => $encryptedFields['notes'] ?? null,
+            'notes_iv' => $encryptedFields['notes_iv'] ?? null,
+            'notes_tag' => $encryptedFields['notes_tag'] ?? null,
+            'shared_user_id' => $share->from_user_id,
+            'shared_at' => $share->shared_at,
+            'shared_group_id' => $sourceService->shared_group_id,
+            'client_encrypted' => true,
+            'strength' => null,
+            'compromised' => false,
+            'reused' => false,
+        ]);
 
         $share->update(['accepted_at' => now()]);
 
@@ -101,6 +199,10 @@ final readonly class ShareService implements ShareServiceInterface
             throw ShareException::unauthorized();
         }
 
+        if ($service->client_encrypted) {
+            throw ShareException::clientEncryptedSharingNotReady();
+        }
+
         if ($service->shared_user_id !== null) {
             throw ShareException::sharedAccessCannotBeReshared();
         }
@@ -110,6 +212,36 @@ final readonly class ShareService implements ShareServiceInterface
     {
         if ($recipient->id === auth()->id()) {
             throw ShareException::cannotShareWithYourself();
+        }
+
+        if ($recipient->usesClientSideVault()) {
+            throw ShareException::clientEncryptedSharingNotReady();
+        }
+    }
+
+    private function validateClientEncryptedOwnership(Service $service): void
+    {
+        if ($service->user_id !== auth()->id()) {
+            throw ShareException::unauthorized();
+        }
+
+        if (! $service->client_encrypted) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
+
+        if ($service->shared_user_id !== null) {
+            throw ShareException::sharedAccessCannotBeReshared();
+        }
+    }
+
+    private function validateClientEncryptedRecipient(User $recipient): void
+    {
+        if ($recipient->id === auth()->id()) {
+            throw ShareException::cannotShareWithYourself();
+        }
+
+        if (! $recipient->usesClientSideVault()) {
+            throw ShareException::recipientRequiresClientVault();
         }
     }
 
@@ -213,6 +345,172 @@ final readonly class ShareService implements ShareServiceInterface
         $raw = json_decode($share->shared_data, true);
 
         return ShareMapper::toPayload($raw);
+    }
+
+    private function extractClientEncryptedPayload(Share $share): array
+    {
+        $payload = json_decode($share->shared_data, true);
+
+        if (! in_array($payload['mode'] ?? null, ['client-encrypted', 'client-encrypted-sync'], true)) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
+
+        return $payload;
+    }
+
+    private function shareClientEncryptedSync(Service $service, User $recipient, array $payload): Share
+    {
+        return DB::transaction(function () use ($service, $recipient, $payload): Share {
+            $sourceService = $this->applyClientEncryptedSyncPayloadToSource($service, $payload);
+
+            return Share::create([
+                'service_id' => $sourceService->id,
+                'from_user_id' => auth()->id(),
+                'to_user_id' => $recipient->id,
+                'shared_data' => json_encode([
+                    'version' => 2,
+                    'mode' => 'client-encrypted-sync',
+                    'encrypted_aes_key' => $payload['encrypted_aes_key'],
+                    'encrypted_data' => $payload['encrypted_data'],
+                    'shared_fields' => $payload['shared_fields'],
+                    'name' => $sourceService->name,
+                    'url' => $sourceService->url,
+                    'favicon' => $sourceService->favicon,
+                    'type' => $sourceService->type ?? Service::TYPE_LOGIN,
+                ]),
+                'shared_at' => now(),
+            ]);
+        });
+    }
+
+    private function applyClientEncryptedSyncPayloadToSource(Service $service, array $payload): Service
+    {
+        $sharedFields = $payload['shared_fields'];
+
+        $service->forceFill([
+            'username' => $sharedFields['username']['ciphertext'],
+            'username_iv' => $sharedFields['username']['iv'],
+            'username_tag' => $sharedFields['username']['tag'],
+            'password' => $sharedFields['password']['ciphertext'],
+            'password_iv' => $sharedFields['password']['iv'],
+            'password_tag' => $sharedFields['password']['tag'],
+            'notes' => $sharedFields['notes']['ciphertext'] ?? null,
+            'notes_iv' => $sharedFields['notes']['iv'] ?? null,
+            'notes_tag' => $sharedFields['notes']['tag'] ?? null,
+            'shared_key_envelope' => $payload['shared_key_envelope'],
+            'client_encrypted' => true,
+            'strength' => null,
+            'compromised' => false,
+            'reused' => false,
+        ])->save();
+
+        return $service->refresh();
+    }
+
+    private function acceptClientEncryptedSync(Share $share, array $payload, array $encryptedFields): AcceptedShareResult
+    {
+        $this->validateClientEncryptedSyncAcceptPayload($encryptedFields);
+        $sourceService = $this->ensureServiceHasSharedGroup($share->service);
+        $sharedFields = $payload['shared_fields'];
+
+        $newService = Service::create([
+            'user_id' => auth()->id(),
+            'type' => $payload['type'] ?? Service::TYPE_LOGIN,
+            'name' => $payload['name'],
+            'url' => $payload['url'] ?? null,
+            'favicon' => $payload['favicon'] ?? null,
+            'username' => $sharedFields['username']['ciphertext'],
+            'username_iv' => $sharedFields['username']['iv'],
+            'username_tag' => $sharedFields['username']['tag'],
+            'password' => $sharedFields['password']['ciphertext'],
+            'password_iv' => $sharedFields['password']['iv'],
+            'password_tag' => $sharedFields['password']['tag'],
+            'notes' => $sharedFields['notes']['ciphertext'] ?? null,
+            'notes_iv' => $sharedFields['notes']['iv'] ?? null,
+            'notes_tag' => $sharedFields['notes']['tag'] ?? null,
+            'shared_user_id' => $share->from_user_id,
+            'shared_at' => $share->shared_at,
+            'shared_group_id' => $sourceService->shared_group_id,
+            'shared_key_envelope' => $encryptedFields['shared_key_envelope'],
+            'client_encrypted' => true,
+            'strength' => null,
+            'compromised' => false,
+            'reused' => false,
+        ]);
+
+        $share->update(['accepted_at' => now()]);
+
+        return new AcceptedShareResult($newService);
+    }
+
+    private function validateClientEncryptedPayload(array $payload): void
+    {
+        $encryptedData = $payload['encrypted_data'] ?? null;
+
+        if (
+            empty($payload['encrypted_aes_key'])
+            || ! is_array($encryptedData)
+            || empty($encryptedData['ciphertext'])
+            || empty($encryptedData['iv'])
+            || empty($encryptedData['tag'])
+        ) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
+    }
+
+    private function validateClientEncryptedSyncPayload(array $payload): void
+    {
+        if (
+            empty($payload['encrypted_aes_key'])
+            || ! $this->hasEncryptedString($payload['encrypted_data'] ?? null)
+            || ! $this->hasEncryptedString($payload['shared_key_envelope'] ?? null)
+            || ! $this->hasRequiredSharedFields($payload['shared_fields'] ?? null)
+        ) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
+    }
+
+    private function hasRequiredSharedFields(mixed $fields): bool
+    {
+        if (! is_array($fields)) {
+            return false;
+        }
+
+        if (! $this->hasEncryptedString($fields['username'] ?? null) || ! $this->hasEncryptedString($fields['password'] ?? null)) {
+            return false;
+        }
+
+        return empty($fields['notes']) || $this->hasEncryptedString($fields['notes']);
+    }
+
+    private function hasEncryptedString(mixed $value): bool
+    {
+        return is_array($value)
+            && ! empty($value['ciphertext'])
+            && ! empty($value['iv'])
+            && strlen((string) $value['iv']) === 24
+            && ! empty($value['tag'])
+            && strlen((string) $value['tag']) === 32;
+    }
+
+    private function validateClientEncryptedAcceptPayload(array $encryptedFields): void
+    {
+        foreach (['username', 'username_iv', 'username_tag', 'password', 'password_iv', 'password_tag'] as $field) {
+            if (empty($encryptedFields[$field])) {
+                throw ShareException::invalidClientEncryptedPayload();
+            }
+        }
+
+        if (! empty($encryptedFields['notes']) && (empty($encryptedFields['notes_iv']) || empty($encryptedFields['notes_tag']))) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
+    }
+
+    private function validateClientEncryptedSyncAcceptPayload(array $encryptedFields): void
+    {
+        if (! $this->hasEncryptedString($encryptedFields['shared_key_envelope'] ?? null)) {
+            throw ShareException::invalidClientEncryptedPayload();
+        }
     }
 
     private function decryptAesKey(SharePayload $payload, User $recipient): string

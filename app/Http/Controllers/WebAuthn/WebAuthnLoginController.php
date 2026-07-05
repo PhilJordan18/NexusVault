@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\WebAuthn;
 
-use App\Services\Auth\UserKeyService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Laragear\WebAuthn\Http\Requests\AssertedRequest;
@@ -13,8 +12,6 @@ use function response;
 
 readonly class WebAuthnLoginController
 {
-    public function __construct(private UserKeyService $userKeyService) {}
-
     /**
      * Returns the challenge to assertion.
      */
@@ -35,7 +32,6 @@ readonly class WebAuthnLoginController
         }
 
         $user = auth()->user();
-        $this->userKeyService->storeMasterKey($user);
 
         $credentialId = $request->validated()['id'];
         $credential = WebAuthnCredential::query()
@@ -51,6 +47,8 @@ readonly class WebAuthnLoginController
             return response()->json(['redirect' => route('mfa.verify.login')]);
         }
 
-        return response()->json(['redirect' => route('dashboard')]);
+        return response()->json([
+            'redirect' => route($user->requiresClientVaultSetup() ? 'vault.setup' : 'vault.unlock'),
+        ]);
     }
 }

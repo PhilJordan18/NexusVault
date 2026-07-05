@@ -90,6 +90,9 @@
                 </div>
 
                 <button type="button" id="create-generate-btn"
+                        data-password-generate
+                        data-password-target="create-password"
+                        data-password-min-length="8"
                         class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium transition">
                     <i class="fa-solid fa-dice"></i>
                     <span>{{ __('Generate strong password') }}</span>
@@ -172,6 +175,7 @@
         passwordInput.dataset.passwordStrengthDisabled = isLogin ? 'false' : 'true';
         urlSection.classList.toggle('hidden', !isLogin);
         createGenerateButton.classList.toggle('hidden', !isLogin);
+        document.querySelector('[data-password-generator-controls-for="create-generate-btn"]')?.classList.toggle('hidden', !isLogin);
 
         if (!isLogin) {
             suggestionsBox.classList.add('hidden');

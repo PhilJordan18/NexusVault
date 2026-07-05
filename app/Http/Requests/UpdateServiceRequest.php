@@ -31,9 +31,16 @@ class UpdateServiceRequest extends FormRequest
             'type' => ['sometimes', 'required', 'string', Rule::in(Service::types())],
             'name' => 'sometimes|required|string|max:255',
             'url' => ['nullable', 'url'],
-            'username' => 'sometimes|required|string|max:255',
+            'username' => 'sometimes|required|string',
             'password' => "sometimes|required|string|min:{$secretMinLength}",
             'notes' => 'nullable|string',
+            'client_encrypted' => [Rule::requiredIf(fn () => $this->user()?->usesClientSideVault()), 'boolean'],
+            'username_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'username_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'password_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'password_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'notes_iv' => ['nullable', 'string', 'size:24'],
+            'notes_tag' => ['nullable', 'string', 'size:32'],
         ];
     }
 }

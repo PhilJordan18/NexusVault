@@ -31,10 +31,17 @@ class CreateServiceRequest extends FormRequest
             'type' => ['required', 'string', Rule::in(Service::types())],
             'name' => 'required|string|max:255',
             'url' => ['nullable', 'url'],
-            'username' => 'required|string|max:255',
+            'username' => 'required|string',
             'password' => "required|string|min:{$secretMinLength}",
             'notes' => 'nullable|string',
             'domain' => 'nullable|string|max:255',
+            'client_encrypted' => [Rule::requiredIf(fn () => $this->user()?->usesClientSideVault()), 'boolean'],
+            'username_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'username_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'password_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'password_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'notes_iv' => ['nullable', 'string', 'size:24'],
+            'notes_tag' => ['nullable', 'string', 'size:32'],
         ];
     }
 }

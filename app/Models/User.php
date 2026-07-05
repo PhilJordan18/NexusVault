@@ -16,7 +16,7 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
     use HasFactory, Notifiable, WebAuthnAuthentication;
 
     protected $fillable = [
-        'name', 'email', 'password', 'salt', 'public_key', 'private_key', 'encrypted_master_key', 'mfa_enabled', 'totp_secret', 'email_verified_at', 'pfp', 'private_nonce', 'is_oauth', 'locale',
+        'name', 'email', 'password', 'salt', 'public_key', 'private_key', 'encrypted_master_key', 'vault_key_envelope', 'vault_recovery_envelope', 'mfa_enabled', 'totp_secret', 'email_verified_at', 'pfp', 'private_nonce', 'is_oauth', 'locale',
     ];
 
     protected $hidden = [
@@ -24,8 +24,18 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
     ];
 
     protected $casts = [
-        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean', 'theme' => 'string', 'locale' => 'string',
+        'email_verified_at' => 'datetime', 'mfa_enabled' => 'boolean', 'is_oauth' => 'boolean', 'theme' => 'string', 'locale' => 'string', 'vault_key_envelope' => 'array', 'vault_recovery_envelope' => 'array',
     ];
+
+    public function usesClientSideVault(): bool
+    {
+        return ! empty($this->vault_key_envelope);
+    }
+
+    public function requiresClientVaultSetup(): bool
+    {
+        return $this->is_oauth && empty($this->vault_key_envelope) && empty($this->encrypted_master_key);
+    }
 
     public function services(): HasMany
     {

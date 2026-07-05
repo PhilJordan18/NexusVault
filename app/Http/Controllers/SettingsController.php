@@ -34,7 +34,7 @@ final class SettingsController extends Controller
     {
         $this->changePasswordService->change(auth()->user(), $request->validated()['new_password']);
 
-        return back()->with('success', 'Your password and encryption keys have been updated successfully.');
+        return back()->with('success', __('Login password updated successfully.'));
     }
 
     public function revokeSession(string $sessionId): JsonResponse
@@ -47,7 +47,7 @@ final class SettingsController extends Controller
             ->where('user_id', $userId)
             ->delete();
 
-        if (!$deleted) {
+        if (! $deleted) {
             return response()->json(['message' => 'Session not found.'], 404);
         }
 
@@ -58,7 +58,7 @@ final class SettingsController extends Controller
 
             return response()->json([
                 'message' => 'Session revoked. You have been logged out.',
-                'redirect' => route('login')
+                'redirect' => route('login'),
             ]);
         }
 
@@ -74,7 +74,7 @@ final class SettingsController extends Controller
 
         return response()->json([
             'message' => 'Logged out from all other devices.',
-            'deleted_count' => $deleted
+            'deleted_count' => $deleted,
         ]);
     }
 

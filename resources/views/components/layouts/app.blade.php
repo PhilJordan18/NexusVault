@@ -51,7 +51,16 @@
             <span>{{ __('Settings') }}</span>
         </a>
 
+        <form method="POST" action="{{ route('vault.lock') }}"
+              onsubmit="sessionStorage.removeItem('nexusvault:vault-key:v1')"
+              class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)] text-sm transition">
+            @csrf
+            <i class="fa-solid fa-lock w-4"></i>
+            <button type="submit">{{ __('Lock Vault') }}</button>
+        </form>
+
         <form method="POST" action="{{ route('logout') }}"
+              onsubmit="sessionStorage.removeItem('nexusvault:vault-key:v1')"
               class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-500/10 text-red-400 text-sm transition">
             @csrf
             <i class="fa-solid fa-sign-out-alt w-4"></i>
@@ -159,6 +168,8 @@
 @include('shares.modal')
 
 <script>
+    window.nexusVaultUsesClientEncryption = @json(auth()->user()?->usesClientSideVault() ?? false);
+    window.nexusVaultEncryptedPrivateKey = @json(auth()->user()?->usesClientSideVault() ? json_decode(auth()->user()->private_key, true) : null);
     window.nexusVaultTranslations = Object.assign(
         {},
         window.nexusVaultTranslations || {},
@@ -168,6 +179,18 @@
             'Medium' => __('Medium'),
             'Strong' => __('Strong'),
             'Very strong' => __('Very strong'),
+            'Customize generator' => __('Customize generator'),
+            'Length' => __('Length'),
+            'Uppercase' => __('Uppercase'),
+            'Lowercase' => __('Lowercase'),
+            'Numbers' => __('Numbers'),
+            'Symbols' => __('Symbols'),
+            'Avoid ambiguous' => __('Avoid ambiguous'),
+            'Share sent successfully!' => __('Share sent successfully!'),
+            'Service added to your vault with success!' => __('Service added to your vault with success!'),
+            'Unable to prepare encrypted share.' => __('Unable to prepare encrypted share.'),
+            'Unable to send encrypted share.' => __('Unable to send encrypted share.'),
+            'Unable to accept encrypted share.' => __('Unable to accept encrypted share.'),
         ]) }}
     );
 </script>

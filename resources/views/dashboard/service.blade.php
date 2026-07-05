@@ -31,6 +31,8 @@
             'Revoke access for this recipient?' => __('Revoke access for this recipient?'),
             'Failed to revoke access.' => __('Failed to revoke access.'),
             'Shared access revoked.' => __('Shared access revoked.'),
+            'Shared copy' => __('Shared copy'),
+            'Shared sync' => __('Shared sync'),
             'Failed to revoke shared access.' => __('Failed to revoke shared access.'),
             'Unknown user' => __('Unknown user'),
             'Accepted' => __('Accepted'),
@@ -80,18 +82,23 @@
                 <div class="card rounded-3xl p-2">
                     @foreach ($accounts as $account)
                         <div onclick="window.selectAccount({{ $account->id }})"
+                             data-account-list-item="{{ $account->id }}"
                              class="px-4 py-4 hover:bg-[var(--bg-input)] rounded-2xl cursor-pointer flex items-center gap-4 group transition {{ $loop->first ? 'bg-[var(--bg-input)]' : '' }}">
 
-                            <div class="w-10 h-10 bg-[var(--bg-input)] rounded-2xl flex items-center justify-center flex-shrink-0 text-xl">
-                                {{ strtoupper(substr($account->username, 0, 1)) }}
+                            <div data-account-list-icon="{{ $account->id }}" class="w-10 h-10 bg-[var(--bg-input)] rounded-2xl flex items-center justify-center flex-shrink-0 text-xl">
+                                {{ strtoupper(substr($account->client_encrypted ? ($account->name ?? $name) : $account->username, 0, 1)) }}
                             </div>
 
                             <div class="flex-1 min-w-0">
-                                <p class="font-medium truncate">{{ $account->username }}</p>
+                                <p data-account-list-label="{{ $account->id }}" class="font-medium truncate">
+                                    {{ $account->client_encrypted ? ($account->name ?? $name) : $account->username }}
+                                </p>
                                 <div class="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                                     <span>{{ $account->updated_at->diffForHumans() }}</span>
                                     @if ($account->shared_group_id)
-                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">{{ __('Shared sync') }}</span>
+                                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
+                                            {{ auth()->user()->usesClientSideVault() && ! $account->shared_key_envelope ? __('Shared copy') : __('Shared sync') }}
+                                        </span>
                                     @endif
                                 </div>
                             </div>
@@ -243,6 +250,9 @@
                 </div>
 
                 <button type="button" id="edit-generate-btn"
+                        data-password-generate
+                        data-password-target="edit-password"
+                        data-password-min-length="8"
                         class="w-full flex items-center justify-center gap-2 text-emerald-500 hover:text-emerald-400 text-sm font-medium mb-4 transition">
                     <i class="fa-solid fa-dice"></i>
                     <span>{{ __('Generate strong password') }}</span>

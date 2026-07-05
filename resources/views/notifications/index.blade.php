@@ -1,6 +1,20 @@
 <x-layouts.app>
     @php
         $pendingCount = $pendingShares->count();
+        $clientSharePayloads = $pendingShares
+            ->mapWithKeys(function ($share) {
+                $payload = json_decode($share->shared_data, true) ?: [];
+
+                return in_array($payload['mode'] ?? null, ['client-encrypted', 'client-encrypted-sync'], true)
+                    ? [$share->id => [
+                        'version' => $payload['version'] ?? 1,
+                        'mode' => $payload['mode'],
+                        'encrypted_aes_key' => $payload['encrypted_aes_key'] ?? '',
+                        'encrypted_data' => $payload['encrypted_data'] ?? [],
+                        'shared_fields' => $payload['shared_fields'] ?? null,
+                    ]]
+                    : [];
+            });
     @endphp
 
     <div class="max-w-4xl mx-auto">
@@ -25,6 +39,10 @@
         @else
             <div class="space-y-4">
                 @foreach($pendingShares as $share)
+                    @php
+                        $payload = json_decode($share->shared_data, true) ?: [];
+                        $isClientEncrypted = in_array($payload['mode'] ?? null, ['client-encrypted', 'client-encrypted-sync'], true);
+                    @endphp
                     <div class="card rounded-3xl p-6 flex items-center justify-between hover:border-emerald-500/40 transition">
                         <div class="flex items-center gap-4">
                             <!-- Avatar / Icon -->
@@ -45,7 +63,9 @@
 
                         <div class="flex items-center gap-3">
                             <!-- Accept -->
-                            <form action="{{ route('shares.accept', $share) }}" method="POST">
+                            <form action="{{ route('shares.accept', $share) }}"
+                                  method="POST"
+                                  @if($isClientEncrypted) data-client-share-accept-form data-share-id="{{ $share->id }}" @endif>
                                 @csrf
                                 <button type="submit"
                                     class="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium flex items-center gap-2 transition">
@@ -69,4 +89,14 @@
             </div>
         @endif
     </div>
+
+    @if($clientSharePayloads->isNotEmpty())
+        <script>
+            window.nexusVaultPendingClientShares = Object.assign(
+                {},
+                window.nexusVaultPendingClientShares || {},
+                {{ Illuminate\Support\Js::from($clientSharePayloads) }}
+            );
+        </script>
+    @endif
 </x-layouts.app>
