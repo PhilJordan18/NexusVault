@@ -88,13 +88,13 @@ final class SettingsController extends Controller
 
     public function destroyPasskey(WebAuthnCredential $webauthnCredential): RedirectResponse
     {
-        if ($webauthnCredential->user_id !== auth()->id()) {
+        if ($webauthnCredential->authenticatable()->isNot(auth()->user())) {
             abort(403);
         }
 
         $webauthnCredential->delete();
 
-        return back()->with('success', 'Passkey deleted.');
+        return back()->with('success', __('Passkey deleted.'));
     }
 
     public function passkeys(): View
