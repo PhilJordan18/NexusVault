@@ -63,7 +63,7 @@ final class ShareController extends Controller
             if ($this->isClientEncryptedShare($share)) {
                 $validated = $this->isClientEncryptedSyncShare($share)
                     ? $request->validate([
-                        'client_encrypted' => ['required', 'boolean'],
+                        'client_encrypted' => ['required', 'accepted'],
                         'shared_key_envelope' => ['required', 'array'],
                         'shared_key_envelope.version' => ['required', 'integer'],
                         'shared_key_envelope.algorithm' => ['required', 'string'],
@@ -73,7 +73,7 @@ final class ShareController extends Controller
                         'shared_key_envelope.tag' => ['required', 'string', 'size:32'],
                     ])
                     : $request->validate([
-                        'client_encrypted' => ['required', 'boolean'],
+                        'client_encrypted' => ['required', 'accepted'],
                         'username' => ['required', 'string'],
                         'username_iv' => ['required', 'string', 'size:24'],
                         'username_tag' => ['required', 'string', 'size:32'],

@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Mappers\ServiceMapper;
 use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 final class DashboardController extends Controller
 {
+    public function __construct(private readonly ServiceMapper $mapper) {}
+
     public function index(): View
     {
         $services = Service::where('user_id', auth()->id())
@@ -46,7 +49,10 @@ final class DashboardController extends Controller
         }
 
         $name = $serviceName;
+        $accountsPayload = $accounts->mapWithKeys(fn (Service $account): array => [
+            $account->id => $this->mapper->toBrowserPayload($account),
+        ]);
 
-        return view('dashboard.service', compact('accounts', 'name'));
+        return view('dashboard.service', compact('accounts', 'accountsPayload', 'name'));
     }
 }

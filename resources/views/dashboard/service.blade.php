@@ -273,7 +273,7 @@
     </div>
 
     <script>
-        window.accounts = @json($accounts->keyBy('id'));
+        window.accounts = {{ Illuminate\Support\Js::from($accountsPayload) }};
         window.nexusVaultTranslations = Object.assign(
             {},
             window.nexusVaultTranslations || {},

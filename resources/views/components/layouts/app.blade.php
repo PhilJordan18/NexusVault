@@ -169,7 +169,6 @@
 
 <script>
     window.nexusVaultUsesClientEncryption = @json(auth()->user()?->usesClientSideVault() ?? false);
-    window.nexusVaultEncryptedPrivateKey = @json(auth()->user()?->usesClientSideVault() ? json_decode(auth()->user()->private_key, true) : null);
     window.nexusVaultTranslations = Object.assign(
         {},
         window.nexusVaultTranslations || {},
@@ -227,7 +226,14 @@
         const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-check-circle';
 
         toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border ${bg}`;
-        toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+
+        const iconElement = document.createElement('i');
+        iconElement.className = `fa-solid ${icon}`;
+
+        const messageElement = document.createElement('span');
+        messageElement.textContent = String(message ?? '');
+
+        toast.append(iconElement, messageElement);
         container.appendChild(toast);
 
         setTimeout(() => {

@@ -6,7 +6,6 @@ use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MfaController;
 use App\Http\Controllers\OAuthController;
-use App\Http\Controllers\PasswordController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\ResetPasswordController;
 use App\Http\Controllers\SearchController;
@@ -28,14 +27,6 @@ Route::get('/', function () {
 })->name('home');
 
 Route::post('/locale', LocaleController::class)->name('locale.update');
-
-// Password Routes
-Route::post('/password/entropy', [PasswordController::class, 'entropy'])
-    ->middleware('throttle:60,1')
-    ->name('password.entropy');
-Route::post('/password/generate', [PasswordController::class, 'generate'])
-    ->middleware('throttle:30,1')
-    ->name('password.generate');
 
 // Regular Auth
 Route::get('/register', [RegisterController::class, 'index'])->name('register');

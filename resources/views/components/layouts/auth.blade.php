@@ -88,7 +88,14 @@
             : 'bg-emerald-500/20 border-emerald-500/30 text-emerald-400';
 
         toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border ${bg}`;
-        toast.innerHTML = `<i class="fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-check-circle'}"></i><span>${message}</span>`;
+
+        const iconElement = document.createElement('i');
+        iconElement.className = `fa-solid ${type === 'error' ? 'fa-circle-exclamation' : 'fa-check-circle'}`;
+
+        const messageElement = document.createElement('span');
+        messageElement.textContent = String(message ?? '');
+
+        toast.append(iconElement, messageElement);
         container.appendChild(toast);
 
         setTimeout(() => {

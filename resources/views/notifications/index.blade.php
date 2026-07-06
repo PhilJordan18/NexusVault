@@ -97,6 +97,7 @@
                 window.nexusVaultPendingClientShares || {},
                 {{ Illuminate\Support\Js::from($clientSharePayloads) }}
             );
+            window.nexusVaultEncryptedPrivateKey = {{ Illuminate\Support\Js::from(json_decode(auth()->user()->private_key, true)) }};
         </script>
     @endif
 </x-layouts.app>

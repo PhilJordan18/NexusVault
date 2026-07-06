@@ -385,6 +385,98 @@ test('client side vault users cannot submit clear vault items', function () {
     expect(Service::where('user_id', $user->id)->exists())->toBeFalse();
 });
 
+test('client side vault users cannot force server side vault item storage', function () {
+    $user = createClientSideVaultUser();
+
+    $this->actingAs($user)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('services.store'), [
+            'type' => Service::TYPE_LOGIN,
+            'name' => 'GitHub',
+            'url' => 'https://github.com',
+            'username' => 'philippe@example.com',
+            'password' => 'plaintext-password',
+            'client_encrypted' => 0,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('client_encrypted');
+
+    expect(Service::where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+test('client side vault users must submit metadata for encrypted optional notes', function () {
+    $user = createClientSideVaultUser();
+
+    $this->actingAs($user)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('services.store'), [
+            'type' => Service::TYPE_LOGIN,
+            'name' => 'GitHub',
+            'url' => 'https://github.com',
+            'username' => 'cipher-username',
+            'username_iv' => '111111111111111111111111',
+            'username_tag' => '22222222222222222222222222222222',
+            'password' => 'cipher-password',
+            'password_iv' => '333333333333333333333333',
+            'password_tag' => '44444444444444444444444444444444',
+            'notes' => 'cipher-notes',
+            'client_encrypted' => 1,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['notes_iv', 'notes_tag']);
+
+    expect(Service::where('user_id', $user->id)->exists())->toBeFalse();
+});
+
+test('client side vault users cannot update encrypted items with clear storage', function () {
+    $user = createClientSideVaultUser();
+
+    $service = Service::create([
+        'user_id' => $user->id,
+        'type' => Service::TYPE_LOGIN,
+        'name' => 'GitHub',
+        'url' => 'https://github.com',
+        'username' => 'cipher-username',
+        'username_iv' => '111111111111111111111111',
+        'username_tag' => '22222222222222222222222222222222',
+        'password' => 'cipher-password',
+        'password_iv' => '333333333333333333333333',
+        'password_tag' => '44444444444444444444444444444444',
+        'notes' => 'cipher-notes',
+        'notes_iv' => '555555555555555555555555',
+        'notes_tag' => '66666666666666666666666666666666',
+        'client_encrypted' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->putJson(route('services.update', $service), [
+            'type' => Service::TYPE_LOGIN,
+            'name' => 'GitHub',
+            'url' => 'https://github.com',
+            'username' => 'philippe@example.com',
+            'password' => 'plaintext-password',
+            'client_encrypted' => 0,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('client_encrypted');
+
+    $service->refresh();
+
+    expect($service->client_encrypted)->toBeTrue()
+        ->and($service->getRawOriginal('username'))->toBe('cipher-username')
+        ->and($service->getRawOriginal('password'))->toBe('cipher-password')
+        ->and($service->getRawOriginal('notes'))->toBe('cipher-notes');
+});
+
+test('legacy server password endpoints are not exposed in zero knowledge mode', function () {
+    $this->postJson('/password/entropy', ['password' => 'plaintext-password'])
+        ->assertNotFound();
+
+    $this->postJson('/password/generate')
+        ->assertNotFound();
+});
+
 test('client side vault users can destructively reset their vault without a server master key', function () {
     $user = createClientSideVaultUser();
     $recipient = User::factory()->create();

@@ -32,14 +32,14 @@ function zkSharingRecoveryEnvelope(): array
     ];
 }
 
-function zkSharingPrivateKeyEnvelope(): string
+function zkSharingPrivateKeyEnvelope(?string $ciphertext = null): string
 {
     return json_encode([
         'version' => 1,
         'algorithm' => 'AES-GCM',
         'keyFormat' => 'pkcs8',
         'iv' => bin2hex(random_bytes(12)),
-        'ciphertext' => base64_encode(random_bytes(256)),
+        'ciphertext' => $ciphertext ?? base64_encode(random_bytes(256)),
         'tag' => bin2hex(random_bytes(16)),
     ]);
 }
@@ -164,6 +164,66 @@ test('client encrypted share preparation returns only recipient public key metad
     expect(Share::count())->toBe(0);
 });
 
+test('general app pages do not expose the encrypted private key envelope', function () {
+    $user = createZkSharingUser('zk-dashboard@nexusvault.test');
+    $user->forceFill([
+        'private_key' => zkSharingPrivateKeyEnvelope('dashboard-private-key-marker'),
+    ])->save();
+
+    $this->actingAs($user)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->get(route('dashboard'))
+        ->assertOk()
+        ->assertDontSee('window.nexusVaultEncryptedPrivateKey', false)
+        ->assertDontSee('dashboard-private-key-marker', false);
+});
+
+test('notifications expose the encrypted private key envelope only for pending client encrypted shares', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
+    $recipient->forceFill([
+        'private_key' => zkSharingPrivateKeyEnvelope('notifications-private-key-marker'),
+    ])->save();
+    $service = createZkSharingService($owner);
+    $payload = zkSharingPayload();
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.store'), [
+            'service_id' => $service->id,
+            'email' => $recipient->email,
+            'client_encrypted' => 1,
+            ...$payload,
+        ])
+        ->assertOk();
+
+    $this->actingAs($recipient)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->get(route('notifications.index'))
+        ->assertOk()
+        ->assertSee('window.nexusVaultPendingClientShares', false)
+        ->assertSee('window.nexusVaultEncryptedPrivateKey', false)
+        ->assertSee('notifications-private-key-marker', false);
+});
+
+test('service detail exposes a minimal browser account payload', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    createZkSharingService($owner);
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->get(route('services.show', [
+            'name' => 'GitHub',
+            'type' => Service::TYPE_LOGIN,
+        ]))
+        ->assertOk()
+        ->assertSee('cipher-password', false)
+        ->assertSee('password_iv', false)
+        ->assertDontSee('\\u0022user_id\\u0022', false)
+        ->assertDontSee('created_at', false)
+        ->assertDontSee('updated_at', false);
+});
+
 test('client encrypted shares are stored as opaque payloads', function () {
     $owner = createZkSharingUser('zk-owner@nexusvault.test');
     $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
@@ -222,6 +282,49 @@ test('client encrypted sync shares convert the source service to shared group ci
         ->and($service->shared_group_id)->not->toBeNull();
 });
 
+test('client encrypted shares require an accepted encryption flag from zero knowledge owners', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
+    $service = createZkSharingService($owner);
+    $payload = zkSharingPayload();
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.store'), [
+            'service_id' => $service->id,
+            'email' => $recipient->email,
+            'client_encrypted' => 0,
+            ...$payload,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('client_encrypted');
+
+    expect(Share::count())->toBe(0)
+        ->and($service->refresh()->shared_group_id)->toBeNull();
+});
+
+test('client encrypted sync shares require sync ciphertext fields', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
+    $service = createZkSharingService($owner);
+    $payload = zkSharingPayload();
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.store'), [
+            'service_id' => $service->id,
+            'email' => $recipient->email,
+            'client_encrypted' => 1,
+            'mode' => 'client-encrypted-sync',
+            ...$payload,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['shared_key_envelope', 'shared_fields']);
+
+    expect(Share::count())->toBe(0)
+        ->and($service->refresh()->shared_group_id)->toBeNull();
+});
+
 test('client encrypted share recipients accept by submitting locally re-encrypted fields', function () {
     $owner = createZkSharingUser('zk-owner@nexusvault.test');
     $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
@@ -260,6 +363,37 @@ test('client encrypted share recipients accept by submitting locally re-encrypte
         ->and($acceptedService->reused)->toBeFalse();
 });
 
+test('client encrypted share recipients must accept with an encryption flag', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
+    $service = createZkSharingService($owner);
+    $payload = zkSharingPayload();
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.store'), [
+            'service_id' => $service->id,
+            'email' => $recipient->email,
+            'client_encrypted' => 1,
+            ...$payload,
+        ])
+        ->assertOk();
+
+    $share = Share::firstOrFail();
+
+    $this->actingAs($recipient)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.accept', $share), [
+            ...zkSharingAcceptedFields(),
+            'client_encrypted' => 0,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('client_encrypted');
+
+    expect($share->refresh()->accepted_at)->toBeNull()
+        ->and(Service::where('user_id', $recipient->id)->exists())->toBeFalse();
+});
+
 test('client encrypted sync recipients accept by storing their own shared key envelope', function () {
     $owner = createZkSharingUser('zk-owner@nexusvault.test');
     $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
@@ -296,6 +430,38 @@ test('client encrypted sync recipients accept by storing their own shared key en
         ->and($acceptedService->getRawOriginal('username'))->toBe($payload['shared_fields']['username']['ciphertext'])
         ->and($acceptedService->getRawOriginal('password'))->toBe($payload['shared_fields']['password']['ciphertext'])
         ->and($acceptedService->getRawOriginal('notes'))->toBe($payload['shared_fields']['notes']['ciphertext']);
+});
+
+test('client encrypted sync recipients must accept with an encryption flag', function () {
+    $owner = createZkSharingUser('zk-owner@nexusvault.test');
+    $recipient = createZkSharingUser('zk-recipient@nexusvault.test');
+    $service = createZkSharingService($owner);
+    $payload = zkSharingSyncPayload();
+    $recipientEnvelope = zkSharingSharedKeyEnvelope('recipient-shared-key', 'b', 'c');
+
+    $this->actingAs($owner)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.store'), [
+            'service_id' => $service->id,
+            'email' => $recipient->email,
+            'client_encrypted' => 1,
+            ...$payload,
+        ])
+        ->assertOk();
+
+    $share = Share::firstOrFail();
+
+    $this->actingAs($recipient)
+        ->withSession(['vault_unlocked_at' => now()->timestamp])
+        ->postJson(route('shares.accept', $share), [
+            'client_encrypted' => 0,
+            'shared_key_envelope' => $recipientEnvelope,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors('client_encrypted');
+
+    expect($share->refresh()->accepted_at)->toBeNull()
+        ->and(Service::where('user_id', $recipient->id)->exists())->toBeFalse();
 });
 
 test('client encrypted sync edits propagate opaque ciphertext across accepted copies', function () {

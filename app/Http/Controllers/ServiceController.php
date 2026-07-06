@@ -81,8 +81,11 @@ final class ServiceController extends Controller
         $accounts->each(function (Service $account) use ($sharesByService): void {
             $account->setAttribute('shared_with', $sharesByService->get($account->id, collect())->values());
         });
+        $accountsPayload = $accounts->mapWithKeys(fn (Service $account): array => [
+            $account->id => $this->mapper->toBrowserPayload($account),
+        ]);
 
-        return view('dashboard.service', compact('accounts', 'name'));
+        return view('dashboard.service', compact('accounts', 'accountsPayload', 'name'));
     }
 
     public function update(UpdateServiceRequest $request, Service $service)

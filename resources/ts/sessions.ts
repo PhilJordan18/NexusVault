@@ -154,10 +154,13 @@ class SessionManager {
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
         }`;
 
-        toast.innerHTML = `
-            <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${message}</span>
-        `;
+        const icon = document.createElement('i');
+        icon.className = `fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`;
+
+        const text = document.createElement('span');
+        text.textContent = message;
+
+        toast.append(icon, text);
 
         toastContainer.appendChild(toast);
 

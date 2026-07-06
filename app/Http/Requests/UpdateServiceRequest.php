@@ -26,6 +26,10 @@ class UpdateServiceRequest extends FormRequest
     {
         $type = $this->input('type', Service::TYPE_LOGIN);
         $secretMinLength = $type === Service::TYPE_LOGIN ? 6 : 1;
+        $clientEncryptionRules = $this->user()?->usesClientSideVault()
+            ? ['required', 'accepted']
+            : ['nullable', 'boolean'];
+        $encryptedNotesRequired = fn (): bool => $this->boolean('client_encrypted') && filled($this->input('notes'));
 
         return [
             'type' => ['sometimes', 'required', 'string', Rule::in(Service::types())],
@@ -34,13 +38,13 @@ class UpdateServiceRequest extends FormRequest
             'username' => 'sometimes|required|string',
             'password' => "sometimes|required|string|min:{$secretMinLength}",
             'notes' => 'nullable|string',
-            'client_encrypted' => [Rule::requiredIf(fn () => $this->user()?->usesClientSideVault()), 'boolean'],
+            'client_encrypted' => $clientEncryptionRules,
             'username_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
             'username_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
             'password_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
             'password_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
-            'notes_iv' => ['nullable', 'string', 'size:24'],
-            'notes_tag' => ['nullable', 'string', 'size:32'],
+            'notes_iv' => [Rule::requiredIf($encryptedNotesRequired), 'nullable', 'string', 'size:24'],
+            'notes_tag' => [Rule::requiredIf($encryptedNotesRequired), 'nullable', 'string', 'size:32'],
         ];
     }
 }
