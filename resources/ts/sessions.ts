@@ -25,15 +25,17 @@ class SessionManager {
 
         // Logout from all other devices
         if (this.logoutAllBtn) {
-            this.logoutAllBtn.addEventListener('click', async (e) => {
+            const logoutAllBtn = this.logoutAllBtn;
+
+            logoutAllBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
 
-                if (this.logoutAllBtn?.disabled) {
+                if (logoutAllBtn.disabled) {
                     return;
                 }
 
                 if (confirm('Are you sure you want to log out from all other devices?')) {
-                    await this.logoutFromAllOtherDevices(this.logoutAllBtn);
+                    await this.logoutFromAllOtherDevices(logoutAllBtn);
                 }
             });
         }
@@ -152,10 +154,13 @@ class SessionManager {
                 : 'bg-red-500/10 border-red-500/30 text-red-400'
         }`;
 
-        toast.innerHTML = `
-            <i class="fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
-            <span>${message}</span>
-        `;
+        const icon = document.createElement('i');
+        icon.className = `fa-solid ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`;
+
+        const text = document.createElement('span');
+        text.textContent = message;
+
+        toast.append(icon, text);
 
         toastContainer.appendChild(toast);
 
@@ -179,3 +184,5 @@ class SessionManager {
 document.addEventListener('DOMContentLoaded', () => {
     new SessionManager();
 });
+
+export {};

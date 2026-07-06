@@ -5,7 +5,6 @@ namespace App\Services\Auth;
 use App\DTOs\Auth\LoginData;
 use App\Models\User;
 use App\Services\Auth\Contracts\LoginServiceInterface;
-use App\Services\Auth\Contracts\UserKeyServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -14,8 +13,6 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class LoginService implements LoginServiceInterface
 {
-    public function __construct(private UserKeyServiceInterface $userKeyService) {}
-
     public function authenticate(array $credentials): RedirectResponse
     {
         $loginData = $this->createLoginData($credentials);
@@ -35,14 +32,13 @@ final readonly class LoginService implements LoginServiceInterface
         $this->ensureEmailIsVerified($user);
 
         $this->performLogin($user);
-        $this->storeMasterKey($user, $data->password);
 
         return $this->redirectAfterLogin($user);
     }
 
     public function logout(): void
     {
-        Session::forget('masterKey');
+        Session::forget(['masterKey', 'vault_unlocked_at', 'vault_legacy_unlock']);
         Auth::logout();
         Session::invalidate();
         Session::regenerateToken();
@@ -75,14 +71,14 @@ final readonly class LoginService implements LoginServiceInterface
 
     private function validateCredentials(?User $user, ?string $password): void
     {
-        if (!$user || !Hash::check($password, $user->password)) {
+        if (! $user || ! Hash::check($password, $user->password)) {
             throw ValidationException::withMessages(['email' => 'Invalid credentials']);
         }
     }
 
     private function ensureEmailIsVerified(User $user): void
     {
-        if (!$user->hasVerifiedEmail()) {
+        if (! $user->hasVerifiedEmail()) {
             redirect()->route('verification.notice')
                 ->with('status', 'verification-link-sent')
                 ->throwResponse();
@@ -95,17 +91,12 @@ final readonly class LoginService implements LoginServiceInterface
         Session::regenerate();
     }
 
-    private function storeMasterKey(User $user, string $password): void
-    {
-        $this->userKeyService->storeMasterKey($user, $password);
-    }
-
     private function redirectAfterLogin(User $user): RedirectResponse
     {
         if ($user->mfa_enabled) {
             return redirect()->route('mfa.verify.login');
         }
 
-        return redirect()->intended('/dashboard');
+        return redirect()->route($user->requiresClientVaultSetup() ? 'vault.setup' : 'vault.unlock');
     }
 }

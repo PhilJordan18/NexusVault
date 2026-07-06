@@ -82,6 +82,8 @@ return [
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
+    'supported_locales' => ['en', 'fr'],
+
     'faker_locale' => env('APP_FAKER_LOCALE', 'en_US'),
 
     /*
@@ -98,6 +100,8 @@ return [
     'cipher' => 'AES-256-CBC',
 
     'key' => env('APP_KEY'),
+
+    'pepper' => env('APP_PEPPER'),
 
     'previous_keys' => [
         ...array_filter(

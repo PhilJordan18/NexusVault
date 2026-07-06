@@ -9,9 +9,16 @@ use Illuminate\Database\Eloquent\Collection;
 interface ServiceServiceInterface
 {
     public function create(ServiceData $data): Service;
+
     public function update(Service $service, ServiceData $data): Service;
+
     public function delete(Service $service): bool;
+
     public function getAllForUser(int $userId): Collection;
+
     public function getByIdForUser(int $id, int $userId): ?Service;
+
     public function getGroupedByName(int $userId): Collection;
+
+    public function getAccountsByName(string $name, int $userId, ?string $type = null): Collection;
 }

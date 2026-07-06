@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Service;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateServiceRequest extends FormRequest
 {
@@ -22,12 +24,27 @@ class UpdateServiceRequest extends FormRequest
      */
     public function rules(): array
     {
+        $type = $this->input('type', Service::TYPE_LOGIN);
+        $secretMinLength = $type === Service::TYPE_LOGIN ? 6 : 1;
+        $clientEncryptionRules = $this->user()?->usesClientSideVault()
+            ? ['required', 'accepted']
+            : ['nullable', 'boolean'];
+        $encryptedNotesRequired = fn (): bool => $this->boolean('client_encrypted') && filled($this->input('notes'));
+
         return [
-            'name'     => 'sometimes|required|string|max:255',
-            'url'      => 'nullable|url',
-            'username' => 'sometimes|required|string|max:255',
-            'password' => 'sometimes|required|string|min:6',
-            'notes'    => 'nullable|string',
+            'type' => ['sometimes', 'required', 'string', Rule::in(Service::types())],
+            'name' => 'sometimes|required|string|max:255',
+            'url' => ['nullable', 'url'],
+            'username' => 'sometimes|required|string',
+            'password' => "sometimes|required|string|min:{$secretMinLength}",
+            'notes' => 'nullable|string',
+            'client_encrypted' => $clientEncryptionRules,
+            'username_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'username_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'password_iv' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:24'],
+            'password_tag' => ['required_if:client_encrypted,1', 'nullable', 'string', 'size:32'],
+            'notes_iv' => [Rule::requiredIf($encryptedNotesRequired), 'nullable', 'string', 'size:24'],
+            'notes_tag' => [Rule::requiredIf($encryptedNotesRequired), 'nullable', 'string', 'size:32'],
         ];
     }
 }

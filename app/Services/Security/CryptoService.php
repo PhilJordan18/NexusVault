@@ -2,10 +2,10 @@
 
 namespace App\Services\Security;
 
+use App\Models\User;
 use App\Services\Auth\UserKeyService;
-use Random\RandomException;
+use Illuminate\Support\Facades\Crypt;
 use RuntimeException;
-use SodiumException;
 
 final readonly class CryptoService
 {
@@ -18,7 +18,7 @@ final readonly class CryptoService
 
         return sodium_crypto_pwhash(
             32,
-            $password . $pepper,
+            $password.$pepper,
             hex2bin($salt),
             SODIUM_CRYPTO_PWHASH_OPSLIMIT_INTERACTIVE,
             SODIUM_CRYPTO_PWHASH_MEMLIMIT_INTERACTIVE,
@@ -42,7 +42,7 @@ final readonly class CryptoService
 
         return [
             'private_key' => $privateKey,
-            'public_key'  => $publicKey,
+            'public_key' => $publicKey,
         ];
     }
 
@@ -56,7 +56,7 @@ final readonly class CryptoService
 
         return [
             'ciphertext' => $encrypted,
-            'nonce'      => $nonce,
+            'nonce' => $nonce,
         ];
     }
 
@@ -79,8 +79,20 @@ final readonly class CryptoService
      */
     public function encryptWithMasterKey(string $data): array
     {
-        $masterKey = app(UserKeyService::class)->getMasterKey();
+        return $this->encryptWithKey($data, app(UserKeyService::class)->getMasterKey());
+    }
 
+    public function encryptWithUserMasterKey(string $data, User $user): array
+    {
+        if (empty($user->encrypted_master_key)) {
+            throw new RuntimeException('Master key is missing for this account.');
+        }
+
+        return $this->encryptWithKey($data, Crypt::decrypt($user->encrypted_master_key));
+    }
+
+    private function encryptWithKey(string $data, string $masterKey): array
+    {
         $iv = random_bytes(12);
         $tag = '';
         $ciphertext = openssl_encrypt(
@@ -94,8 +106,8 @@ final readonly class CryptoService
 
         return [
             'ciphertext' => base64_encode($ciphertext),
-            'iv'         => bin2hex($iv),
-            'tag'        => bin2hex($tag),
+            'iv' => bin2hex($iv),
+            'tag' => bin2hex($tag),
         ];
     }
 
@@ -134,12 +146,12 @@ final readonly class CryptoService
         $encrypted = '';
         $success = openssl_public_encrypt($data, $encrypted, $publicKey, OPENSSL_PKCS1_OAEP_PADDING);
 
-        if (!$success || empty($encrypted)) {
+        if (! $success || empty($encrypted)) {
             $errors = [];
             while ($err = openssl_error_string()) {
                 $errors[] = $err;
             }
-            throw new RuntimeException('RSA encryption failed: ' . implode(' | ', $errors));
+            throw new RuntimeException('RSA encryption failed: '.implode(' | ', $errors));
         }
 
         return base64_encode($encrypted);
@@ -158,7 +170,7 @@ final readonly class CryptoService
         $decrypted = '';
         $success = openssl_private_decrypt($encrypted, $decrypted, $privateKey, OPENSSL_PKCS1_OAEP_PADDING);
 
-        if (!$success || $decrypted === '') {
+        if (! $success || $decrypted === '') {
             throw new RuntimeException('RSA decryption failed. The private key may be invalid.');
         }
 
@@ -176,8 +188,8 @@ final readonly class CryptoService
 
         return [
             'ciphertext' => base64_encode($ciphertext),
-            'iv'         => bin2hex($iv),
-            'tag'        => bin2hex($tag),
+            'iv' => bin2hex($iv),
+            'tag' => bin2hex($tag),
         ];
     }
 

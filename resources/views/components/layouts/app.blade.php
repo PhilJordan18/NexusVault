@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>NexusVault • {{ $title ?? 'Dashboard' }}</title>
+    @include('partials.favicons')
     @vite(['resources/css/app.css', 'resources/js/app.ts'])
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
@@ -21,12 +22,12 @@
 
     <!-- Logo -->
     <div class="p-6 flex items-center gap-3 border-b border-[var(--border-color)]">
-        <div class="w-9 h-9 bg-emerald-500 rounded-2xl flex items-center justify-center">
-            <span class="text-white font-bold text-2xl">N</span>
+        <div class="w-9 h-9 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl flex items-center justify-center">
+            <img src="{{ asset('logo/LogoMonogramme.svg') }}" alt="" class="w-6 h-6">
         </div>
         <div>
             <h1 class="text-2xl font-semibold tracking-tighter">NexusVault</h1>
-            <p class="text-[10px] text-[var(--text-secondary)] -mt-1">Password Manager</p>
+            <p class="text-[10px] text-[var(--text-secondary)] -mt-1">{{ __('Password Manager') }}</p>
         </div>
     </div>
 
@@ -34,27 +35,36 @@
     <nav class="flex-1 px-3 py-6 space-y-1 text-sm">
         <a href="{{ route('dashboard') }}" class="flex items-center gap-3 px-4 py-3 rounded-2xl nav-active">
             <i class="fa-solid fa-key w-4"></i>
-            <span>All Items</span>
+            <span>{{ __('All Items') }}</span>
             <span class="ml-auto text-xs bg-white/20 px-2 py-0.5 rounded-full">{{ $totalItems }}</span>
         </a>
 
         <a href="{{ route('passkeys.index') }}"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-fingerprint w-4"></i>
-            <span>Passkeys</span>
+            <span>{{ __('Passkeys') }}</span>
         </a>
 
         <a href="{{ route('settings') }}"
            class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
             <i class="fa-solid fa-gear w-4"></i>
-            <span>Settings</span>
+            <span>{{ __('Settings') }}</span>
         </a>
 
+        <form method="POST" action="{{ route('vault.lock') }}"
+              onsubmit="sessionStorage.removeItem('nexusvault:vault-key:v1')"
+              class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)] text-sm transition">
+            @csrf
+            <i class="fa-solid fa-lock w-4"></i>
+            <button type="submit">{{ __('Lock Vault') }}</button>
+        </form>
+
         <form method="POST" action="{{ route('logout') }}"
+              onsubmit="sessionStorage.removeItem('nexusvault:vault-key:v1')"
               class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-red-500/10 text-red-400 text-sm transition">
             @csrf
             <i class="fa-solid fa-sign-out-alt w-4"></i>
-            <button type="submit">Logout</button>
+            <button type="submit">{{ __('Logout') }}</button>
         </form>
     </nav>
 
@@ -97,7 +107,7 @@
                 <div class="relative">
                     <input type="text" id="search-input" autocomplete="off"
                            class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-3xl py-2.5 pl-11 pr-4 text-sm placeholder:text-[var(--text-secondary)] outline-none"
-                           placeholder="Search passwords, services...">
+                           placeholder="{{ __('Search passwords, services...') }}">
                     <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]"></i>
                 </div>
                 <div id="search-dropdown"
@@ -108,17 +118,19 @@
 
         <!-- Right side actions -->
         <div class="flex items-center gap-1 md:gap-3 ml-2">
+            @include('partials.language-switch')
+
             <button onclick="showCreateModal()"
                     class="flex items-center gap-2 px-3 md:px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl text-sm font-medium transition">
                 <i class="fa-solid fa-plus"></i>
-                <span class="hidden sm:inline">New Item</span>
+                <span class="hidden sm:inline">{{ __('New Item') }}</span>
             </button>
 
             <!-- Notifications -->
             <div class="relative">
                 @php
                     $pendingShares = \App\Models\Share::where('to_user_id', auth()->id())
-                        ->whereNull('accepted_at')->where('rejected', false)->count();
+                        ->whereNull('accepted_at')->whereNull('revoked_at')->where('rejected', false)->count();
                 @endphp
                 <button onclick="window.location.href='{{ route('notifications.index') }}'"
                         class="w-9 h-9 flex items-center justify-center hover:bg-white/10 rounded-2xl transition relative">
@@ -156,6 +168,33 @@
 @include('shares.modal')
 
 <script>
+    window.nexusVaultUsesClientEncryption = @json(auth()->user()?->usesClientSideVault() ?? false);
+    window.nexusVaultTranslations = Object.assign(
+        {},
+        window.nexusVaultTranslations || {},
+        {{ Illuminate\Support\Js::from([
+            'Very weak' => __('Very weak'),
+            'Weak' => __('Weak'),
+            'Medium' => __('Medium'),
+            'Strong' => __('Strong'),
+            'Very strong' => __('Very strong'),
+            'Customize generator' => __('Customize generator'),
+            'Length' => __('Length'),
+            'Uppercase' => __('Uppercase'),
+            'Lowercase' => __('Lowercase'),
+            'Numbers' => __('Numbers'),
+            'Symbols' => __('Symbols'),
+            'Avoid ambiguous' => __('Avoid ambiguous'),
+            'Share sent successfully!' => __('Share sent successfully!'),
+            'Service added to your vault with success!' => __('Service added to your vault with success!'),
+            'Unable to prepare encrypted share.' => __('Unable to prepare encrypted share.'),
+            'Unable to send encrypted share.' => __('Unable to send encrypted share.'),
+            'Unable to accept encrypted share.' => __('Unable to accept encrypted share.'),
+        ]) }}
+    );
+</script>
+
+<script>
     // === SIDEBAR MOBILE ===
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
@@ -187,7 +226,14 @@
         const icon = type === 'error' ? 'fa-circle-exclamation' : 'fa-check-circle';
 
         toast.className = `px-6 py-3 rounded-2xl shadow-xl flex items-center gap-3 text-sm border ${bg}`;
-        toast.innerHTML = `<i class="fa-solid ${icon}"></i><span>${message}</span>`;
+
+        const iconElement = document.createElement('i');
+        iconElement.className = `fa-solid ${icon}`;
+
+        const messageElement = document.createElement('span');
+        messageElement.textContent = String(message ?? '');
+
+        toast.append(iconElement, messageElement);
         container.appendChild(toast);
 
         setTimeout(() => {
@@ -205,6 +251,8 @@
         const form = document.getElementById('create-service-form');
         if (form) form.reset();
 
+        if (window.setCreateItemType) window.setCreateItemType('login');
+
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
         const urlPreview = document.getElementById('service-url-preview');
@@ -212,27 +260,32 @@
 
         if (nameInput) nameInput.value = '';
         if (domainInput) domainInput.value = '';
-        if (urlPreview) urlPreview.innerHTML = 'Sera généré automatiquement';
+        if (urlPreview) urlPreview.textContent = @json(__('Will be generated automatically'));
         if (suggestions) suggestions.classList.add('hidden');
 
         document.getElementById('create-modal').classList.remove('hidden');
     }
 
-    function showCreateModalForService(serviceName, serviceUrl = '') {
+    function showCreateModalForService(serviceName, serviceUrl = '', type = 'login') {
         const modal = document.getElementById('create-modal');
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
         const urlPreview = document.getElementById('service-url-preview');
 
+        if (window.setCreateItemType) window.setCreateItemType(type);
         if (nameInput) nameInput.value = serviceName || '';
 
-        if (serviceUrl && domainInput && urlPreview) {
+        if (type === 'login' && serviceUrl && domainInput && urlPreview) {
             try {
                 const urlObj = new URL(serviceUrl);
                 domainInput.value = urlObj.hostname.replace('www.', '');
-                urlPreview.innerHTML = `<span class="text-emerald-400">${serviceUrl}</span>`;
+                const previewUrl = document.createElement('span');
+                previewUrl.className = 'text-emerald-400';
+                previewUrl.textContent = serviceUrl;
+                urlPreview.textContent = '';
+                urlPreview.appendChild(previewUrl);
             } catch (e) {
-                urlPreview.innerHTML = 'Sera généré automatiquement';
+                urlPreview.textContent = @json(__('Will be generated automatically'));
             }
         }
 
@@ -279,11 +332,11 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
-                    window.showToast('Theme updated successfully', 'success');
+                    window.showToast(@json(__('Theme updated successfully')), 'success');
                 }
             })
             .catch(() => {
-                window.showToast('Failed to update theme', 'error');
+                window.showToast(@json(__('Failed to update theme')), 'error');
             });
     }
 </script>

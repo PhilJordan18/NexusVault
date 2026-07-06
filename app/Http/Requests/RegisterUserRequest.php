@@ -23,6 +23,20 @@ class RegisterUserRequest extends FormRequest
     public function rules(): array
     {
         return [
+            ...self::accountRules(),
+            'vault_key_envelope' => 'required|json',
+            'vault_recovery_envelope' => 'required|json',
+            'public_key' => 'required|string',
+            'encrypted_private_key' => 'required|json',
+        ];
+    }
+
+    /**
+     * @return array<string, ValidationRule|array<mixed>|string>
+     */
+    public static function accountRules(): array
+    {
+        return [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',

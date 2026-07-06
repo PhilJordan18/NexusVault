@@ -6,19 +6,26 @@ use App\Http\Requests\CreateServiceRequest;
 use App\Http\Requests\UpdateServiceRequest;
 use App\Mappers\ServiceMapper;
 use App\Models\Service;
+use App\Models\Share;
 use App\Services\Vault\Contracts\ServiceServiceInterface;
+use App\Services\Vault\FaviconService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 final class ServiceController extends Controller
 {
-    public function __construct(private readonly ServiceServiceInterface $service, private readonly ServiceMapper $mapper) {}
+    public function __construct(
+        private readonly ServiceServiceInterface $service,
+        private readonly ServiceMapper $mapper,
+        private readonly FaviconService $faviconService
+    ) {}
 
     public function index()
     {
         $grouped = $this->service->getGroupedByName(auth()->id());
+
         return view('dashboard.index', compact('grouped'));
     }
 
@@ -27,13 +34,58 @@ final class ServiceController extends Controller
         $data = $this->mapper->fromCreateRequest($request);
         $this->service->create($data);
 
-        return redirect()->route('dashboard')->with('success', 'Service added successfully!');
+        return redirect()->route('dashboard')->with('success', __('Service added successfully!'));
     }
 
-    public function show(string $name)
+    public function show(string $name): View|RedirectResponse
     {
-        $accounts = $this->service->getAccountsByName($name, auth()->id());
-        return view('dashboard.service', compact('accounts', 'name'));
+        $type = request('type');
+
+        if ($type && ! in_array($type, Service::types(), true)) {
+            abort(404);
+        }
+
+        $accounts = $this->service->getAccountsByName($name, auth()->id(), $type);
+
+        if ($accounts->isEmpty()) {
+            return redirect()
+                ->route('dashboard')
+                ->with('error', __('This service is no longer available.'));
+        }
+
+        $accounts->makeVisible([
+            'username_iv',
+            'username_tag',
+            'password_iv',
+            'password_tag',
+            'notes_iv',
+            'notes_tag',
+        ]);
+
+        $sharesByService = Share::with('toUser')
+            ->where('from_user_id', auth()->id())
+            ->whereIn('service_id', $accounts->pluck('id'))
+            ->where('rejected', false)
+            ->whereNull('revoked_at')
+            ->latest()
+            ->get()
+            ->groupBy('service_id')
+            ->map(fn ($shares) => $shares->map(fn (Share $share) => [
+                'id' => $share->id,
+                'name' => $share->toUser?->name,
+                'email' => $share->toUser?->email,
+                'status' => $share->accepted_at ? 'Accepted' : 'Pending',
+                'shared_at' => $share->shared_at?->diffForHumans(),
+            ])->values());
+
+        $accounts->each(function (Service $account) use ($sharesByService): void {
+            $account->setAttribute('shared_with', $sharesByService->get($account->id, collect())->values());
+        });
+        $accountsPayload = $accounts->mapWithKeys(fn (Service $account): array => [
+            $account->id => $this->mapper->toBrowserPayload($account),
+        ]);
+
+        return view('dashboard.service', compact('accounts', 'accountsPayload', 'name'));
     }
 
     public function update(UpdateServiceRequest $request, Service $service)
@@ -47,17 +99,30 @@ final class ServiceController extends Controller
 
         if ($request->wantsJson()) {
             return response()->json([
-                'id'         => $updated->id,
-                'name'       => $updated->name,
-                'url'        => $updated->url,
-                'username'   => $updated->username,
-                'password'   => $updated->password,
-                'notes'      => $updated->notes,
+                'id' => $updated->id,
+                'type' => $updated->type,
+                'name' => $updated->name,
+                'url' => $updated->url,
+                'username' => $updated->username,
+                'username_iv' => $updated->username_iv,
+                'username_tag' => $updated->username_tag,
+                'password' => $updated->password,
+                'password_iv' => $updated->password_iv,
+                'password_tag' => $updated->password_tag,
+                'notes' => $updated->notes,
+                'notes_iv' => $updated->notes_iv,
+                'notes_tag' => $updated->notes_tag,
+                'client_encrypted' => $updated->client_encrypted,
+                'shared_group_id' => $updated->shared_group_id,
+                'shared_key_envelope' => $updated->shared_key_envelope,
+                'strength' => $updated->strength,
+                'compromised' => $updated->compromised,
+                'reused' => $updated->reused,
                 'updated_at' => $updated->updated_at->diffForHumans(),
             ]);
         }
 
-        return back()->with('success', 'Service updated successfully!');
+        return back()->with('success', __('Service updated successfully!'));
     }
 
     public function destroy(Service $service): JsonResponse|RedirectResponse
@@ -69,8 +134,8 @@ final class ServiceController extends Controller
         $this->service->delete($service);
 
         return request()->expectsJson()
-            ? response()->json(['message' => 'Service deleted'])
-            : redirect()->route('dashboard')->with('success', 'Service deleted');
+            ? response()->json(['message' => __('Service deleted')])
+            : redirect()->route('dashboard')->with('success', __('Service deleted'));
     }
 
     public function suggest(Request $request)
@@ -85,40 +150,49 @@ final class ServiceController extends Controller
 
         $results = $predefined->filter(function ($item) use ($query) {
             return str_contains(mb_strtolower($item['name']), $query);
+        })->map(function (array $item): array {
+            $domain = $this->faviconService->normalizeDomain($item['domain'] ?? null)
+                ?? $this->faviconService->domainFromUrl($item['url'] ?? null);
+
+            $url = $this->faviconService->urlFor($item['url'] ?? null, $domain);
+
+            return [
+                'name' => $item['name'],
+                'type' => Service::TYPE_LOGIN,
+                'url' => $url,
+                'favicon' => $this->faviconService->iconFor($url, $domain),
+                'domain' => $domain,
+            ];
         })->values();
 
         $userServices = Service::where('user_id', auth()->id())
             ->whereRaw('LOWER(name) like ?', ["%{$query}%"])
-            ->select('name', 'url', 'favicon')
+            ->select('name', 'type', 'url', 'favicon')
             ->distinct()
             ->limit(5)
             ->get()
-            ->map(function ($service) {
-                $domain = null;
-                if ($service->url) {
-                    $parsed = parse_url($service->url);
-                    $domain = $parsed['host'] ?? null;
-                    if ($domain && str_starts_with($domain, 'www.')) {
-                        $domain = substr($domain, 4);
-                    }
-                }
+            ->map(function (Service $service) {
+                $domain = $this->faviconService->domainFromUrl($service->url);
+
                 return [
-                    'name'    => $service->name,
-                    'url'     => $service->url,
-                    'favicon' => $service->favicon ?? 'https://www.google.com/s2/favicons?domain=' . ($domain ?? 'example.com') . '&sz=64',
-                    'domain'  => $domain,
+                    'name' => $service->name,
+                    'type' => $service->type,
+                    'url' => $service->url,
+                    'favicon' => $service->favicon ?: $this->faviconService->iconFor($service->url, $domain),
+                    'domain' => $domain,
                 ];
             });
 
         if ($results->isEmpty() && $userServices->isEmpty()) {
-            $domain = Str::slug($query) . '.com';
-            $url = "https://www.{$domain}";
-            $favicon = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
+            $domain = $this->faviconService->domainFromName($query);
+            $url = $this->faviconService->urlFor(null, $domain);
+
             return response()->json([[
-                'name'    => ucfirst($query),
-                'url'     => $url,
-                'favicon' => $favicon,
-                'domain'  => $domain,
+                'name' => ucfirst($query),
+                'type' => Service::TYPE_LOGIN,
+                'url' => $url,
+                'favicon' => $this->faviconService->iconFor($url, $domain),
+                'domain' => $domain,
             ]]);
         }
 
@@ -126,9 +200,9 @@ final class ServiceController extends Controller
 
         $merged = $merged->map(function ($item) {
             if (empty($item['favicon'])) {
-                $domain = $item['domain'] ?? 'example.com';
-                $item['favicon'] = "https://www.google.com/s2/favicons?domain={$domain}&sz=64";
+                $item['favicon'] = $this->faviconService->iconFor($item['url'] ?? null, $item['domain'] ?? null);
             }
+
             return $item;
         });
 

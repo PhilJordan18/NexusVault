@@ -50,3 +50,5 @@ async function fetchResults(query: string) {
         dropdown.innerHTML = '<div class="px-4 py-4 text-center text-red-400">Error</div>';
     }
 }
+
+export {};

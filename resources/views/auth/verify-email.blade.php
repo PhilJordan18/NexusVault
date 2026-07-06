@@ -1,40 +1,42 @@
 <x-layouts.auth>
-    <div class="bg-white/5 backdrop-blur-2xl border border-white/10 rounded-3xl p-8 shadow-2xl">
-        <div class="flex justify-center mb-6">
-            <div class="w-20 h-20 bg-nexus-500/10 rounded-2xl flex items-center justify-center border border-nexus-500/30">
-                <i class="fa-solid fa-envelope-circle-check text-5xl text-nexus-500"></i>
+    <div class="card rounded-2xl p-6 sm:p-8">
+        <div class="mb-6 flex justify-center">
+            <div class="flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/30 bg-emerald-500/10">
+                <i class="fa-solid fa-envelope-circle-check text-3xl text-emerald-400"></i>
             </div>
         </div>
 
-        <h1 class="text-3xl font-semibold text-center mb-1">Verify Your Email</h1>
-        <p class="text-white/60 text-center mb-8">
-            We've sent a verification link to your email address.
+        <h1 class="mb-1 text-center text-3xl font-semibold">{{ __('Verify Your Email') }}</h1>
+        <p class="mb-8 text-center text-[var(--text-secondary)]">
+            {{ __("We've sent a verification link to your email address.") }}
         </p>
 
         @if (session('status') == 'verification-link-sent')
-            <div class="mb-6 p-4 bg-nexus-500/10 border border-nexus-500/30 rounded-2xl text-nexus-500 text-center">
-                A new verification link has been sent!
+            <div class="mb-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 text-center text-emerald-400">
+                {{ __('A new verification link has been sent!') }}
             </div>
         @endif
 
         <div class="space-y-4">
-            <p class="text-white/70 text-center">
-                Please check your inbox and click the verification link to continue.
+            <p class="text-center text-[var(--text-secondary)]">
+                {{ __('Please check your inbox and click the verification link to continue.') }}
             </p>
 
             <form method="POST" action="{{ route('verification.send') }}" class="text-center">
                 @csrf
                 <button type="submit"
-                        class="text-nexus-500 hover:text-nexus-400 underline transition">
-                    Resend verification email
+                        class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-5 py-3.5 font-semibold text-white transition hover:bg-emerald-700">
+                    <i class="fa-solid fa-paper-plane"></i>
+                    <span>{{ __('Resend verification email') }}</span>
                 </button>
             </form>
 
             <form method="POST" action="{{ route('logout') }}" class="text-center">
                 @csrf
                 <button type="submit"
-                        class="text-white/50 hover:text-white transition">
-                    ← Log out and try another account
+                        class="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">
+                    <i class="fa-solid fa-arrow-left mr-1 text-xs"></i>
+                    {{ __('Log out and try another account') }}
                 </button>
             </form>
         </div>

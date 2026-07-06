@@ -2,8 +2,8 @@
 <tr>
 <td class="header">
 <a href="{{ $url }}" style="display: inline-block;">
-@if (trim($slot) === 'Laravel')
-<img src="https://laravel.com/img/notification-logo-v2.1.png" class="logo" alt="Laravel Logo">
+@if (in_array(trim($slot), ['Laravel', config('app.name')], true))
+<img src="{{ asset('logo/LogoMonogramme.svg') }}" class="logo" alt="{{ config('app.name') }} Logo">
 @else
 {!! $slot !!}
 @endif

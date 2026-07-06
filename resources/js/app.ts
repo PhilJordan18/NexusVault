@@ -1,28 +1,44 @@
 import { createInertiaApp } from '@inertiajs/vue3';
-import { initPasskeys } from '../ts/passkey';
-import { showShareModal, hideShareModal } from '../ts/utils/modals';
-import { bindPasswordStrength } from '../ts/utils/password-utils';
-import '../ts/search'
-import '../ts/sessions'
-import './pages/service';
-
-if (typeof window !== 'undefined') {
-    (window as any).showShareModal = showShareModal;
-    (window as any).hideShareModal = hideShareModal;
-}
 
 const appName = 'NexusVault';
 
-createInertiaApp({
-    title: (title) => (title ? `${title} - ${appName}` : appName),
-    progress: {
-        color: '#4B5563',
-    },
-});
+function bootInertiaApp(): void {
+    if (!document.querySelector('[data-page]')) {
+        return;
+    }
 
-// Initialize Passkeys on every page (including Settings)
-document.addEventListener('DOMContentLoaded', () => {
+    void createInertiaApp({
+        title: (title) => (title ? `${title} - ${appName}` : appName),
+        progress: {
+            color: '#4B5563',
+        },
+    });
+}
+
+async function bootBrowserModules(): Promise<void> {
+    const [
+        { initPasskeys },
+        { showShareModal, hideShareModal },
+        { bindPasswordGeneratorCustomization, bindPasswordStrength },
+        { bindZeroKnowledgeCreateForm },
+        { bindZeroKnowledgeSharing },
+    ] = await Promise.all([
+        import('../ts/passkey'),
+        import('../ts/utils/modals'),
+        import('../ts/utils/password-utils'),
+        import('../ts/zero-knowledge-forms'),
+        import('../ts/zero-knowledge-sharing'),
+        import('../ts/search'),
+        import('../ts/sessions'),
+        import('./pages/service'),
+    ]);
+
+    (window as any).showShareModal = showShareModal;
+    (window as any).hideShareModal = hideShareModal;
+
     initPasskeys();
+    bindZeroKnowledgeCreateForm();
+    bindZeroKnowledgeSharing();
     bindPasswordStrength(
         'create-password',
         'create-password-toggle',
@@ -31,4 +47,17 @@ document.addEventListener('DOMContentLoaded', () => {
         'create-strength-text',
         'create-generate-btn'
     );
-});
+    bindPasswordGeneratorCustomization();
+}
+
+if (typeof window !== 'undefined') {
+    bootInertiaApp();
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            void bootBrowserModules();
+        });
+    } else {
+        void bootBrowserModules();
+    }
+}

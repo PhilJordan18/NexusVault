@@ -4,12 +4,9 @@ namespace App\Services\Auth;
 
 use App\Models\User;
 use App\Services\Security\CryptoService;
-use Exception;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Session;
-use Random\RandomException;
 use RuntimeException;
-use SodiumException;
 
 final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
 {
@@ -30,11 +27,11 @@ final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
         $encryptedMasterKey = Crypt::encrypt($masterKey);
 
         return [
-            'salt'                  => $saltHex,
-            'public_key'            => $keyPair['public_key'],
-            'private_key'           => $encryptedPrivate['ciphertext'],
-            'private_nonce'         => $encryptedPrivate['nonce'],
-            'encrypted_master_key'  => $encryptedMasterKey,
+            'salt' => $saltHex,
+            'public_key' => $keyPair['public_key'],
+            'private_key' => $encryptedPrivate['ciphertext'],
+            'private_nonce' => $encryptedPrivate['nonce'],
+            'encrypted_master_key' => $encryptedMasterKey,
         ];
     }
 
@@ -65,28 +62,8 @@ final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
     {
         $encoded = Session::get('masterKey');
 
-        if (!$encoded && auth()->check()) {
-            $user = auth()->user();
-
-            try {
-                if (!empty($user->encrypted_master_key)) {
-                    $masterKey = Crypt::decrypt($user->encrypted_master_key);
-                } else {
-                    throw new RuntimeException('Master key is missing. Please log in again.');
-                }
-
-                Session::put('masterKey', base64_encode($masterKey));
-                $encoded = Session::get('masterKey');
-
-            } catch (Exception $e) {
-                auth()->logout();
-                Session::invalidate();
-                throw new RuntimeException('Session expired. Please log in again.');
-            }
-        }
-
-        if (!$encoded) {
-            throw new RuntimeException('Master key not found. Please log in again.');
+        if (! $encoded) {
+            throw new RuntimeException('Vault is locked. Please unlock it to continue.');
         }
 
         return base64_decode($encoded);
@@ -114,7 +91,7 @@ final readonly class UserKeyService implements Contracts\UserKeyServiceInterface
         $newEncrypted = $this->cryptoService->encryptPrivateKey($privateKey, $newMasterKey);
 
         $user->update([
-            'private_key'   => base64_encode($newEncrypted['ciphertext']),
+            'private_key' => base64_encode($newEncrypted['ciphertext']),
             'private_nonce' => $newEncrypted['nonce'],
         ]);
     }
