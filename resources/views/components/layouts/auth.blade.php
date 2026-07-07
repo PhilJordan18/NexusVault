@@ -42,6 +42,15 @@
     </div>
 </div>
 
+<footer class="px-4 pb-6 text-center text-xs text-[var(--text-secondary)]">
+    <div class="flex flex-wrap items-center justify-center gap-x-4 gap-y-2">
+        <a href="{{ route('legal.terms') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Terms of Use') }}</a>
+        <a href="{{ route('legal.privacy') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Privacy Policy') }}</a>
+        <a href="{{ route('legal.cookies') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Cookie Policy') }}</a>
+        <a href="{{ route('legal.accessibility') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Accessibility') }}</a>
+    </div>
+</footer>
+
 <!-- Toast -->
 <div id="toast-container" class="fixed top-6 left-1/2 -translate-x-1/2 z-[200]"></div>
 

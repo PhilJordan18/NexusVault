@@ -26,6 +26,11 @@ Route::get('/', function () {
     return view('landing');
 })->name('home');
 
+Route::view('/terms', 'legal.terms')->name('legal.terms');
+Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
+Route::view('/cookies', 'legal.cookies')->name('legal.cookies');
+Route::view('/accessibility', 'legal.accessibility')->name('legal.accessibility');
+
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
 // Regular Auth

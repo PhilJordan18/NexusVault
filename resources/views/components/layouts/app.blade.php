@@ -68,6 +68,15 @@
         </form>
     </nav>
 
+    <div class="px-6 pb-4 text-[11px] text-[var(--text-secondary)]">
+        <div class="flex flex-wrap gap-x-3 gap-y-1">
+            <a href="{{ route('legal.privacy') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Privacy') }}</a>
+            <a href="{{ route('legal.terms') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Terms') }}</a>
+            <a href="{{ route('legal.cookies') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Cookies') }}</a>
+            <a href="{{ route('legal.accessibility') }}" class="transition hover:text-[var(--text-primary)]">{{ __('Accessibility') }}</a>
+        </div>
+    </div>
+
     <!-- User -->
     <div class="p-4 border-t border-[var(--border-color)] mt-auto">
         <div class="flex items-center gap-3 px-3 py-2 rounded-2xl hover:bg-white/5 cursor-pointer"

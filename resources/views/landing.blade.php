@@ -124,7 +124,7 @@
             </a>
         </div>
 
-        <p class="mt-6 text-xs text-white/50" data-aos="fade-up" data-aos-delay="650">{{ __('No credit card required • 14-day Pro trial included') }}</p>
+        <p class="mt-6 text-xs text-white/50" data-aos="fade-up" data-aos-delay="650">{{ __('No credit card required • Free while NexusVault is in preview') }}</p>
     </div>
 
     <!-- Scroll Indicator -->
@@ -181,7 +181,7 @@
                 <div class="mb-4">→ Key derivation: <span class="text-white">Argon2id</span></div>
                 <div>→ Authentication: <span class="text-white">WebAuthn (Passkeys) + TOTP</span></div>
                 <div class="mt-8 pt-8 border-t border-white/10 text-xs text-white/40">
-                    {{ __('Audited by cryptography experts • GDPR compliant • Hosted in Europe') }}
+                    {{ __('Zero-knowledge by design • Privacy-first • Hosted in Europe') }}
                 </div>
             </div>
         </div>
@@ -196,9 +196,9 @@
 
     <div class="grid md:grid-cols-3 gap-8">
         @foreach([
-            ['num' => '01', 'title' => __('Create your account'), 'desc' => __('Sign up in 20 seconds with email or Passkey.')],
-            ['num' => '02', 'title' => __('Add your accounts'), 'desc' => __('Import from Chrome, LastPass, or enter them manually.')],
-            ['num' => '03', 'title' => __('Enjoy the peace of mind'), 'desc' => __('Auto-fill, secure sharing, and breach alerts.')],
+            ['num' => '01', 'title' => __('Create your account'), 'desc' => __('Sign up with email, OAuth, or Passkey.')],
+            ['num' => '02', 'title' => __('Add your accounts'), 'desc' => __('Store logins, payment cards, and secure notes in one encrypted vault.')],
+            ['num' => '03', 'title' => __('Enjoy the peace of mind'), 'desc' => __('Use local password generation, secure sharing, and vault recovery.')],
         ] as $step)
             <div class="relative pl-16" data-aos="fade-up" data-aos-delay="{{ $loop->index * 120 }}">
                 <div class="absolute left-0 top-1 text-[80px] font-black text-white/5">{{ $step['num'] }}</div>
@@ -214,13 +214,13 @@
      data-aos="zoom-in-up">
     <div class="max-w-2xl mx-auto text-center px-6">
         <h2 class="text-6xl font-semibold tracking-tighter">{{ __('Ready to take back control?') }}</h2>
-        <p class="mt-4 text-xl text-white/70">{{ __('Join thousands of people who already sleep better at night.') }}</p>
+        <p class="mt-4 text-xl text-white/70">{{ __('Build a calmer, safer vault for the accounts that matter.') }}</p>
 
         <a href="{{ route('register') }}"
            class="mt-10 inline-flex px-14 py-4 bg-white text-zinc-950 font-semibold text-xl rounded-3xl hover:bg-emerald-400 hover:text-white transition">
             {{ __('Create my vault for free') }}
         </a>
-        <p class="mt-4 text-xs text-white/50">{{ __('No credit card • Cancel anytime') }}</p>
+        <p class="mt-4 text-xs text-white/50">{{ __('No credit card • Zero-knowledge by design') }}</p>
     </div>
 </div>
 
@@ -240,14 +240,19 @@
         <div class="md:col-span-3">
             <div class="font-semibold mb-4">{{ __('Product') }}</div>
             <div class="space-y-2 text-white/70 text-sm">
-                <div>{{ __('Features') }}</div><div>{{ __('Security') }}</div><div>{{ __('Pricing') }}</div><div>{{ __('Changelog') }}</div>
+                <a href="#features" class="block hover:text-white transition">{{ __('Features') }}</a>
+                <a href="#security" class="block hover:text-white transition">{{ __('Security') }}</a>
+                <a href="#how-it-works" class="block hover:text-white transition">{{ __('How it Works') }}</a>
             </div>
         </div>
 
         <div class="md:col-span-4 text-right md:text-left">
             <div class="font-semibold mb-4">{{ __('Legal') }}</div>
             <div class="space-y-2 text-white/70 text-sm">
-                <div>{{ __('Privacy') }}</div><div>{{ __('Terms') }}</div><div>{{ __('GDPR') }}</div>
+                <a href="{{ route('legal.privacy') }}" class="block hover:text-white transition">{{ __('Privacy Policy') }}</a>
+                <a href="{{ route('legal.terms') }}" class="block hover:text-white transition">{{ __('Terms of Use') }}</a>
+                <a href="{{ route('legal.cookies') }}" class="block hover:text-white transition">{{ __('Cookie Policy') }}</a>
+                <a href="{{ route('legal.accessibility') }}" class="block hover:text-white transition">{{ __('Accessibility') }}</a>
             </div>
             <div class="mt-10 text-xs text-white/40">
                 {{ __('© :year NexusVault. Built with love and strong cryptography.', ['year' => date('Y')]) }}

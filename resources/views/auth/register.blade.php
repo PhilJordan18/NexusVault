@@ -132,6 +132,13 @@
                 <span>{{ __('Generate strong vault password') }}</span>
             </button>
 
+            <p class="mb-4 text-center text-xs leading-5 text-[var(--text-secondary)]">
+                {{ __('By creating an account, you agree to the') }}
+                <a href="{{ route('legal.terms') }}" class="text-emerald-500 transition hover:text-emerald-400">{{ __('Terms of Use') }}</a>
+                {{ __('and acknowledge the') }}
+                <a href="{{ route('legal.privacy') }}" class="text-emerald-500 transition hover:text-emerald-400">{{ __('Privacy Policy') }}</a>.
+            </p>
+
             <button type="submit"
                     class="w-full rounded-2xl bg-emerald-600 py-3.5 font-semibold text-white transition hover:bg-emerald-700">
                 {{ __('Create account') }}
