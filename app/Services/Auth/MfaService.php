@@ -30,19 +30,48 @@ final readonly class MfaService implements MfaServiceInterface
     }
 
     /**
+     * @return array{mime_type: string, contents: string}
+     *
      * @throws MissingQrCodeServiceException
      */
-    public function getQrCodeUrl(User $user): string
+    public function getQrCodeImage(User $user): array
     {
         $qrCode = $this->google2FA->getQRCodeInline('NexusVault', $user->email, $user->totp_secret, 220);
 
         if (str_starts_with($qrCode, 'data:image/')) {
-            return $qrCode;
+            return $this->decodeDataUri($qrCode);
         }
 
         $mimeType = str_starts_with(ltrim($qrCode), '<') ? 'image/svg+xml' : 'image/png';
 
-        return sprintf('data:%s;base64,%s', $mimeType, base64_encode($qrCode));
+        return [
+            'mime_type' => $mimeType,
+            'contents' => $qrCode,
+        ];
+    }
+
+    /**
+     * @throws MissingQrCodeServiceException
+     */
+    public function getQrCodeUrl(User $user): string
+    {
+        $qrCode = $this->getQrCodeImage($user);
+
+        return sprintf('data:%s;base64,%s', $qrCode['mime_type'], base64_encode($qrCode['contents']));
+    }
+
+    /**
+     * @return array{mime_type: string, contents: string}
+     */
+    private function decodeDataUri(string $dataUri): array
+    {
+        [$metadata, $contents] = explode(',', $dataUri, 2);
+        $mimeType = str_replace(['data:', ';base64'], '', $metadata);
+
+        return [
+            'mime_type' => $mimeType,
+            'contents' => base64_decode($contents, true) ?: '',
+        ];
     }
 
     /**

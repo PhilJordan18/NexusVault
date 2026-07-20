@@ -18,14 +18,7 @@
                 </h2>
 
                 <div class="my-6 flex min-h-[240px] items-center justify-center rounded-xl bg-white p-4">
-                    @if($qrUrl)
-                        <img src="{{ $qrUrl }}" alt="{{ __('MFA QR Code') }}" class="max-w-[220px] shadow-md">
-                    @else
-                        <div class="text-center text-red-500">
-                            <i class="fa-solid fa-triangle-exclamation mb-2 text-3xl"></i>
-                            <p>{{ __('QR Code failed to load') }}</p>
-                        </div>
-                    @endif
+                    <img src="{{ route('mfa.qr-code', [], false) }}" alt="{{ __('MFA QR Code') }}" width="220" height="220" class="h-[220px] w-[220px] shadow-md">
                 </div>
 
                 <div class="text-center">

@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Services\Auth\Contracts\MfaServiceInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Response;
 use Illuminate\View\View;
 use Random\RandomException;
 use SodiumException;
@@ -24,11 +25,24 @@ final class MfaController extends Controller
             $user->update(['totp_secret' => $secret]);
         }
 
-        $qrUrl = $this->service->getQrCodeUrl($user);
-
         return view('auth.mfa.setup', [
-            'qrUrl' => $qrUrl,
             'totp_secret' => $user->totp_secret,
+        ]);
+    }
+
+    public function qrCode(): Response
+    {
+        $user = $this->getUser();
+
+        abort_if(empty($user?->totp_secret), 404);
+
+        $qrCode = $this->service->getQrCodeImage($user);
+
+        return response($qrCode['contents'], 200, [
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
+            'Content-Type' => $qrCode['mime_type'],
+            'Pragma' => 'no-cache',
+            'X-Content-Type-Options' => 'nosniff',
         ]);
     }
 

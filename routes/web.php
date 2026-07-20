@@ -105,6 +105,7 @@ Route::middleware('auth')->group(function () {
 // MFA
 Route::middleware('auth')->group(function () {
     Route::get('/mfa/setup', [MfaController::class, 'showSetup'])->name('mfa.setup');
+    Route::get('/mfa/qr-code', [MfaController::class, 'qrCode'])->name('mfa.qr-code');
     Route::post('/mfa/setup', [MfaController::class, 'verifySetup'])
         ->middleware('throttle:6,1')
         ->name('mfa.setup.verify');
