@@ -37,7 +37,7 @@ final class VaultResetController extends Controller
             ])->save();
         });
 
-        Session::forget(['masterKey', 'vault_legacy_unlock']);
+        Session::forget('masterKey');
         Session::put('vault_unlocked_at', now()->timestamp);
 
         return redirect()->route('dashboard')->with('success', __('Vault reset. Your new vault is empty and unlocked in this browser.'));

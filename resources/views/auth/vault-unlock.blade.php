@@ -118,23 +118,6 @@
             </script>
         @endif
 
-        @if($allowsLegacyUnlock)
-            <div class="mt-6 rounded-2xl border border-yellow-500/20 bg-yellow-500/10 p-4">
-                <p class="text-sm text-yellow-300">
-                    {{ __('This OAuth vault still uses the legacy server-side unlock. We will migrate it to true zero-knowledge in the next steps.') }}
-                </p>
-
-                <form method="POST" action="{{ route('vault.unlock.store') }}" class="mt-4">
-                    @csrf
-                    <input type="hidden" name="legacy_unlock" value="1">
-                    <button type="submit"
-                            class="w-full rounded-2xl border border-yellow-500/30 py-3 font-medium text-yellow-200 transition hover:bg-yellow-500/10">
-                        {{ __('Unlock legacy OAuth vault') }}
-                    </button>
-                </form>
-            </div>
-        @endif
-
         <form method="POST" action="{{ route('logout') }}" class="mt-6 text-center">
             @csrf
             <button type="submit" class="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">

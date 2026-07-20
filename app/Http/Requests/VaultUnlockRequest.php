@@ -25,7 +25,6 @@ class VaultUnlockRequest extends FormRequest
         return [
             'vault_password' => ['nullable', 'string'],
             'client_unlocked' => ['nullable', 'boolean'],
-            'legacy_unlock' => ['nullable', 'boolean'],
         ];
     }
 }

@@ -143,14 +143,12 @@ test('locking the vault clears vault session state', function () {
         ->withSession([
             'masterKey' => 'test-key',
             'vault_unlocked_at' => now()->timestamp,
-            'vault_legacy_unlock' => true,
         ])
         ->post(route('vault.lock'))
         ->assertRedirect(route('vault.unlock'));
 
     $this->assertFalse(Session::has('masterKey'));
     $this->assertFalse(Session::has('vault_unlocked_at'));
-    $this->assertFalse(Session::has('vault_legacy_unlock'));
 });
 
 test('json requests receive a locked vault response', function () {
@@ -272,6 +270,36 @@ test('oauth users without a vault are redirected to setup from protected routes'
     $this->actingAs($user)
         ->get(route('vault.unlock'))
         ->assertRedirect(route('vault.setup'));
+});
+
+test('legacy oauth vaults with server keys are forced through client setup', function () {
+    $user = createOAuthUserRequiringVaultSetup();
+    $user->forceFill(['encrypted_master_key' => 'legacy-server-master-key'])->save();
+
+    expect($user->refresh()->requiresClientVaultSetup())->toBeTrue();
+
+    $this->actingAs($user)
+        ->get(route('vault.unlock'))
+        ->assertRedirect(route('vault.setup'));
+
+    $this->actingAs($user)
+        ->post(route('vault.unlock.store'), ['legacy_unlock' => 1])
+        ->assertRedirect(route('vault.setup'));
+
+    $this->assertFalse(Session::has('masterKey'));
+    $this->assertFalse(Session::has('vault_unlocked_at'));
+});
+
+test('client side oauth vault unlock page does not expose the legacy unlock action', function () {
+    $user = createClientSideVaultUser();
+    $user->forceFill(['is_oauth' => true])->save();
+
+    $this->actingAs($user)
+        ->get(route('vault.unlock'))
+        ->assertOk()
+        ->assertDontSee('Unlock legacy OAuth vault')
+        ->assertDontSee('legacy server-side unlock')
+        ->assertDontSee('legacy_unlock');
 });
 
 test('oauth users can create their client side vault after login', function () {

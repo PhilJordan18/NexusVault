@@ -12,10 +12,11 @@ use PragmaRX\Google2FAQRCode\Google2FA as Google2FAQRCode;
 
 final readonly class MfaService implements MfaServiceInterface
 {
-
     private Google2FAQRCode $google2FA;
-    public function __construct() {
-        $this->google2FA = new Google2FAQRCode();
+
+    public function __construct(?Google2FAQRCode $google2FA = null)
+    {
+        $this->google2FA = $google2FA ?? new Google2FAQRCode;
     }
 
     /**
@@ -33,7 +34,15 @@ final readonly class MfaService implements MfaServiceInterface
      */
     public function getQrCodeUrl(User $user): string
     {
-        return $this->google2FA->getQRCodeInline('NexusVault', $user->email, $user->totp_secret, 220);
+        $qrCode = $this->google2FA->getQRCodeInline('NexusVault', $user->email, $user->totp_secret, 220);
+
+        if (str_starts_with($qrCode, 'data:image/')) {
+            return $qrCode;
+        }
+
+        $mimeType = str_starts_with(ltrim($qrCode), '<') ? 'image/svg+xml' : 'image/png';
+
+        return sprintf('data:%s;base64,%s', $mimeType, base64_encode($qrCode));
     }
 
     /**
@@ -57,16 +66,19 @@ final readonly class MfaService implements MfaServiceInterface
      */
     public function enableMfa(User $user, string $code): bool
     {
-       if ($this->verifyCode($user, $code)) {
-           $user->update(['mfa_enabled' => true]);
-           return true;
-       }
-       return false;
+        if ($this->verifyCode($user, $code)) {
+            $user->update(['mfa_enabled' => true]);
+
+            return true;
+        }
+
+        return false;
     }
 
     public function disableMfa(User $user): bool
     {
-        $user->update(['mfa_enabled' => false ,'totp_secret' => null]);
+        $user->update(['mfa_enabled' => false, 'totp_secret' => null]);
+
         return true;
     }
 }

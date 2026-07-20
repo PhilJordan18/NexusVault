@@ -34,7 +34,7 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
 
     public function requiresClientVaultSetup(): bool
     {
-        return $this->is_oauth && empty($this->vault_key_envelope) && empty($this->encrypted_master_key);
+        return $this->is_oauth && empty($this->vault_key_envelope);
     }
 
     public function services(): HasMany

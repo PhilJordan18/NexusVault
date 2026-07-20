@@ -38,7 +38,7 @@ final readonly class LoginService implements LoginServiceInterface
 
     public function logout(): void
     {
-        Session::forget(['masterKey', 'vault_unlocked_at', 'vault_legacy_unlock']);
+        Session::forget(['masterKey', 'vault_unlocked_at']);
         Auth::logout();
         Session::invalidate();
         Session::regenerateToken();

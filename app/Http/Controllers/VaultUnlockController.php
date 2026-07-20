@@ -24,14 +24,17 @@ final class VaultUnlockController extends Controller
             return redirect()->intended('/dashboard');
         }
 
-        return view('auth.vault-unlock', [
-            'allowsLegacyUnlock' => (bool) auth()->user()?->is_oauth,
-        ]);
+        return view('auth.vault-unlock');
     }
 
     public function unlock(VaultUnlockRequest $request): RedirectResponse
     {
         $user = $request->user();
+
+        if ($user->requiresClientVaultSetup()) {
+            return redirect()->route('vault.setup');
+        }
+
         $validated = $request->validated();
 
         if ($user->usesClientSideVault()) {
@@ -45,15 +48,12 @@ final class VaultUnlockController extends Controller
                 $this->userKeyService->storeMasterKey($user, $validated['vault_password']);
                 $this->userKeyService->getDecryptedPrivateKey($user);
             } catch (RuntimeException) {
-                Session::forget(['masterKey', 'vault_unlocked_at', 'vault_legacy_unlock']);
+                Session::forget(['masterKey', 'vault_unlocked_at']);
 
                 throw ValidationException::withMessages([
                     'vault_password' => __('The vault password is incorrect.'),
                 ]);
             }
-        } elseif ($request->boolean('legacy_unlock') && $user->is_oauth) {
-            $this->userKeyService->storeMasterKey($user);
-            Session::put('vault_legacy_unlock', true);
         } else {
             throw ValidationException::withMessages([
                 'vault_password' => __('Enter your vault password to continue.'),
@@ -67,7 +67,7 @@ final class VaultUnlockController extends Controller
 
     public function lock(): RedirectResponse
     {
-        Session::forget(['masterKey', 'vault_unlocked_at', 'vault_legacy_unlock']);
+        Session::forget(['masterKey', 'vault_unlocked_at']);
 
         return redirect()->route('vault.unlock')->with('success', __('Vault locked.'));
     }

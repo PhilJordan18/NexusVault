@@ -39,7 +39,7 @@ final class VaultSetupController extends Controller
             'vault_recovery_envelope' => json_decode($validated['vault_recovery_envelope'], true, 512, JSON_THROW_ON_ERROR),
         ])->save();
 
-        Session::forget(['masterKey', 'vault_legacy_unlock']);
+        Session::forget('masterKey');
         Session::put('vault_unlocked_at', now()->timestamp);
         Session::forget('url.intended');
 
