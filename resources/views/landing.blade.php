@@ -9,6 +9,7 @@
 
     <!-- AOS -->
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.14.8/dist/cdn.min.js" defer></script>
 
     <style>
@@ -143,16 +144,18 @@
 
     <div class="grid md:grid-cols-3 gap-6">
         @foreach([
-            ['icon' => '🔐', 'title' => __('AES-256-GCM Encryption'), 'desc' => __('Military-grade encryption used by banks and governments.')],
-            ['icon' => '🔄', 'title' => __('Secure Sharing'), 'desc' => __('Share passwords without ever revealing them.')],
-            ['icon' => '🔑', 'title' => __('Passkeys & MFA'), 'desc' => __('Passwordless login + two-factor authentication.')],
-            ['icon' => '⚡', 'title' => __('Smart Generator'), 'desc' => __('Strong passwords generated locally in one click.')],
-            ['icon' => '📱', 'title' => __('Multi-Device Recovery'), 'desc' => __('Switch phones? Restore everything in 30 seconds.')],
-            ['icon' => '🛡️', 'title' => __('Zero-Knowledge'), 'desc' => __('Even if we get hacked, your data stays unreadable.')],
+            ['icon' => 'fa-solid fa-shield-halved', 'tone' => 'border-emerald-400/20 bg-emerald-500/10 text-emerald-300', 'title' => __('AES-256-GCM Encryption'), 'desc' => __('Military-grade encryption used by banks and governments.')],
+            ['icon' => 'fa-solid fa-share-nodes', 'tone' => 'border-sky-400/20 bg-sky-500/10 text-sky-300', 'title' => __('Secure Sharing'), 'desc' => __('Share passwords without ever revealing them.')],
+            ['icon' => 'fa-solid fa-fingerprint', 'tone' => 'border-indigo-400/20 bg-indigo-500/10 text-indigo-300', 'title' => __('Passkeys & MFA'), 'desc' => __('Passwordless login + two-factor authentication.')],
+            ['icon' => 'fa-solid fa-wand-magic-sparkles', 'tone' => 'border-amber-400/20 bg-amber-500/10 text-amber-300', 'title' => __('Smart Generator'), 'desc' => __('Strong passwords generated locally in one click.')],
+            ['icon' => 'fa-solid fa-key', 'tone' => 'border-violet-400/20 bg-violet-500/10 text-violet-300', 'title' => __('Multi-Device Recovery'), 'desc' => __('Switch phones? Restore everything in 30 seconds.')],
+            ['icon' => 'fa-solid fa-user-shield', 'tone' => 'border-teal-400/20 bg-teal-500/10 text-teal-300', 'title' => __('Zero-Knowledge'), 'desc' => __('Even if we get hacked, your data stays unreadable.')],
         ] as $feature)
             <div class="bg-zinc-900 border border-white/10 rounded-3xl p-8 hover:border-emerald-500/50 transition group"
                  data-aos="fade-up" data-aos-delay="{{ $loop->index * 70 }}">
-                <div class="text-4xl mb-6">{{ $feature['icon'] }}</div>
+                <div class="mb-6 inline-flex h-12 w-12 items-center justify-center rounded-2xl border text-xl transition group-hover:scale-105 {{ $feature['tone'] }}">
+                    <i class="{{ $feature['icon'] }}"></i>
+                </div>
                 <h3 class="text-2xl font-semibold mb-3">{{ $feature['title'] }}</h3>
                 <p class="text-white/60">{{ $feature['desc'] }}</p>
             </div>
