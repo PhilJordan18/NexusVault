@@ -7,8 +7,8 @@ test('it resolves clean favicon urls for valid domains and urls', function () {
 
     expect($service->normalizeDomain('https://www.GitHub.com/login'))->toBe('github.com')
         ->and($service->domainFromUrl('https://sub.example.com/path'))->toBe('sub.example.com')
-        ->and($service->urlFor(null, 'github.com'))->toBe('https://www.github.com')
-        ->and($service->iconFor(null, 'github.com'))->toBe('https://www.google.com/s2/favicons?domain=github.com&sz=128');
+        ->and($service->urlFor(null, 'github.com'))->toBe('https://github.com')
+        ->and($service->iconFor(null, 'github.com'))->toBe('https://github.com/favicon.ico');
 });
 
 test('it falls back to the NexusVault monogram for invalid domains', function () {

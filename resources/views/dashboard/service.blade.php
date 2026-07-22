@@ -220,7 +220,15 @@
                 <input type="hidden" id="edit-service-id">
                 <input type="hidden" id="edit-type">
                 <input type="hidden" id="edit-name">
-                <input type="hidden" id="edit-url">
+                <div id="edit-url-container" class="mb-5">
+                    <label class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('URL') }}</label>
+                    <input type="text" id="edit-url" inputmode="url"
+                           class="w-full bg-[var(--bg-input)] border border-[var(--border-color)] focus:border-emerald-500 rounded-2xl px-5 py-3.5"
+                           placeholder="https://laughtube.ca">
+                    <p class="mt-2 text-xs text-[var(--text-secondary)]">
+                        {{ __('Use the exact website when the suggestion is not reliable.') }}
+                    </p>
+                </div>
                 <!-- Username / Email -->
                 <div class="mb-5">
                     <label id="edit-username-label" class="block text-sm text-[var(--text-secondary)] mb-2">{{ __('Username / Email') }}</label>

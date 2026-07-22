@@ -51,6 +51,14 @@
             <span>{{ __('Settings') }}</span>
         </a>
 
+        @if(auth()->user()->isAdmin())
+            <a href="{{ route('admin.dashboard') }}"
+               class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)]">
+                <i class="fa-solid fa-chart-simple w-4"></i>
+                <span>{{ __('Admin') }}</span>
+            </a>
+        @endif
+
         <form method="POST" action="{{ route('vault.lock') }}"
               onsubmit="sessionStorage.removeItem('nexusvault:vault-key:v1')"
               class="flex items-center gap-3 px-4 py-3 rounded-2xl hover:bg-white/5 text-[var(--text-secondary)] text-sm transition">
@@ -264,12 +272,12 @@
 
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
-        const urlPreview = document.getElementById('service-url-preview');
+        const urlInput = document.getElementById('service-url');
         const suggestions = document.getElementById('name-suggestions');
 
         if (nameInput) nameInput.value = '';
         if (domainInput) domainInput.value = '';
-        if (urlPreview) urlPreview.textContent = @json(__('Will be generated automatically'));
+        if (urlInput) urlInput.value = '';
         if (suggestions) suggestions.classList.add('hidden');
 
         document.getElementById('create-modal').classList.remove('hidden');
@@ -279,22 +287,18 @@
         const modal = document.getElementById('create-modal');
         const nameInput = document.getElementById('service-name');
         const domainInput = document.getElementById('service-domain');
-        const urlPreview = document.getElementById('service-url-preview');
+        const urlInput = document.getElementById('service-url');
 
         if (window.setCreateItemType) window.setCreateItemType(type);
         if (nameInput) nameInput.value = serviceName || '';
 
-        if (type === 'login' && serviceUrl && domainInput && urlPreview) {
+        if (type === 'login' && serviceUrl && domainInput && urlInput) {
             try {
                 const urlObj = new URL(serviceUrl);
                 domainInput.value = urlObj.hostname.replace('www.', '');
-                const previewUrl = document.createElement('span');
-                previewUrl.className = 'text-emerald-400';
-                previewUrl.textContent = serviceUrl;
-                urlPreview.textContent = '';
-                urlPreview.appendChild(previewUrl);
+                urlInput.value = serviceUrl;
             } catch (e) {
-                urlPreview.textContent = @json(__('Will be generated automatically'));
+                urlInput.value = '';
             }
         }
 

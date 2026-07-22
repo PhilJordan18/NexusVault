@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForgotPasswordController;
 use App\Http\Controllers\LocaleController;
@@ -140,6 +141,10 @@ Route::middleware(['auth', 'mfa'])->group(function () {
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('/dashboard/service/{service}', [DashboardController::class, 'show'])->name('dashboard.services');
+});
+
+Route::middleware(['auth', 'mfa', 'admin'])->group(function () {
+    Route::get('/admin', AdminDashboardController::class)->name('admin.dashboard');
 });
 
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {

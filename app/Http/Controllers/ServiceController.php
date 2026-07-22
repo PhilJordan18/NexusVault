@@ -184,7 +184,7 @@ final class ServiceController extends Controller
             });
 
         if ($results->isEmpty() && $userServices->isEmpty()) {
-            $domain = $this->faviconService->domainFromName($query);
+            $domain = $this->faviconService->normalizeDomain($query);
             $url = $this->faviconService->urlFor(null, $domain);
 
             return response()->json([[

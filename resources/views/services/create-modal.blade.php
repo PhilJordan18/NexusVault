@@ -61,10 +61,16 @@
                 <!-- URL -->
                 <div id="service-url-section">
                     <label class="mb-1.5 block text-sm text-[var(--text-secondary)]">{{ __('URL') }}</label>
-                    <div id="service-url-preview"
-                         class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-5 py-3.5 text-sm text-[var(--text-secondary)]">
-                        {{ __('Will be generated automatically') }}
-                    </div>
+                    <input type="text"
+                           name="url"
+                           id="service-url"
+                           autocomplete="off"
+                           inputmode="url"
+                           class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-5 py-3.5 text-sm focus:border-emerald-500"
+                           placeholder="https://laughtube.ca">
+                    <p class="mt-2 text-xs text-[var(--text-secondary)]">
+                        {{ __('Suggestions are optional. You can type the exact website if NexusVault does not know it yet.') }}
+                    </p>
                 </div>
 
                 <!-- Username -->
@@ -133,6 +139,7 @@
     const suggestionsBox = document.getElementById('name-suggestions');
     const typeInput = document.getElementById('service-type');
     const urlSection = document.getElementById('service-url-section');
+    const urlInput = document.getElementById('service-url');
     const usernameInput = document.querySelector('#create-service-form input[name="username"]');
     const passwordInput = document.getElementById('create-password');
     const notesInput = document.querySelector('#create-service-form textarea[name="notes"]');
@@ -194,6 +201,7 @@
         if (!isLogin) {
             suggestionsBox.classList.add('hidden');
             document.getElementById('service-domain').value = '';
+            urlInput.value = '';
             createStrengthContainer.classList.add('hidden');
         }
 
@@ -210,6 +218,23 @@
     document.querySelectorAll('.item-type-btn').forEach(button => {
         button.addEventListener('click', () => setCreateItemType(button.dataset.serviceType || 'login'));
     });
+
+    function normalizeUrlInput() {
+        if (!urlInput || typeInput.value !== 'login') {
+            return;
+        }
+
+        const value = urlInput.value.trim();
+
+        if (!value || value.includes('://')) {
+            urlInput.value = value;
+            return;
+        }
+
+        urlInput.value = `https://${value}`;
+    }
+
+    document.getElementById('create-service-form')?.addEventListener('submit', normalizeUrlInput, { capture: true });
 
     if (nameInput) {
         nameInput.addEventListener('input', function() {
@@ -265,18 +290,7 @@
                             div.onclick = () => {
                                 nameInput.value = service.name;
                                 document.getElementById('service-domain').value = service.domain || '';
-
-                                const preview = document.getElementById('service-url-preview');
-                                preview.textContent = '';
-
-                                if (service.url) {
-                                    const previewUrl = document.createElement('span');
-                                    previewUrl.className = 'text-emerald-400';
-                                    previewUrl.textContent = service.url;
-                                    preview.appendChild(previewUrl);
-                                } else {
-                                    preview.textContent = {{ Illuminate\Support\Js::from(__('Will be generated automatically')) }};
-                                }
+                                urlInput.value = service.url || '';
 
                                 suggestionsBox.classList.add('hidden');
                             };

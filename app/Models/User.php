@@ -37,6 +37,11 @@ class User extends Authenticatable implements MustVerifyEmail, WebAuthnAuthentic
         return $this->is_oauth && empty($this->vault_key_envelope);
     }
 
+    public function isAdmin(): bool
+    {
+        return in_array(mb_strtolower($this->email), config('nexusvault.admin_emails', []), true);
+    }
+
     public function services(): HasMany
     {
         return $this->hasMany(Service::class);

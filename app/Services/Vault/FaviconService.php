@@ -2,8 +2,6 @@
 
 namespace App\Services\Vault;
 
-use Illuminate\Support\Str;
-
 final class FaviconService
 {
     public const DEFAULT_ICON_PATH = '/logo/LogoMonogramme.svg';
@@ -16,9 +14,7 @@ final class FaviconService
             return self::DEFAULT_ICON_PATH;
         }
 
-        $safeSize = min(max($size, 16), 256);
-
-        return 'https://www.google.com/s2/favicons?domain='.rawurlencode($normalizedDomain).'&sz='.$safeSize;
+        return "https://{$normalizedDomain}/favicon.ico";
     }
 
     public function urlFor(?string $url = null, ?string $domain = null): ?string
@@ -33,7 +29,7 @@ final class FaviconService
 
         $normalizedDomain = $this->normalizeDomain($domain);
 
-        return $normalizedDomain ? "https://www.{$normalizedDomain}" : null;
+        return $normalizedDomain ? "https://{$normalizedDomain}" : null;
     }
 
     public function domainFromUrl(?string $url): ?string
@@ -45,13 +41,6 @@ final class FaviconService
         $host = parse_url($this->ensureUrlScheme($url), PHP_URL_HOST);
 
         return $this->normalizeDomain($host);
-    }
-
-    public function domainFromName(string $name): ?string
-    {
-        $slug = Str::slug($name);
-
-        return $slug ? "{$slug}.com" : null;
     }
 
     public function normalizeDomain(?string $domain): ?string

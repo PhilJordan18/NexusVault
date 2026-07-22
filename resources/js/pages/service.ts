@@ -98,6 +98,16 @@ function csrfToken(): string {
     return meta?.content || '';
 }
 
+function normalizeUrl(value: string): string | null {
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+        return null;
+    }
+
+    return trimmed.includes('://') ? trimmed : `https://${trimmed}`;
+}
+
 function usesClientEncryption(): boolean {
     return Boolean((window as any).nexusVaultUsesClientEncryption);
 }
@@ -331,6 +341,7 @@ function updateSelectedListItem(id: number): void {
     document.getElementById('edit-generate-btn')?.classList.toggle('hidden', !isLogin);
     document.querySelector('[data-password-generator-controls-for="edit-generate-btn"]')?.classList.toggle('hidden', !isLogin);
     document.getElementById('edit-strength-container')?.classList.toggle('hidden', !isLogin);
+    document.getElementById('edit-url-container')?.classList.toggle('hidden', !isLogin);
 
     document.getElementById('edit-account-modal')!.classList.remove('hidden');
 };
@@ -391,7 +402,7 @@ function updateSelectedListItem(id: number): void {
             body: JSON.stringify({
                 name: (document.getElementById('edit-name') as HTMLInputElement).value,
                 type,
-                url: (document.getElementById('edit-url') as HTMLInputElement).value || null,
+                url: type === 'login' ? normalizeUrl((document.getElementById('edit-url') as HTMLInputElement).value) : null,
                 username: encryptedFields?.username.ciphertext ?? username,
                 username_iv: encryptedFields?.username.iv,
                 username_tag: encryptedFields?.username.tag,

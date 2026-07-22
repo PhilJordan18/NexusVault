@@ -241,9 +241,8 @@ final readonly class ServiceService implements ServiceServiceInterface
             ];
         }
 
-        $domain = $data->domain
-            ?: $this->faviconService->domainFromUrl($data->url)
-            ?: $this->faviconService->domainFromName($data->name);
+        $domain = $this->faviconService->domainFromUrl($data->url)
+            ?: $data->domain;
 
         $url = $this->faviconService->urlFor($data->url, $domain);
 
