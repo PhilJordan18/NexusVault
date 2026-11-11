@@ -12,7 +12,7 @@
         "moduleResolution": "bundler",
         "baseUrl": ".",
         "paths": {
-            "@/*": ["./resources/ts/*"]
+            "@/*": ["./resources/js/*"]
         },
         "types": ["vite/client"],
         "resolveJsonModule": true,

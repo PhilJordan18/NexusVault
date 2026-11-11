@@ -3,6 +3,7 @@
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ForgotPasswordController;
+use App\Http\Controllers\LegalController;
 use App\Http\Controllers\LocaleController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\MfaController;
@@ -27,10 +28,10 @@ Route::get('/', function () {
     return view('landing');
 })->name('home');
 
-Route::view('/terms', 'legal.terms')->name('legal.terms');
-Route::view('/privacy', 'legal.privacy')->name('legal.privacy');
-Route::view('/cookies', 'legal.cookies')->name('legal.cookies');
-Route::view('/accessibility', 'legal.accessibility')->name('legal.accessibility');
+Route::get('/terms', [LegalController::class, 'terms'])->name('legal.terms');
+Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy');
+Route::get('/cookies', [LegalController::class, 'cookies'])->name('legal.cookies');
+Route::get('/accessibility', [LegalController::class, 'accessibility'])->name('legal.accessibility');
 
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
