@@ -73,7 +73,7 @@ jobs:
 
       - name: Coverage of app/Services/{Auth,Security,Vault}
         if: matrix.php == '8.5'
-        run: php artisan test --compact --coverage
+        run: php artisan test --compact --coverage --min=80
 
   security:
     name: security
