@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""Livre un mandat vers la branche dev.
+
+    nv-deliver M-002 [--skip-build]
+
+Etapes : verifications de depart, rebase sur origin/dev, checks, preuve QA,
+mise a jour du board, commit de livraison avec trailer, push vers dev puis vers
+la branche de travail. Le hook pre-push revalide tout de son cote.
+"""
+
+from __future__ import annotations
+
+import argparse
+import os
+import re
+import subprocess
+import sys
+import time
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
+
+from qa_evidence import build, write  # noqa: E402
+
+MANDATE_RE = re.compile(r"^M-\d{3}$")
+CHECKS = (
+    ("composer run ci:check", ["composer", "run", "ci:check"]),
+    ("npm run build", ["npm", "run", "build"]),
+)
+
+
+def fail(message: str) -> None:
+    print(f"[nv-deliver] {message}", file=sys.stderr)
+    sys.exit(1)
+
+
+def git(*args: str, env: dict | None = None, check: bool = True) -> str:
+    result = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, env=env, check=False)
+    if check and result.returncode != 0:
+        fail(f"git {' '.join(args)} a echoue :\n{result.stderr.strip()}")
+    return result.stdout.strip()
+
+
+def board_status(mandate: str) -> tuple[str, str | None]:
+    import json
+    with open(os.path.join(ROOT, ".nv", "board.json"), encoding="utf-8") as handle:
+        board = json.load(handle)
+    for item in board.get("mandates", []):
+        if item["id"] == mandate:
+            return item["status"], item.get("branch")
+    fail(f"{mandate} absent du board")
+    return "", None
+
+
+def preflight(mandate: str) -> str:
+    branch = git("symbolic-ref", "--short", "HEAD")
+    if not branch.startswith("nv/"):
+        fail(f"branche courante {branch}, une livraison part d'une branche nv/<role>/{mandate}-slug")
+    if git("status", "--porcelain"):
+        fail("arbre de travail non propre, commiter ou remiser avant de livrer")
+    status, _ = board_status(mandate)
+    if status != "in_progress":
+        fail(f"{mandate} est {status}, il doit etre in_progress")
+    report = os.path.join(ROOT, ".nv", "reports", f"{mandate}-livraison.md")
+    if not os.path.exists(report):
+        fail(f"rapport manquant : .nv/reports/{mandate}-livraison.md (gabarit dans .nv/templates/)")
+    git("fetch", "origin", "dev", check=False)
+    if subprocess.run(["git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/dev"], cwd=ROOT).returncode != 0:
+        fail("origin/dev n'existe pas encore, voir H-003 dans .nv/PROCEDURES.md")
+    return branch
+
+
+def rebase_on_dev() -> None:
+    env = dict(os.environ, NV_DELIVER_RUN="1")
+    result = subprocess.run(["git", "rebase", "origin/dev"], cwd=ROOT, env=env, text=True)
+    if result.returncode != 0:
+        fail("rebase sur origin/dev en conflit. Resoudre, git rebase --continue, puis relancer nv-deliver")
+    if git("rev-list", "--merges", "origin/dev..HEAD"):
+        fail("commit de merge dans la plage a livrer, l'historique doit etre lineaire")
+    if not git("rev-list", "origin/dev..HEAD"):
+        fail("rien a livrer, HEAD est deja sur origin/dev")
+
+
+def run_checks(skip_build: bool) -> list[dict]:
+    checks: list[dict] = []
+    for label, argv in CHECKS:
+        if skip_build and label == "npm run build":
+            continue
+        print(f"[nv-deliver] {label}")
+        started = time.monotonic()
+        result = subprocess.run(argv, cwd=ROOT)
+        checks.append({"command": label, "exit_code": result.returncode, "duration_s": round(time.monotonic() - started, 1)})
+        if result.returncode != 0:
+            break
+    return checks
+
+
+def deliver_commit(mandate: str, branch: str, tested: str, checks: list[dict]) -> str:
+    evidence = build(mandate, branch, tested, checks)
+    write(ROOT, evidence)
+    if evidence["status"] != "pass":
+        fail("checks en echec, preuve ecrite dans .nv/qa/ mais pas de livraison")
+    subprocess.run([sys.executable, os.path.join(ROOT, ".nv", "bin", "nv-board"), "set", mandate, "delivered", "--branch", branch], cwd=ROOT, check=True)
+    git("add", ".nv/qa", ".nv/board.json")
+    env = dict(os.environ, NV_DELIVER_RUN="1")
+    message = f"chore(nv): deliver {mandate}\n\nNV-Deliver: {mandate}\n"
+    result = subprocess.run(["git", "commit", "-m", message], cwd=ROOT, env=env, capture_output=True, text=True)
+    if result.returncode != 0:
+        fail(f"commit de livraison refuse :\n{result.stderr}")
+    return git("rev-parse", "HEAD")
+
+
+def push(head: str, branch: str) -> None:
+    env = dict(os.environ, NV_DELIVER_RUN="1", NV_DELIVER_HEAD=head)
+    result = subprocess.run(["git", "push", "origin", f"{head}:refs/heads/dev"], cwd=ROOT, env=env, text=True)
+    if result.returncode != 0:
+        fail("push vers dev refuse par le hook ou le serveur, voir le message ci-dessus")
+    subprocess.run(["git", "push", "--force-with-lease", "-u", "origin", branch], cwd=ROOT, env=env, text=True)
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="nv-deliver")
+    parser.add_argument("mandate")
+    parser.add_argument("--skip-build", action="store_true", help="ne pas lancer npm run build")
+    args = parser.parse_args(argv[1:])
+    if not MANDATE_RE.match(args.mandate):
+        fail("identifiant attendu : M-xxx")
+    branch = preflight(args.mandate)
+    rebase_on_dev()
+    tested = git("rev-parse", "HEAD")
+    checks = run_checks(args.skip_build)
+    head = deliver_commit(args.mandate, branch, tested, checks)
+    push(head, branch)
+    print(f"[nv-deliver] {args.mandate} livre sur dev ({head[:10]}). La branche {branch} est close.")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

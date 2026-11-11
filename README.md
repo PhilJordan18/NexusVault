@@ -40,6 +40,19 @@ docs/
   adr/
 ```
 
+## Agentic Workflow
+
+Development is done by role-based Claude and Codex sessions. Everything they
+exchange lives in `.nv/`. Start with `.nv/README.md`, run `.nv/bin/nv-setup`
+once per machine, then launch a session with its role:
+
+```bash
+NV_ROLE=dev claude
+```
+
+Rules for every agent are in `AGENTS.md`. See `docs/adr/ADR-004` for the
+branch model and `docs/adr/ADR-005` for the frontend migration.
+
 ## Main Stack
 
 - Laravel 13, PHP 8.5, Blade, Vite, TypeScript.

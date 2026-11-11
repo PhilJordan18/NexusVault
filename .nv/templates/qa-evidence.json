@@ -1,0 +1,10 @@
+{
+  "mandate": "M-000",
+  "head": "sha",
+  "branch": "nv/dev/M-000-slug",
+  "created": "2026-01-01T00:00:00Z",
+  "status": "pass",
+  "checks": [
+    { "command": "composer run ci:check", "exit_code": 0, "duration_s": 0 }
+  ]
+}

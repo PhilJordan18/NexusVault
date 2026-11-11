@@ -1,0 +1,120 @@
+#!/usr/bin/env python3
+"""Lire et mettre a jour .nv/board.json.
+
+    nv-board list
+    nv-board show M-002
+    nv-board set M-002 in_progress [--branch nv/dev/M-002-slug]
+    nv-board add M-004 "Titre" --owner dev --file mandates/M-004-slug.md [--priority 2]
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+from datetime import date
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+BOARD = os.path.join(ROOT, ".nv", "board.json")
+
+
+def load() -> dict:
+    with open(BOARD, encoding="utf-8") as handle:
+        return json.load(handle)
+
+
+def save(board: dict) -> None:
+    board["updated"] = date.today().isoformat()
+    with open(BOARD, "w", encoding="utf-8") as handle:
+        json.dump(board, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+
+def find(board: dict, item_id: str) -> tuple[str, dict] | tuple[None, None]:
+    for key in ("mandates", "human_actions"):
+        for item in board.get(key, []):
+            if item.get("id") == item_id:
+                return key, item
+    return None, None
+
+
+def cmd_list(board: dict, _args: argparse.Namespace) -> int:
+    print(f"board mis a jour le {board.get('updated')}")
+    print("\nMandats")
+    for item in sorted(board.get("mandates", []), key=lambda i: (i.get("priority", 9), i["id"])):
+        branch = f"  {item['branch']}" if item.get("branch") else ""
+        print(f"  {item['id']}  P{item.get('priority', '-')}  {item['status']:<12}{item['owner']:<10}{item['title']}{branch}")
+    print("\nActions humaines")
+    for item in sorted(board.get("human_actions", []), key=lambda i: (i.get("priority", 9), i["id"])):
+        print(f"  {item['id']}  P{item.get('priority', '-')}  {item['status']:<12}{item['title']}")
+    return 0
+
+
+def cmd_show(board: dict, args: argparse.Namespace) -> int:
+    _key, item = find(board, args.id)
+    if item is None:
+        print(f"{args.id} introuvable", file=sys.stderr)
+        return 1
+    print(json.dumps(item, indent=2, ensure_ascii=False))
+    return 0
+
+
+def cmd_set(board: dict, args: argparse.Namespace) -> int:
+    _key, item = find(board, args.id)
+    if item is None:
+        print(f"{args.id} introuvable", file=sys.stderr)
+        return 1
+    if args.status not in board["statuses"]:
+        print(f"statut inconnu {args.status!r}, permis : {', '.join(board['statuses'])}", file=sys.stderr)
+        return 1
+    item["status"] = args.status
+    if args.branch:
+        item["branch"] = args.branch
+    save(board)
+    print(f"{args.id} -> {args.status}")
+    return 0
+
+
+def cmd_add(board: dict, args: argparse.Namespace) -> int:
+    key = "human_actions" if args.id.startswith("H-") else "mandates"
+    if find(board, args.id)[1] is not None:
+        print(f"{args.id} existe deja", file=sys.stderr)
+        return 1
+    item = {"id": args.id, "title": args.title, "status": "draft", "priority": args.priority}
+    if key == "mandates":
+        if not args.owner or not args.file:
+            print("--owner et --file sont requis pour un mandat", file=sys.stderr)
+            return 1
+        item.update({"owner": args.owner, "file": args.file, "branch": None})
+    else:
+        item["ref"] = args.file or ""
+    board.setdefault(key, []).append(item)
+    save(board)
+    print(f"{args.id} ajoute ({key})")
+    return 0
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(prog="nv-board")
+    sub = parser.add_subparsers(dest="command", required=True)
+    sub.add_parser("list")
+    show = sub.add_parser("show")
+    show.add_argument("id")
+    setp = sub.add_parser("set")
+    setp.add_argument("id")
+    setp.add_argument("status")
+    setp.add_argument("--branch")
+    add = sub.add_parser("add")
+    add.add_argument("id")
+    add.add_argument("title")
+    add.add_argument("--owner")
+    add.add_argument("--file")
+    add.add_argument("--priority", type=int, default=2)
+    args = parser.parse_args(argv[1:])
+    board = load()
+    return {"list": cmd_list, "show": cmd_show, "set": cmd_set, "add": cmd_add}[args.command](board, args)
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

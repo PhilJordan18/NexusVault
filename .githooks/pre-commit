@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+# NexusVault : pas de commit sur main ou dev, pas de secret ni de fichier parasite dans l'index.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo detached)"
+case "$branch" in
+  main|master|dev)
+    echo "[nv-pre-commit] commit direct sur $branch refuse. Travailler sur nv/<role>/M-xxx-slug." >&2
+    exit 1 ;;
+esac
+mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
+[ "${#staged[@]}" -eq 0 ] && exit 0
+for file in "${staged[@]}"; do
+  case "$file" in
+    .DS_Store|*/.DS_Store|public/hot|public/build/*|node_modules/*|vendor/*)
+      echo "[nv-pre-commit] fichier parasite dans l'index : $file" >&2
+      exit 1 ;;
+  esac
+done
+if command -v python3 >/dev/null 2>&1; then
+  python3 "$ROOT/.claude/hooks/secret_files.py" check "${staged[@]}"
+else
+  for file in "${staged[@]}"; do
+    base="$(basename "$file")"
+    case "$base" in
+      .env.example) ;;
+      .env|.env.*|*.pem|*.key|*.p12|*.pfx|id_rsa*|id_ed25519*|auth.json|*.sqlite)
+        echo "[nv-pre-commit] fichier secret dans l'index : $file" >&2
+        exit 1 ;;
+    esac
+  done
+fi

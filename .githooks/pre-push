@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+# NexusVault : jamais vers main, vers dev uniquement par nv-deliver, jamais de force push ni de merge commit.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+zero="0000000000000000000000000000000000000000"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${remote_ref:-}" ] && continue
+  name="${remote_ref#refs/heads/}"
+  if [ "$local_sha" = "$zero" ]; then
+    echo "[nv-pre-push] suppression de $name refusee." >&2
+    exit 1
+  fi
+  case "$name" in
+    main|master)
+      echo "[nv-pre-push] push vers $name refuse. main ne recoit que des PR depuis dev, fusionnees par le PM." >&2
+      exit 1 ;;
+    dev) ;;
+    nv/*|claude/*|codex/*) ;;
+    *)
+      echo "[nv-pre-push] branche $name hors convention. Utiliser nv/<role>/M-xxx-slug." >&2
+      exit 1 ;;
+  esac
+  if [ "$remote_sha" != "$zero" ]; then
+    if ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+      if [ "$name" = "dev" ] || [ "${NV_DELIVER_RUN:-}" != "1" ]; then
+        echo "[nv-pre-push] push non fast-forward vers $name refuse. Pas de reecriture d'historique pousse." >&2
+        exit 1
+      fi
+    fi
+    range="$remote_sha..$local_sha"
+  else
+    range="$local_sha"
+  fi
+  if [ -n "$(git rev-list --merges "$range" 2>/dev/null)" ]; then
+    echo "[nv-pre-push] un commit de merge est dans la plage poussee vers $name. Historique lineaire exige." >&2
+    exit 1
+  fi
+  if [ "$name" = "dev" ]; then
+    if [ "${NV_DELIVER_RUN:-}" != "1" ] || [ "${NV_DELIVER_HEAD:-}" != "$local_sha" ]; then
+      echo "[nv-pre-push] push vers dev refuse hors de .nv/bin/nv-deliver." >&2
+      exit 1
+    fi
+    mandate="$(git log -1 --format=%B "$local_sha" | git interpret-trailers --parse | sed -n 's/^NV-Deliver: *\(M-[0-9]\{3\}\).*/\1/p' | head -n 1)"
+    if [ -z "$mandate" ]; then
+      echo "[nv-pre-push] le commit livre n'a pas de trailer NV-Deliver: M-xxx." >&2
+      exit 1
+    fi
+    tested="$(git rev-parse "$local_sha^")"
+    if [ -n "$(git diff --name-only "$tested" "$local_sha" | grep -v '^\.nv/' || true)" ]; then
+      echo "[nv-pre-push] le commit de livraison ne doit toucher que .nv/." >&2
+      exit 1
+    fi
+    if ! git show "$local_sha:.nv/qa/$mandate.json" 2>/dev/null | python3 "$ROOT/.claude/hooks/check_qa_evidence.py" "$mandate" "$tested" -; then
+      exit 1
+    fi
+    if ! git cat-file -e "$local_sha:.nv/reports/$mandate-livraison.md" 2>/dev/null; then
+      echo "[nv-pre-push] rapport .nv/reports/$mandate-livraison.md absent du commit livre." >&2
+      exit 1
+    fi
+  fi
+done
+exit 0
