@@ -1,7 +1,16 @@
 {
   "version": 1,
   "updated": "2026-11-11",
-  "statuses": ["draft", "ready", "in_progress", "delivered", "reviewed", "accepted", "rejected", "done"],
+  "statuses": [
+    "draft",
+    "ready",
+    "in_progress",
+    "delivered",
+    "reviewed",
+    "accepted",
+    "rejected",
+    "done"
+  ],
   "mandates": [
     {
       "id": "M-001",
@@ -49,7 +58,7 @@
     {
       "id": "H-003",
       "title": "Creer la branche dev depuis main",
-      "status": "ready",
+      "status": "done",
       "priority": 1,
       "ref": "PROCEDURES.md"
     }
