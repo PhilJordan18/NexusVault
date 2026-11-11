@@ -33,7 +33,6 @@ function decodeAssertionOptions(options: any): any {
     }
 
     if (copy.allowCredentials) {
-
         copy.allowCredentials = copy.allowCredentials.map((cred: any) => ({
             ...cred,
             id: base64urlToArrayBuffer(cred.id),
@@ -67,7 +66,9 @@ function serializeCredential(credential: PublicKeyCredential): any {
         rawId: arrayBufferToBase64url(credential.rawId),
         response: {
             clientDataJSON: arrayBufferToBase64url(response.clientDataJSON),
-            attestationObject: arrayBufferToBase64url(response.attestationObject),
+            attestationObject: arrayBufferToBase64url(
+                response.attestationObject,
+            ),
         },
     };
 }
@@ -80,10 +81,14 @@ function serializeAssertionCredential(credential: PublicKeyCredential): any {
         type: credential.type,
         rawId: arrayBufferToBase64url(credential.rawId),
         response: {
-            authenticatorData: arrayBufferToBase64url(response.authenticatorData),
+            authenticatorData: arrayBufferToBase64url(
+                response.authenticatorData,
+            ),
             clientDataJSON: arrayBufferToBase64url(response.clientDataJSON),
             signature: arrayBufferToBase64url(response.signature),
-            userHandle: response.userHandle ? arrayBufferToBase64url(response.userHandle) : null,
+            userHandle: response.userHandle
+                ? arrayBufferToBase64url(response.userHandle)
+                : null,
         },
     };
 }
@@ -92,7 +97,9 @@ export class WebAuthn {
     private readonly csrfToken: string;
 
     constructor() {
-        const metaTag = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+        const metaTag = document.querySelector(
+            'meta[name="csrf-token"]',
+        ) as HTMLMetaElement;
         this.csrfToken = metaTag?.content || '';
     }
 
@@ -102,7 +109,7 @@ export class WebAuthn {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.csrfToken,
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
         });
 
@@ -110,7 +117,9 @@ export class WebAuthn {
             const text = await res.text();
             console.error('Server returned non-JSON:', text);
 
-            throw new Error(`Server error ${res.status}: ${text.substring(0, 200)}`);
+            throw new Error(
+                `Server error ${res.status}: ${text.substring(0, 200)}`,
+            );
         }
 
         const data = await res.json();
@@ -132,7 +141,7 @@ export class WebAuthn {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.csrfToken,
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
             body: JSON.stringify(body),
         });
@@ -153,7 +162,7 @@ export class WebAuthn {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.csrfToken,
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
         });
 
@@ -169,7 +178,9 @@ export class WebAuthn {
         return decodeAssertionOptions(data);
     }
 
-    async login(credential: any): Promise<{ success: boolean; redirect?: string }> {
+    async login(
+        credential: any,
+    ): Promise<{ success: boolean; redirect?: string }> {
         const serialized = serializeAssertionCredential(credential);
 
         const res = await fetch('/webauthn/login', {
@@ -177,7 +188,7 @@ export class WebAuthn {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': this.csrfToken,
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
             body: JSON.stringify(serialized),
         });

@@ -9,7 +9,12 @@ import {
     encryptVaultString,
     hasStoredVaultKey,
 } from './zero-knowledge';
-import type { ClientSharePayload, EncryptedPrivateKeyEnvelope, EncryptedString, SharedKeyEnvelope } from './zero-knowledge';
+import type {
+    ClientSharePayload,
+    EncryptedPrivateKeyEnvelope,
+    EncryptedString,
+    SharedKeyEnvelope,
+} from './zero-knowledge';
 
 type ShareableAccount = {
     id: number;
@@ -37,13 +42,17 @@ type PreparedShareResponse = {
 type PendingShares = Record<number, ClientSharePayload>;
 
 function t(key: string): string {
-    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+    const translations = (window as any).nexusVaultTranslations as
+        | Record<string, string>
+        | undefined;
 
     return translations?.[key] ?? key;
 }
 
 function csrfToken(): string {
-    const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement | null;
+    const meta = document.querySelector(
+        'meta[name="csrf-token"]',
+    ) as HTMLMetaElement | null;
 
     return meta?.content ?? '';
 }
@@ -63,14 +72,28 @@ function ensureBrowserVaultKey(): boolean {
 }
 
 function encryptedPrivateKey(): EncryptedPrivateKeyEnvelope | null {
-    return ((window as any).nexusVaultEncryptedPrivateKey as EncryptedPrivateKeyEnvelope | null | undefined) ?? null;
+    return (
+        ((window as any).nexusVaultEncryptedPrivateKey as
+            | EncryptedPrivateKeyEnvelope
+            | null
+            | undefined) ?? null
+    );
 }
 
 function currentShareableAccount(): ShareableAccount | null {
-    return ((window as any).nexusVaultCurrentAccount as ShareableAccount | null | undefined) ?? null;
+    return (
+        ((window as any).nexusVaultCurrentAccount as
+            | ShareableAccount
+            | null
+            | undefined) ?? null
+    );
 }
 
-function encryptedField(ciphertext?: string | null, iv?: string | null, tag?: string | null): EncryptedString | null {
+function encryptedField(
+    ciphertext?: string | null,
+    iv?: string | null,
+    tag?: string | null,
+): EncryptedString | null {
     if (!ciphertext || !iv || !tag) {
         return null;
     }
@@ -78,7 +101,9 @@ function encryptedField(ciphertext?: string | null, iv?: string | null, tag?: st
     return { ciphertext, iv, tag };
 }
 
-async function decryptShareableAccount(account: ShareableAccount): Promise<ShareableAccount | null> {
+async function decryptShareableAccount(
+    account: ShareableAccount,
+): Promise<ShareableAccount | null> {
     if (!account.client_encrypted) {
         return account;
     }
@@ -91,11 +116,24 @@ async function decryptShareableAccount(account: ShareableAccount): Promise<Share
         ? await decryptSharedKeyFromVault(account.shared_key_envelope)
         : null;
     const decryptString = sharedKey
-        ? (encrypted: EncryptedString) => decryptSharedVaultString(encrypted, sharedKey)
+        ? (encrypted: EncryptedString) =>
+              decryptSharedVaultString(encrypted, sharedKey)
         : decryptVaultString;
-    const username = encryptedField(account.username, account.username_iv, account.username_tag);
-    const password = encryptedField(account.password, account.password_iv, account.password_tag);
-    const notes = encryptedField(account.notes, account.notes_iv, account.notes_tag);
+    const username = encryptedField(
+        account.username,
+        account.username_iv,
+        account.username_tag,
+    );
+    const password = encryptedField(
+        account.password,
+        account.password_iv,
+        account.password_tag,
+    );
+    const notes = encryptedField(
+        account.notes,
+        account.notes_iv,
+        account.notes_tag,
+    );
 
     if (!username || !password) {
         return null;
@@ -110,12 +148,20 @@ async function decryptShareableAccount(account: ShareableAccount): Promise<Share
     };
 }
 
-async function accountById(serviceId: number): Promise<ShareableAccount | null> {
-    const accounts = (window as any).accounts as Record<number, ShareableAccount> | undefined;
+async function accountById(
+    serviceId: number,
+): Promise<ShareableAccount | null> {
+    const accounts = (window as any).accounts as
+        | Record<number, ShareableAccount>
+        | undefined;
     const currentAccount = currentShareableAccount();
-    const resolvedId = Number.isFinite(serviceId) && serviceId > 0 ? serviceId : currentAccount?.id;
+    const resolvedId =
+        Number.isFinite(serviceId) && serviceId > 0
+            ? serviceId
+            : currentAccount?.id;
     const account = resolvedId
-        ? accounts?.[resolvedId] ?? (currentAccount?.id === resolvedId ? currentAccount : null)
+        ? (accounts?.[resolvedId] ??
+          (currentAccount?.id === resolvedId ? currentAccount : null))
         : null;
 
     if (!account) {
@@ -138,7 +184,9 @@ async function accountById(serviceId: number): Promise<ShareableAccount | null> 
 }
 
 async function responseJson<T>(response: Response): Promise<T> {
-    const json = await response.json().catch(() => ({ message: response.statusText }));
+    const json = await response
+        .json()
+        .catch(() => ({ message: response.statusText }));
 
     if (!response.ok) {
         throw new Error(json.message ?? response.statusText);
@@ -148,18 +196,21 @@ async function responseJson<T>(response: Response): Promise<T> {
 }
 
 function setFormDisabled(form: HTMLFormElement, disabled: boolean): void {
-    form.querySelectorAll<HTMLButtonElement>('button').forEach(button => {
+    form.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
         button.disabled = disabled;
     });
 }
 
-async function prepareClientShare(serviceId: number, email: string): Promise<PreparedShareResponse> {
+async function prepareClientShare(
+    serviceId: number,
+    email: string,
+): Promise<PreparedShareResponse> {
     const response = await fetch('/shares/prepare', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': csrfToken(),
-            'Accept': 'application/json',
+            Accept: 'application/json',
         },
         body: JSON.stringify({ service_id: serviceId, email }),
     });
@@ -167,20 +218,28 @@ async function prepareClientShare(serviceId: number, email: string): Promise<Pre
     return responseJson<PreparedShareResponse>(response);
 }
 
-async function sendClientShare(form: HTMLFormElement, account: ShareableAccount, email: string): Promise<ClientSharePayload> {
+async function sendClientShare(
+    form: HTMLFormElement,
+    account: ShareableAccount,
+    email: string,
+): Promise<ClientSharePayload> {
     const preparedShare = await prepareClientShare(account.id, email);
-    const payload = await createClientSyncSharePayload({
-        username: account.username,
-        password: account.password,
-        notes: account.notes ?? null,
-    }, preparedShare.recipient.public_key, account.shared_key_envelope ?? null);
+    const payload = await createClientSyncSharePayload(
+        {
+            username: account.username,
+            password: account.password,
+            notes: account.notes ?? null,
+        },
+        preparedShare.recipient.public_key,
+        account.shared_key_envelope ?? null,
+    );
 
     const response = await fetch(form.action, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': csrfToken(),
-            'Accept': 'application/json',
+            Accept: 'application/json',
         },
         body: JSON.stringify({
             service_id: account.id,
@@ -200,13 +259,15 @@ async function sendClientShare(form: HTMLFormElement, account: ShareableAccount,
 }
 
 function bindShareForm(): void {
-    const form = document.getElementById('share-form') as HTMLFormElement | null;
+    const form = document.getElementById(
+        'share-form',
+    ) as HTMLFormElement | null;
 
     if (!form) {
         return;
     }
 
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', (event) => {
         if (!usesClientEncryption()) {
             return;
         }
@@ -218,15 +279,28 @@ function bindShareForm(): void {
                 return;
             }
 
-            const modalServiceId = Number((document.getElementById('modal-service-id') as HTMLInputElement | null)?.value);
-            const serviceId = Number.isFinite(modalServiceId) && modalServiceId > 0
-                ? modalServiceId
-                : currentShareableAccount()?.id ?? 0;
-            const email = (form.querySelector<HTMLInputElement>('input[name="email"]')?.value ?? '').trim();
+            const modalServiceId = Number(
+                (
+                    document.getElementById(
+                        'modal-service-id',
+                    ) as HTMLInputElement | null
+                )?.value,
+            );
+            const serviceId =
+                Number.isFinite(modalServiceId) && modalServiceId > 0
+                    ? modalServiceId
+                    : (currentShareableAccount()?.id ?? 0);
+            const email = (
+                form.querySelector<HTMLInputElement>('input[name="email"]')
+                    ?.value ?? ''
+            ).trim();
             const account = await accountById(serviceId);
 
             if (!account || !email) {
-                (window as any).showToast?.(t('Unable to prepare encrypted share.'), 'error');
+                (window as any).showToast?.(
+                    t('Unable to prepare encrypted share.'),
+                    'error',
+                );
 
                 return;
             }
@@ -235,12 +309,23 @@ function bindShareForm(): void {
 
             try {
                 const payload = await sendClientShare(form, account, email);
-                account.shared_key_envelope = payload.shared_key_envelope ?? account.shared_key_envelope ?? null;
+                account.shared_key_envelope =
+                    payload.shared_key_envelope ??
+                    account.shared_key_envelope ??
+                    null;
                 (window as any).hideShareModal?.();
-                (window as any).showToast?.(t('Share sent successfully!'), 'success');
+                (window as any).showToast?.(
+                    t('Share sent successfully!'),
+                    'success',
+                );
             } catch (error) {
                 console.error(error);
-                (window as any).showToast?.(error instanceof Error ? error.message : t('Unable to send encrypted share.'), 'error');
+                (window as any).showToast?.(
+                    error instanceof Error
+                        ? error.message
+                        : t('Unable to send encrypted share.'),
+                    'error',
+                );
             } finally {
                 setFormDisabled(form, false);
             }
@@ -264,7 +349,9 @@ async function encryptAcceptedShareFields(data: {
     };
 }
 
-function acceptedShareRequestBody(encryptedFields: Awaited<ReturnType<typeof encryptAcceptedShareFields>>) {
+function acceptedShareRequestBody(
+    encryptedFields: Awaited<ReturnType<typeof encryptAcceptedShareFields>>,
+) {
     return {
         client_encrypted: 1,
         username: encryptedFields.username.ciphertext,
@@ -280,60 +367,91 @@ function acceptedShareRequestBody(encryptedFields: Awaited<ReturnType<typeof enc
 }
 
 function bindAcceptForms(): void {
-    document.querySelectorAll<HTMLFormElement>('[data-client-share-accept-form]').forEach(form => {
-        form.addEventListener('submit', event => {
-            event.preventDefault();
+    document
+        .querySelectorAll<HTMLFormElement>('[data-client-share-accept-form]')
+        .forEach((form) => {
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
 
-            void (async () => {
-                if (!ensureBrowserVaultKey()) {
-                    return;
-                }
+                void (async () => {
+                    if (!ensureBrowserVaultKey()) {
+                        return;
+                    }
 
-                const privateKey = encryptedPrivateKey();
-                const shareId = Number(form.dataset.shareId);
-                const payload = ((window as any).nexusVaultPendingClientShares as PendingShares | undefined)?.[shareId];
+                    const privateKey = encryptedPrivateKey();
+                    const shareId = Number(form.dataset.shareId);
+                    const payload = (
+                        (window as any).nexusVaultPendingClientShares as
+                            | PendingShares
+                            | undefined
+                    )?.[shareId];
 
-                if (!privateKey || !payload) {
-                    (window as any).showToast?.(t('Unable to accept encrypted share.'), 'error');
-
-                    return;
-                }
-
-                setFormDisabled(form, true);
-
-                try {
-                    const body = payload.mode === 'client-encrypted-sync'
-                        ? {
-                            client_encrypted: 1,
-                            shared_key_envelope: await encryptSharedKeyForVault(
-                                await decryptSharedKeyFromRecipient(payload.encrypted_aes_key, privateKey)
-                            ),
-                        }
-                        : acceptedShareRequestBody(
-                            await encryptAcceptedShareFields(await decryptClientSharePayload(payload, privateKey))
+                    if (!privateKey || !payload) {
+                        (window as any).showToast?.(
+                            t('Unable to accept encrypted share.'),
+                            'error',
                         );
 
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': csrfToken(),
-                            'Accept': 'application/json',
-                        },
-                        body: JSON.stringify(body),
-                    });
-                    const json = await responseJson<{ redirect?: string; message?: string }>(response);
+                        return;
+                    }
 
-                    (window as any).showToast?.(json.message ?? t('Service added to your vault with success!'), 'success');
-                    window.location.href = json.redirect ?? '/dashboard';
-                } catch (error) {
-                    console.error(error);
-                    (window as any).showToast?.(error instanceof Error ? error.message : t('Unable to accept encrypted share.'), 'error');
-                    setFormDisabled(form, false);
-                }
-            })();
+                    setFormDisabled(form, true);
+
+                    try {
+                        const body =
+                            payload.mode === 'client-encrypted-sync'
+                                ? {
+                                      client_encrypted: 1,
+                                      shared_key_envelope:
+                                          await encryptSharedKeyForVault(
+                                              await decryptSharedKeyFromRecipient(
+                                                  payload.encrypted_aes_key,
+                                                  privateKey,
+                                              ),
+                                          ),
+                                  }
+                                : acceptedShareRequestBody(
+                                      await encryptAcceptedShareFields(
+                                          await decryptClientSharePayload(
+                                              payload,
+                                              privateKey,
+                                          ),
+                                      ),
+                                  );
+
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': csrfToken(),
+                                Accept: 'application/json',
+                            },
+                            body: JSON.stringify(body),
+                        });
+                        const json = await responseJson<{
+                            redirect?: string;
+                            message?: string;
+                        }>(response);
+
+                        (window as any).showToast?.(
+                            json.message ??
+                                t('Service added to your vault with success!'),
+                            'success',
+                        );
+                        window.location.href = json.redirect ?? '/dashboard';
+                    } catch (error) {
+                        console.error(error);
+                        (window as any).showToast?.(
+                            error instanceof Error
+                                ? error.message
+                                : t('Unable to accept encrypted share.'),
+                            'error',
+                        );
+                        setFormDisabled(form, false);
+                    }
+                })();
+            });
         });
-    });
 }
 
 export function bindZeroKnowledgeSharing(): void {

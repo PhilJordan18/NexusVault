@@ -35,7 +35,9 @@ const CHARACTER_GROUPS = {
 const AMBIGUOUS_CHARACTERS = new Set('0O1Il|`\'"'.split(''));
 
 function t(key: string): string {
-    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+    const translations = (window as any).nexusVaultTranslations as
+        | Record<string, string>
+        | undefined;
 
     return translations?.[key] ?? key;
 }
@@ -60,19 +62,28 @@ function selectedGroups(options: PasswordGeneratorOptions): string[] {
         options.symbols ? CHARACTER_GROUPS.symbols : '',
     ].filter(Boolean);
 
-    return groups.map(group => {
+    return groups.map((group) => {
         if (!options.avoidAmbiguous) {
             return group;
         }
 
-        const filtered = [...group].filter(character => !AMBIGUOUS_CHARACTERS.has(character)).join('');
+        const filtered = [...group]
+            .filter((character) => !AMBIGUOUS_CHARACTERS.has(character))
+            .join('');
 
         return filtered || group;
     });
 }
 
-function normalizeOptions(options: Partial<PasswordGeneratorOptions> = {}, minimumLength = MIN_LENGTH): PasswordGeneratorOptions {
-    const merged = { ...DEFAULT_OPTIONS, ...loadPasswordGeneratorOptions(), ...options };
+function normalizeOptions(
+    options: Partial<PasswordGeneratorOptions> = {},
+    minimumLength = MIN_LENGTH,
+): PasswordGeneratorOptions {
+    const merged = {
+        ...DEFAULT_OPTIONS,
+        ...loadPasswordGeneratorOptions(),
+        ...options,
+    };
 
     if (!merged.upper && !merged.lower && !merged.numbers && !merged.symbols) {
         merged.lower = true;
@@ -80,7 +91,10 @@ function normalizeOptions(options: Partial<PasswordGeneratorOptions> = {}, minim
 
     return {
         ...merged,
-        length: clampLength(Number(merged.length) || DEFAULT_OPTIONS.length, minimumLength),
+        length: clampLength(
+            Number(merged.length) || DEFAULT_OPTIONS.length,
+            minimumLength,
+        ),
         upper: Boolean(merged.upper),
         lower: Boolean(merged.lower),
         numbers: Boolean(merged.numbers),
@@ -101,7 +115,10 @@ export function loadPasswordGeneratorOptions(): PasswordGeneratorOptions {
             return { ...DEFAULT_OPTIONS };
         }
 
-        return { ...DEFAULT_OPTIONS, ...JSON.parse(stored) } as PasswordGeneratorOptions;
+        return {
+            ...DEFAULT_OPTIONS,
+            ...JSON.parse(stored),
+        } as PasswordGeneratorOptions;
     } catch {
         return { ...DEFAULT_OPTIONS };
     }
@@ -139,13 +156,19 @@ function shuffleCharacters(characters: string[]): string[] {
 
     for (let index = shuffled.length - 1; index > 0; index -= 1) {
         const swapIndex = randomInt(index + 1);
-        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+        [shuffled[index], shuffled[swapIndex]] = [
+            shuffled[swapIndex],
+            shuffled[index],
+        ];
     }
 
     return shuffled;
 }
 
-export function generatePassword(options: Partial<PasswordGeneratorOptions> = {}, minimumLength = MIN_LENGTH): string {
+export function generatePassword(
+    options: Partial<PasswordGeneratorOptions> = {},
+    minimumLength = MIN_LENGTH,
+): string {
     const normalizedOptions = normalizeOptions(options, minimumLength);
     const groups = selectedGroups(normalizedOptions);
     const allCharacters = groups.join('');
@@ -159,12 +182,16 @@ export function generatePassword(options: Partial<PasswordGeneratorOptions> = {}
 }
 
 export function generatePasswordForButton(button: HTMLElement): string {
-    const minimumLength = Number(button.dataset.passwordMinLength ?? MIN_LENGTH);
+    const minimumLength = Number(
+        button.dataset.passwordMinLength ?? MIN_LENGTH,
+    );
 
     return generatePassword({}, minimumLength);
 }
 
-export async function calculateEntropy(password: string): Promise<PasswordEntropy> {
+export async function calculateEntropy(
+    password: string,
+): Promise<PasswordEntropy> {
     return calculatePasswordEntropy(password);
 }
 
@@ -246,7 +273,7 @@ export function renderPasswordStrength(
     strengthContainer: HTMLElement,
     strengthBar: HTMLElement,
     strengthText: HTMLElement,
-    result: PasswordEntropy
+    result: PasswordEntropy,
 ): void {
     const percentage = Math.min((result.entropy / 100) * 100, 100);
     strengthBar.style.width = `${percentage}%`;
@@ -273,10 +300,11 @@ function createIcon(className: string): HTMLElement {
 function createCheckboxControl(
     label: string,
     checked: boolean,
-    onChange: (checked: boolean) => void
+    onChange: (checked: boolean) => void,
 ): HTMLLabelElement {
     const wrapper = document.createElement('label');
-    wrapper.className = 'flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-xs';
+    wrapper.className =
+        'flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-3 py-2 text-xs';
 
     const text = document.createElement('span');
     text.textContent = label;
@@ -296,10 +324,14 @@ function bindLengthInputs(
     panel: HTMLElement,
     options: PasswordGeneratorOptions,
     minimumLength: number,
-    onChange: (length: number) => void
+    onChange: (length: number) => void,
 ): void {
-    const range = panel.querySelector<HTMLInputElement>('[data-password-generator-length-range]');
-    const number = panel.querySelector<HTMLInputElement>('[data-password-generator-length-number]');
+    const range = panel.querySelector<HTMLInputElement>(
+        '[data-password-generator-length-range]',
+    );
+    const number = panel.querySelector<HTMLInputElement>(
+        '[data-password-generator-length-number]',
+    );
 
     if (!range || !number) {
         return;
@@ -324,7 +356,9 @@ function bindLengthInputs(
 }
 
 function createPasswordGeneratorControls(button: HTMLElement): HTMLElement {
-    const minimumLength = Number(button.dataset.passwordMinLength ?? MIN_LENGTH);
+    const minimumLength = Number(
+        button.dataset.passwordMinLength ?? MIN_LENGTH,
+    );
     let options = normalizeOptions({}, minimumLength);
 
     const wrapper = document.createElement('div');
@@ -333,20 +367,23 @@ function createPasswordGeneratorControls(button: HTMLElement): HTMLElement {
 
     const toggle = document.createElement('button');
     toggle.type = 'button';
-    toggle.className = 'flex w-full items-center justify-center gap-2 text-xs font-medium text-[var(--text-secondary)] transition hover:text-emerald-400';
+    toggle.className =
+        'flex w-full items-center justify-center gap-2 text-xs font-medium text-[var(--text-secondary)] transition hover:text-emerald-400';
     toggle.append(createIcon('fa-solid fa-sliders'));
     const toggleText = document.createElement('span');
     toggleText.textContent = t('Customize generator');
     toggle.appendChild(toggleText);
 
     const panel = document.createElement('div');
-    panel.className = 'mt-3 hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)]/40 p-4';
+    panel.className =
+        'mt-3 hidden rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)]/40 p-4';
 
     const lengthRow = document.createElement('div');
     lengthRow.className = 'mb-4';
 
     const lengthHeader = document.createElement('div');
-    lengthHeader.className = 'mb-2 flex items-center justify-between gap-3 text-xs';
+    lengthHeader.className =
+        'mb-2 flex items-center justify-between gap-3 text-xs';
 
     const lengthLabel = document.createElement('span');
     lengthLabel.className = 'text-[var(--text-secondary)]';
@@ -355,7 +392,8 @@ function createPasswordGeneratorControls(button: HTMLElement): HTMLElement {
     const lengthNumber = document.createElement('input');
     lengthNumber.type = 'number';
     lengthNumber.dataset.passwordGeneratorLengthNumber = 'true';
-    lengthNumber.className = 'w-16 rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1 text-center text-xs outline-none focus:border-emerald-500';
+    lengthNumber.className =
+        'w-16 rounded-xl border border-[var(--border-color)] bg-[var(--bg-input)] px-2 py-1 text-center text-xs outline-none focus:border-emerald-500';
 
     const lengthRange = document.createElement('input');
     lengthRange.type = 'range';
@@ -368,37 +406,58 @@ function createPasswordGeneratorControls(button: HTMLElement): HTMLElement {
     const grid = document.createElement('div');
     grid.className = 'grid grid-cols-1 gap-2 sm:grid-cols-2';
 
-    const setOption = (key: keyof PasswordGeneratorOptions, value: boolean | number): void => {
+    const setOption = (
+        key: keyof PasswordGeneratorOptions,
+        value: boolean | number,
+    ): void => {
         options = normalizeOptions({ ...options, [key]: value }, minimumLength);
         savePasswordGeneratorOptions(options);
     };
 
     grid.append(
-        createCheckboxControl(t('Uppercase'), options.upper, value => setOption('upper', value)),
-        createCheckboxControl(t('Lowercase'), options.lower, value => setOption('lower', value)),
-        createCheckboxControl(t('Numbers'), options.numbers, value => setOption('numbers', value)),
-        createCheckboxControl(t('Symbols'), options.symbols, value => setOption('symbols', value)),
-        createCheckboxControl(t('Avoid ambiguous'), options.avoidAmbiguous, value => setOption('avoidAmbiguous', value))
+        createCheckboxControl(t('Uppercase'), options.upper, (value) =>
+            setOption('upper', value),
+        ),
+        createCheckboxControl(t('Lowercase'), options.lower, (value) =>
+            setOption('lower', value),
+        ),
+        createCheckboxControl(t('Numbers'), options.numbers, (value) =>
+            setOption('numbers', value),
+        ),
+        createCheckboxControl(t('Symbols'), options.symbols, (value) =>
+            setOption('symbols', value),
+        ),
+        createCheckboxControl(
+            t('Avoid ambiguous'),
+            options.avoidAmbiguous,
+            (value) => setOption('avoidAmbiguous', value),
+        ),
     );
 
     panel.append(lengthRow, grid);
-    bindLengthInputs(panel, options, minimumLength, length => setOption('length', length));
+    bindLengthInputs(panel, options, minimumLength, (length) =>
+        setOption('length', length),
+    );
     toggle.addEventListener('click', () => panel.classList.toggle('hidden'));
     wrapper.append(toggle, panel);
 
     return wrapper;
 }
 
-export function bindPasswordGeneratorCustomization(root: ParentNode = document): void {
-    root.querySelectorAll<HTMLElement>('[data-password-generate]').forEach(button => {
-        if (button.dataset.passwordGeneratorCustomizationBound === 'true') {
-            return;
-        }
+export function bindPasswordGeneratorCustomization(
+    root: ParentNode = document,
+): void {
+    root.querySelectorAll<HTMLElement>('[data-password-generate]').forEach(
+        (button) => {
+            if (button.dataset.passwordGeneratorCustomizationBound === 'true') {
+                return;
+            }
 
-        button.dataset.passwordGeneratorCustomizationBound = 'true';
-        const controls = createPasswordGeneratorControls(button);
-        button.insertAdjacentElement('afterend', controls);
-    });
+            button.dataset.passwordGeneratorCustomizationBound = 'true';
+            const controls = createPasswordGeneratorControls(button);
+            button.insertAdjacentElement('afterend', controls);
+        },
+    );
 }
 
 /**
@@ -411,17 +470,23 @@ export function bindPasswordStrength(
     strengthBarId: string,
     strengthTextId: string,
     generateBtnId: string | null,
-    confirmationInputId?: string
+    confirmationInputId?: string,
 ): void {
-    const passwordInput = document.getElementById(passwordInputId) as HTMLInputElement | null;
+    const passwordInput = document.getElementById(
+        passwordInputId,
+    ) as HTMLInputElement | null;
 
     if (!passwordInput) {
         return;
     }
 
     const strengthContainer = document.getElementById(strengthContainerId);
-    const strengthBar = document.getElementById(strengthBarId) as HTMLElement | null;
-    const strengthText = document.getElementById(strengthTextId) as HTMLElement | null;
+    const strengthBar = document.getElementById(
+        strengthBarId,
+    ) as HTMLElement | null;
+    const strengthText = document.getElementById(
+        strengthTextId,
+    ) as HTMLElement | null;
     let entropyTimer: number | null = null;
     let entropyRequestId = 0;
 
@@ -431,7 +496,8 @@ export function bindPasswordStrength(
         if (toggleBtn) {
             toggleBtn.addEventListener('click', () => {
                 const icon = toggleBtn.querySelector('i') as HTMLElement | null;
-                const nextType = passwordInput.type === 'password' ? 'text' : 'password';
+                const nextType =
+                    passwordInput.type === 'password' ? 'text' : 'password';
 
                 passwordInput.type = nextType;
 
@@ -463,11 +529,16 @@ export function bindPasswordStrength(
         }
 
         if (passwordInput.value.length < 4) {
-            renderPasswordStrength(strengthContainer, strengthBar, strengthText, {
-                entropy: 0,
-                strength: 'very_weak',
-                label: 'Very weak',
-            });
+            renderPasswordStrength(
+                strengthContainer,
+                strengthBar,
+                strengthText,
+                {
+                    entropy: 0,
+                    strength: 'very_weak',
+                    label: 'Very weak',
+                },
+            );
 
             return;
         }
@@ -477,7 +548,12 @@ export function bindPasswordStrength(
                 return;
             }
 
-            renderPasswordStrength(strengthContainer, strengthBar, strengthText, calculatePasswordEntropy(passwordInput.value));
+            renderPasswordStrength(
+                strengthContainer,
+                strengthBar,
+                strengthText,
+                calculatePasswordEntropy(passwordInput.value),
+            );
         }, 150);
     });
 
@@ -494,11 +570,15 @@ export function bindPasswordStrength(
 
                 const newPassword = generatePasswordForButton(generateBtn);
                 passwordInput.value = newPassword;
-                passwordInput.dispatchEvent(new Event('input', { bubbles: true }));
+                passwordInput.dispatchEvent(
+                    new Event('input', { bubbles: true }),
+                );
                 passwordInput.setCustomValidity('');
 
                 if (confirmationInputId) {
-                    const confirmInput = document.getElementById(confirmationInputId) as HTMLInputElement | null;
+                    const confirmInput = document.getElementById(
+                        confirmationInputId,
+                    ) as HTMLInputElement | null;
 
                     if (confirmInput) {
                         confirmInput.value = newPassword;

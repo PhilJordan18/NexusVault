@@ -4,7 +4,11 @@ function shouldUseClientEncryption(): boolean {
     return Boolean((window as any).nexusVaultUsesClientEncryption);
 }
 
-function setHiddenInput(form: HTMLFormElement, name: string, value: string): void {
+function setHiddenInput(
+    form: HTMLFormElement,
+    name: string,
+    value: string,
+): void {
     let input = form.querySelector<HTMLInputElement>(`input[name="${name}"]`);
 
     if (!input) {
@@ -17,8 +21,15 @@ function setHiddenInput(form: HTMLFormElement, name: string, value: string): voi
     input.value = value;
 }
 
-async function encryptFieldIntoForm(form: HTMLFormElement, fieldName: string, ivName: string, tagName: string): Promise<void> {
-    const field = form.querySelector<HTMLInputElement | HTMLTextAreaElement>(`[name="${fieldName}"]`);
+async function encryptFieldIntoForm(
+    form: HTMLFormElement,
+    fieldName: string,
+    ivName: string,
+    tagName: string,
+): Promise<void> {
+    const field = form.querySelector<HTMLInputElement | HTMLTextAreaElement>(
+        `[name="${fieldName}"]`,
+    );
 
     if (!field || field.value === '') {
         setHiddenInput(form, ivName, '');
@@ -50,13 +61,15 @@ async function submitEncryptedCreateForm(form: HTMLFormElement): Promise<void> {
 }
 
 export function bindZeroKnowledgeCreateForm(): void {
-    const form = document.getElementById('create-service-form') as HTMLFormElement | null;
+    const form = document.getElementById(
+        'create-service-form',
+    ) as HTMLFormElement | null;
 
     if (!form || !shouldUseClientEncryption()) {
         return;
     }
 
-    form.addEventListener('submit', event => {
+    form.addEventListener('submit', (event) => {
         if (form.dataset.zkEncrypted === '1') {
             return;
         }

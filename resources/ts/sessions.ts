@@ -6,19 +6,24 @@ class SessionManager {
     }
 
     private init(): void {
-        this.logoutAllBtn = document.getElementById('logout-all-sessions-btn') as HTMLButtonElement | null;
+        this.logoutAllBtn = document.getElementById(
+            'logout-all-sessions-btn',
+        ) as HTMLButtonElement | null;
         this.bindEvents();
     }
 
     private bindEvents(): void {
         // Revoke single session
-        document.querySelectorAll('.revoke-session-btn').forEach(btn => {
+        document.querySelectorAll('.revoke-session-btn').forEach((btn) => {
             btn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 const sessionId = (btn as HTMLElement).dataset.sessionId;
 
                 if (sessionId) {
-                    await this.revokeSession(sessionId, btn as HTMLButtonElement);
+                    await this.revokeSession(
+                        sessionId,
+                        btn as HTMLButtonElement,
+                    );
                 }
             });
         });
@@ -34,7 +39,11 @@ class SessionManager {
                     return;
                 }
 
-                if (confirm('Are you sure you want to log out from all other devices?')) {
+                if (
+                    confirm(
+                        'Are you sure you want to log out from all other devices?',
+                    )
+                ) {
                     await this.logoutFromAllOtherDevices(logoutAllBtn);
                 }
             });
@@ -42,7 +51,8 @@ class SessionManager {
     }
 
     private countOtherSessions(): number {
-        return document.querySelectorAll('.session-card:not(.current-session)').length;
+        return document.querySelectorAll('.session-card:not(.current-session)')
+            .length;
     }
 
     private updateLogoutAllButton(): void {
@@ -55,19 +65,26 @@ class SessionManager {
         if (count >= 2) {
             // Actif
             this.logoutAllBtn.disabled = false;
-            this.logoutAllBtn.className = this.logoutAllBtn.className
-                    .replace(/bg-gray-500\/10 text-gray-500 cursor-not-allowed/g, '')
-                + ' bg-red-500/10 hover:bg-red-500/20 text-red-500';
+            this.logoutAllBtn.className =
+                this.logoutAllBtn.className.replace(
+                    /bg-gray-500\/10 text-gray-500 cursor-not-allowed/g,
+                    '',
+                ) + ' bg-red-500/10 hover:bg-red-500/20 text-red-500';
         } else {
             // Inactif
             this.logoutAllBtn.disabled = true;
-            this.logoutAllBtn.className = this.logoutAllBtn.className
-                    .replace(/bg-red-500\/10 hover:bg-red-500\/20 text-red-500/g, '')
-                + ' bg-gray-500/10 text-gray-500 cursor-not-allowed';
+            this.logoutAllBtn.className =
+                this.logoutAllBtn.className.replace(
+                    /bg-red-500\/10 hover:bg-red-500\/20 text-red-500/g,
+                    '',
+                ) + ' bg-gray-500/10 text-gray-500 cursor-not-allowed';
         }
     }
 
-    private async revokeSession(sessionId: string, button: HTMLButtonElement): Promise<void> {
+    private async revokeSession(
+        sessionId: string,
+        button: HTMLButtonElement,
+    ): Promise<void> {
         const originalText = button.innerHTML;
         button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Logging out...`;
         button.disabled = true;
@@ -77,7 +94,7 @@ class SessionManager {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': this.getCsrfToken(),
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
             });
 
@@ -88,7 +105,7 @@ class SessionManager {
                     card.classList.add('opacity-0', 'scale-95');
                     setTimeout(() => {
                         card.remove();
-                        this.updateLogoutAllButton();   // mise à jour dynamique
+                        this.updateLogoutAllButton(); // mise à jour dynamique
                     }, 200);
                 }
 
@@ -104,7 +121,9 @@ class SessionManager {
         }
     }
 
-    private async logoutFromAllOtherDevices(button: HTMLButtonElement): Promise<void> {
+    private async logoutFromAllOtherDevices(
+        button: HTMLButtonElement,
+    ): Promise<void> {
         const originalText = button.innerHTML;
         button.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> Logging out...`;
         button.disabled = true;
@@ -114,18 +133,20 @@ class SessionManager {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': this.getCsrfToken(),
-                    'Accept': 'application/json',
+                    Accept: 'application/json',
                 },
             });
 
             if (response.ok) {
-                document.querySelectorAll('.session-card:not(.current-session)').forEach(card => {
-                    card.classList.add('opacity-0', 'scale-95');
-                    setTimeout(() => {
-                        card.remove();
-                        this.updateLogoutAllButton();
-                    }, 200);
-                });
+                document
+                    .querySelectorAll('.session-card:not(.current-session)')
+                    .forEach((card) => {
+                        card.classList.add('opacity-0', 'scale-95');
+                        setTimeout(() => {
+                            card.remove();
+                            this.updateLogoutAllButton();
+                        }, 200);
+                    });
                 this.showToast('Logged out from all other devices', 'success');
             } else {
                 throw new Error('Failed to logout from all devices');
@@ -139,13 +160,20 @@ class SessionManager {
     }
 
     private getCsrfToken(): string {
-        const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+        const meta = document.querySelector(
+            'meta[name="csrf-token"]',
+        ) as HTMLMetaElement;
 
         return meta?.content || '';
     }
 
-    private showToast(message: string, type: 'success' | 'error' = 'success'): void {
-        const toastContainer = document.getElementById('toast-container') || this.createToastContainer();
+    private showToast(
+        message: string,
+        type: 'success' | 'error' = 'success',
+    ): void {
+        const toastContainer =
+            document.getElementById('toast-container') ||
+            this.createToastContainer();
 
         const toast = document.createElement('div');
         toast.className = `flex items-center gap-3 px-5 py-3 rounded-2xl shadow-xl text-sm border ${

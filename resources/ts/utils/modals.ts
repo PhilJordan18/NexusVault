@@ -1,5 +1,7 @@
 export function showShareModal(serviceId: number | string) {
-    const input = document.getElementById('modal-service-id') as HTMLInputElement | null;
+    const input = document.getElementById(
+        'modal-service-id',
+    ) as HTMLInputElement | null;
     const modal = document.getElementById('share-modal');
 
     if (input && modal) {
