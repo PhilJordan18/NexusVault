@@ -371,5 +371,6 @@
     "Confirm this action with your login password or a current authenticator code.": "Confirm this action with your login password or a current authenticator code.",
     "Or a current authenticator code": "Or a current authenticator code",
     "Authenticator code": "Authenticator code",
-    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Enable two-factor authentication first: this action must be confirmed with an authenticator code."
+    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Enable two-factor authentication first: this action must be confirmed with an authenticator code.",
+    "Your password has been reset successfully. Please log in.": "Your password has been reset successfully. Please log in."
 }

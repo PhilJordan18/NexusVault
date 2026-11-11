@@ -7,8 +7,10 @@ use App\Models\User;
 use App\Services\Auth\Contracts\LoginServiceInterface;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 final readonly class LoginService implements LoginServiceInterface
@@ -71,11 +73,22 @@ final readonly class LoginService implements LoginServiceInterface
         return User::where('email', $email)->first();
     }
 
+    /**
+     * The hash is always checked, against a throwaway hash when the account is unknown,
+     * so that response times do not reveal which emails exist.
+     */
     private function validateCredentials(?User $user, ?string $password): void
     {
-        if (! $user || ! Hash::check($password, $user->password)) {
+        $hash = $user?->password ?? $this->unknownAccountHash();
+
+        if (! Hash::check((string) $password, $hash) || ! $user) {
             throw ValidationException::withMessages(['email' => 'Invalid credentials']);
         }
+    }
+
+    private function unknownAccountHash(): string
+    {
+        return Cache::rememberForever('auth.unknown_account_hash', fn (): string => Hash::make(Str::random(40)));
     }
 
     private function ensureEmailIsVerified(User $user): void
