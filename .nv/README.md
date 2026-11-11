@@ -71,7 +71,7 @@ pour les actions qui reviennent a un humain.
 | --- | --- | --- | --- | --- |
 | `nv-deliver M-xxx` | owner du mandat (`dev`, `ui`, `secops`) | tout, le commit de livraison seulement `.nv/` | `composer run ci:check`, `npm run build`, preuve `.nv/qa/` | `in_progress` vers `delivered` |
 | `nv-deliver --review M-xxx` | `secops` | `.nv/reports/`, `docs/` | verdict `approved` ou `changes_requested` dans le rapport | `delivered` vers `reviewed` |
-| `nv-deliver --governance <slug>` | `architect` | `.nv/` sauf `qa/`, `docs/`, `.claude/`, `.agents/`, `.githooks/`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore` | tests des hooks Claude et git | aucun changement de statut automatique |
+| `nv-deliver --governance <slug>` | `architect` | `.nv/` sauf `qa/`, `docs/`, `.claude/` sauf `hooks/` et `settings.json`, `.agents/`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore` ; jamais `.githooks/` | tests des hooks Claude et git | aucun changement de statut automatique |
 
 Un push vers `dev` est valide par la politique deja sur `dev`
 (`policy_at`), pas par celle de l'arbre de travail : une livraison ne peut

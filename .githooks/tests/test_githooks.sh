@@ -107,5 +107,32 @@ echo "--- governance delivery touching app code refused"
 echo z > app.txt && git add app.txt && git commit -q -m "feat(x): code sous gouvernance"
 echo "- governance code" >> .nv/journal.md && git add .nv && NV_DELIVER_RUN=1 git commit -q -m "chore(nv): governance code" -m "NV-Governance: code"
 G2=$(git rev-parse HEAD); NV_DELIVER_RUN=1 NV_DELIVER_HEAD=$G2 git push origin "$G2:refs/heads/dev" 2>&1 | head -3 || true
+echo "--- founding exception: dev holds the old policy, the delivery that tightens it is validated by the old one"
+git switch -q -c nv/dev/old-policy origin/dev
+python3 - <<'PY'
+import pathlib
+p = pathlib.Path(".claude/hooks/delivery.py"); s = p.read_text()
+s = s.replace('"forbidden_paths": (".nv/qa/", ".githooks/", ".claude/hooks/", ".claude/settings.json"),', '"forbidden_paths": (".nv/qa/",),')
+s = s.replace('    ".agents/",\n    "AGENTS.md",', '    ".agents/",\n    ".githooks/",\n    "AGENTS.md",')
+p.write_text(s)
+PY
+git add .claude && git commit -q -m "chore(nv): ancienne politique sur dev"
+OLD=$(git rev-parse HEAD); git $BYPASS push -q origin "$OLD:refs/heads/dev" && git fetch -q origin
+git switch -q -c nv/architect/socle origin/dev
+cp $REPO/.claude/hooks/delivery.py .claude/hooks/delivery.py && echo "# socle" >> .githooks/pre-push
+git add .claude .githooks && git commit -q -m "feat(nv): politique qui exclut les gardes de la gouvernance"
+echo "- governance socle" >> .nv/journal.md && git add .nv && NV_DELIVER_RUN=1 git commit -q -m "chore(nv): governance socle" -m "NV-Governance: socle"
+G3=$(git rev-parse HEAD); NV_DELIVER_RUN=1 NV_DELIVER_HEAD=$G3 git push -q origin "$G3:refs/heads/dev" && echo FOUNDING-GOVERNANCE-OK
+git fetch -q origin
+echo "--- governance delivery touching .githooks/pre-push refused by the policy now on dev"
+git switch -q -c nv/architect/hooks origin/dev && echo "# encore" >> .githooks/pre-push
+git add .githooks && git commit -q -m "chore(nv): toucher un garde sous gouvernance"
+echo "- governance hooks" >> .nv/journal.md && git add .nv && NV_DELIVER_RUN=1 git commit -q -m "chore(nv): governance hooks" -m "NV-Governance: hooks"
+G4=$(git rev-parse HEAD); NV_DELIVER_RUN=1 NV_DELIVER_HEAD=$G4 git push origin "$G4:refs/heads/dev" 2>&1 | head -3 || true
+echo "--- governance delivery touching .claude/hooks and settings refused"
+git switch -q -c nv/architect/hooks2 origin/dev && echo "# x" >> .claude/hooks/delivery.py && echo '{}' > .claude/settings.json
+git add .claude && git commit -q -m "chore(nv): toucher les gardes Claude"
+echo "- governance hooks2" >> .nv/journal.md && git add .nv && NV_DELIVER_RUN=1 git commit -q -m "chore(nv): governance hooks2" -m "NV-Governance: hooks2"
+G5=$(git rev-parse HEAD); NV_DELIVER_RUN=1 NV_DELIVER_HEAD=$G5 git push origin "$G5:refs/heads/dev" 2>&1 | head -4 || true
 echo "--- remote state"
 git ls-remote origin | sed 's/\t/ /'

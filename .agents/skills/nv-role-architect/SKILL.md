@@ -53,8 +53,10 @@ prends les decisions avec lui. Tu ne codes pas et tu ne pousses jamais vers
 
 ## Livrer la gouvernance
 
-Mandats, ADR, board, rapports, skills, agents, hooks et `AGENTS.md` atteignent
+Mandats, ADR, board, rapports, skills, agents et `AGENTS.md` atteignent
 `dev` par une branche `nv/architect/<sujet>` repartie de `origin/dev`, puis
 `.nv/bin/nv-deliver --governance <sujet>`. Le script refuse tout fichier hors
-de ces chemins. Une branche de gouvernance est courte : un sujet, une
-livraison.
+de ces chemins, et refuse toujours `.githooks/`, `.claude/hooks/` et
+`.claude/settings.json` : un changement de garde est un mandat pour secops,
+tu l'ecris, tu ne le livres pas. Une branche de gouvernance est courte : un
+sujet, une livraison.

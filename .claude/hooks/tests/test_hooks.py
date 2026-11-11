@@ -181,11 +181,23 @@ class DeliveryPolicyTest(unittest.TestCase):
         self.assertEqual(disallowed_range_paths(["app/Models/User.php", ".nv/mandates/M-009-x.md"], "review"),
                          ["app/Models/User.php", ".nv/mandates/M-009-x.md"])
         self.assertEqual(disallowed_range_paths([".nv/mandates/M-009-x.md", "docs/adr/ADR-006-x.md", "AGENTS.md",
-                                                 ".claude/hooks/guard_bash.py", ".agents/skills/nv-deliver/SKILL.md"], "governance"), [])
+                                                 ".claude/skills/nv-deliver", ".claude/agents/nv-explorer.md",
+                                                 ".agents/skills/nv-deliver/SKILL.md"], "governance"), [])
         self.assertEqual(disallowed_range_paths(["app/Models/User.php", ".github/workflows/ci.yml", ".nv/qa/M-002.json"], "governance"),
                          ["app/Models/User.php", ".github/workflows/ci.yml", ".nv/qa/M-002.json"])
+        self.assertEqual(disallowed_range_paths([".githooks/pre-push", ".claude/hooks/guard_bash.py", ".claude/settings.json",
+                                                 ".claude/skills/x/SKILL.md", ".nv/mandates/M-009.md"], "governance"),
+                         [".githooks/pre-push", ".claude/hooks/guard_bash.py", ".claude/settings.json"])
         self.assertEqual(disallowed_tip_paths([".nv/board.json", ".nv/journal.md"], "governance"), [])
         self.assertEqual(disallowed_tip_paths(["routes/web.php"], "deliver"), ["routes/web.php"])
+
+    def test_policy_at_reads_the_committed_module(self) -> None:
+        import delivery
+        from delivery import policy_at
+        committed = policy_at("HEAD", cwd=ROOT)
+        self.assertEqual(set(committed.KINDS), set(delivery.KINDS))
+        self.assertTrue(callable(committed.disallowed_range_paths))
+        self.assertIs(policy_at("HEAD~100000", cwd=ROOT), delivery)
 
     def test_review_verdict(self) -> None:
         from delivery import review_verdict

@@ -28,8 +28,8 @@ from delivery import (  # noqa: E402
     KINDS,
     REVIEW_VERDICTS,
     commit_message,
-    disallowed_range_paths,
     journal_line,
+    policy_at,
     review_verdict,
     valid_ref,
 )
@@ -109,7 +109,7 @@ def rebase_on_dev(kind: str) -> None:
     if not git("rev-list", "origin/dev..HEAD"):
         fail("rien a livrer, HEAD est deja sur origin/dev")
     touched = git("diff", "--name-only", "origin/dev", "HEAD").split()
-    bad = disallowed_range_paths(touched, kind)
+    bad = policy_at("origin/dev", cwd=ROOT).disallowed_range_paths(touched, kind)
     if bad:
         fail(f"une livraison {kind} ne peut pas toucher : {', '.join(bad)}")
 

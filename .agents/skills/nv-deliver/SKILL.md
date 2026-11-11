@@ -40,8 +40,10 @@ description: Livrer vers la branche dev de NexusVault avec le script nv-deliver,
 
 - slug en minuscules et tirets, par exemple `mandats-sprint-1`;
 - les commits a livrer ne touchent que `.nv/` (sauf `qa/`), `docs/`,
-  `.claude/`, `.agents/`, `.githooks/`, `AGENTS.md`, `CLAUDE.md`, `README.md`
-  et `.gitignore`;
+  `.claude/skills/`, `.claude/agents/`, `.agents/`, `AGENTS.md`, `CLAUDE.md`,
+  `README.md` et `.gitignore`. Les gardes eux-memes, `.githooks/`,
+  `.claude/hooks/` et `.claude/settings.json`, sont refuses : ils changent par
+  un mandat porte par secops, revu comme du code;
 - le script lance les tests des hooks Claude et des hooks git, puis commite
   `chore(nv): governance <slug>` avec le trailer `NV-Governance: <slug>`.
 
@@ -49,7 +51,9 @@ description: Livrer vers la branche dev de NexusVault avec le script nv-deliver,
 
 Le trailer, les chemins touches par la plage et par le commit de livraison,
 la preuve QA et le rapport pour un mandat, le verdict pour un avis. La
-politique est dans `.claude/hooks/delivery.py`. Le script et le hook doivent
+politique est dans `.claude/hooks/delivery.py`, et c'est sa version deja sur
+`origin/dev` qui s'applique, pas celle de ta branche : une livraison qui
+change la politique est validee par l'ancienne. Le script et le hook doivent
 etre d'accord.
 
 ## En cas de refus

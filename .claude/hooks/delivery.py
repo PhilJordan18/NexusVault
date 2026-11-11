@@ -4,12 +4,21 @@ Module partage par .nv/bin/nv-deliver (qui cree le commit de livraison) et par
 check_delivery.py (appele par le hook pre-push pour revalider la plage poussee
 vers dev). Une seule table decrit, pour chaque sorte de livraison, le trailer,
 le role qui a le droit de la lancer, et ce que les commits peuvent toucher.
+
+La politique qui valide un push vers dev est celle deja presente sur dev
+(`policy_at`), jamais celle de l'arbre de travail : une livraison ne peut pas
+assouplir les regles qui la valident, elle ne les change que pour les
+suivantes.
 """
 
 from __future__ import annotations
 
 import re
+import subprocess
+import types
 from typing import Any
+
+POLICY_PATH = ".claude/hooks/delivery.py"
 
 MANDATE_RE = re.compile(r"^M-\d{3}$")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{2,40}$")
@@ -21,7 +30,6 @@ GOVERNANCE_PATHS = (
     "docs/",
     ".claude/",
     ".agents/",
-    ".githooks/",
     "AGENTS.md",
     "CLAUDE.md",
     "README.md",
@@ -55,7 +63,7 @@ KINDS: dict[str, dict[str, Any]] = {
         "ref": SLUG_RE,
         "roles": ("architect",),
         "range_paths": GOVERNANCE_PATHS,
-        "forbidden_paths": (".nv/qa/",),
+        "forbidden_paths": (".nv/qa/", ".githooks/", ".claude/hooks/", ".claude/settings.json"),
         "tip_paths": (".nv/",),
         "status_before": (),
         "status_after": None,
@@ -123,3 +131,15 @@ def review_verdict(report: str) -> str | None:
 
 def journal_line(kind: str, ref: str, head: str, branch: str, date: str) -> str:
     return f"- {date} {kind} {ref} {head[:10]} {branch}\n"
+
+
+def policy_at(ref: str, cwd: str | None = None) -> types.ModuleType:
+    """Ce module tel qu'il existe au commit `ref`, ou ce module-ci si `ref` ne le porte pas encore."""
+    result = subprocess.run(["git", "show", f"{ref}:{POLICY_PATH}"], capture_output=True, text=True, check=False, cwd=cwd)
+    if result.returncode != 0:
+        import sys
+
+        return sys.modules[__name__]
+    module = types.ModuleType(f"delivery@{ref}")
+    exec(compile(result.stdout, f"{POLICY_PATH}@{ref}", "exec"), module.__dict__)
+    return module
