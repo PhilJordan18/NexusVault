@@ -1,19 +1,19 @@
 {
   "mandate": "M-002",
-  "head": "6699715cb39b8b977e4ba4fbd0d751ff23ee73bd",
+  "head": "a6cf19f6edb614d8cc4da330548062e596bca90c",
   "branch": "claude/autocompact-300k-bu83lf",
-  "created": "2026-11-11T02:29:06Z",
+  "created": "2026-11-11T14:59:55Z",
   "status": "pass",
   "checks": [
     {
       "command": "composer run ci:check",
       "exit_code": 0,
-      "duration_s": 18.3
+      "duration_s": 29.0
     },
     {
       "command": "npm run build",
       "exit_code": 0,
-      "duration_s": 1.5
+      "duration_s": 4.1
     }
   ]
 }
