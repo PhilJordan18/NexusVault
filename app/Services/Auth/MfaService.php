@@ -12,6 +12,11 @@ use PragmaRX\Google2FAQRCode\Google2FA as Google2FAQRCode;
 
 final readonly class MfaService implements MfaServiceInterface
 {
+    /**
+     * Accepted clock drift, in 30 second periods, on each side of the current one.
+     */
+    private const TOTP_WINDOW = 1;
+
     private Google2FAQRCode $google2FA;
 
     public function __construct(?Google2FAQRCode $google2FA = null)
@@ -97,7 +102,7 @@ final readonly class MfaService implements MfaServiceInterface
      */
     public function verifySecretCode(string $secret, string $code): bool
     {
-        return (bool) $this->google2FA->verifyKey($secret, $code, 2);
+        return (bool) $this->google2FA->verifyKey($secret, $code, self::TOTP_WINDOW);
     }
 
     /**
