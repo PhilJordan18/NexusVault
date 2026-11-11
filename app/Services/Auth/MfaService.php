@@ -34,9 +34,9 @@ final readonly class MfaService implements MfaServiceInterface
      *
      * @throws MissingQrCodeServiceException
      */
-    public function getQrCodeImage(User $user): array
+    public function getQrCodeImage(User $user, string $secret): array
     {
-        $qrCode = $this->google2FA->getQRCodeInline('NexusVault', $user->email, $user->totp_secret, 220);
+        $qrCode = $this->google2FA->getQRCodeInline('NexusVault', $user->email, $secret, 220);
 
         if (str_starts_with($qrCode, 'data:image/')) {
             return $this->decodeDataUri($qrCode);
@@ -53,9 +53,9 @@ final readonly class MfaService implements MfaServiceInterface
     /**
      * @throws MissingQrCodeServiceException
      */
-    public function getQrCodeUrl(User $user): string
+    public function getQrCodeUrl(User $user, string $secret): string
     {
-        $qrCode = $this->getQrCodeImage($user);
+        $qrCode = $this->getQrCodeImage($user, $secret);
 
         return sprintf('data:%s;base64,%s', $qrCode['mime_type'], base64_encode($qrCode['contents']));
     }
@@ -85,23 +85,37 @@ final readonly class MfaService implements MfaServiceInterface
             return false;
         }
 
-        return $this->google2FA->verifyKey($user->totp_secret, $code, 2);
+        return $this->verifySecretCode($user->totp_secret, $code);
     }
 
     /**
+     * Verify a code against a secret that is not yet confirmed for the user.
+     *
+     * @throws IncompatibleWithGoogleAuthenticatorException
+     * @throws InvalidCharactersException
+     * @throws SecretKeyTooShortException
+     */
+    public function verifySecretCode(string $secret, string $code): bool
+    {
+        return (bool) $this->google2FA->verifyKey($secret, $code, 2);
+    }
+
+    /**
+     * Persist the pending secret only once the user proved their authenticator knows it.
+     *
      * @throws IncompatibleWithGoogleAuthenticatorException
      * @throws SecretKeyTooShortException
      * @throws InvalidCharactersException
      */
-    public function enableMfa(User $user, string $code): bool
+    public function enableMfa(User $user, string $secret, string $code): bool
     {
-        if ($this->verifyCode($user, $code)) {
-            $user->update(['mfa_enabled' => true]);
-
-            return true;
+        if (! $this->verifySecretCode($secret, $code)) {
+            return false;
         }
 
-        return false;
+        $user->forceFill(['mfa_enabled' => true, 'totp_secret' => $secret])->save();
+
+        return true;
     }
 
     public function disableMfa(User $user): bool
