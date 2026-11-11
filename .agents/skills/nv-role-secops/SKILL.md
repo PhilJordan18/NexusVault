@@ -31,6 +31,11 @@ Charger `nv-security-review` et suivre la checklist. Lancer `nv-pentester`
 sur toute livraison qui touche auth, session, crypto, partage ou admin.
 Un `changes_requested` doit nommer le fichier, la ligne et le scenario d'abus.
 
+L'avis atteint `dev` par une branche `nv/secops/M-xxx-revue` repartie de
+`origin/dev`, ou seuls le rapport et `docs/` changent, puis
+`.nv/bin/nv-deliver --review M-xxx`. Le script passe le mandat a `reviewed`
+et pousse. Ne jamais confier l'avis a la session qui a livre.
+
 ## Regles
 
 - Tes propres livraisons passent aussi par `nv-deliver` sur une branche

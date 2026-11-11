@@ -43,6 +43,16 @@ versionnes dans `.githooks/`, hooks Claude Code dans `.claude/hooks/`. Seule la
 premiere couche est une barriere reelle, les deux autres guident des agents
 cooperatifs et donnent un retour immediat.
 
+Amendement du 2026-11-11 : `nv-deliver` connait trois sortes de livraison,
+chacune liee a un role et a des chemins permis. Un mandat (`nv-deliver M-xxx`,
+par son owner) peut toucher tout le depot. Un avis securite
+(`nv-deliver --review M-xxx`, par Securite) ne touche que les rapports et
+`docs/`. Une livraison de gouvernance (`nv-deliver --governance <slug>`, par
+Architecture) ne touche que `.nv/`, `docs/`, les skills, les agents, les hooks
+et les fichiers de contrat. Les trois portent un trailer distinct et une
+ligne dans `.nv/journal.md`. La politique est un seul module,
+`.claude/hooks/delivery.py`, lu par le script et par le hook `pre-push`.
+
 ## Alternatives considerees
 
 Une seule session qui fait tout : plus simple, mais aucun contre-pouvoir sur

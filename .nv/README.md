@@ -17,6 +17,7 @@ sur qui a demande quoi, qui l'a livre, et sur quelles preuves.
   mandates/          un fichier par mandat, redige par la session Architecture
   reports/           rapports de revue, de livraison, d'audit
   qa/                preuves QA generees par nv-deliver (sha, commandes, resultats)
+  journal.md         une ligne par livraison vers dev, ecrit par nv-deliver
   templates/         gabarits de mandat, de rapport et de preuve QA
   bin/               scripts nv-setup, nv-deliver, nv-board
   worktrees/         ignore par git, worktrees locaux des sessions
@@ -26,7 +27,7 @@ sur qui a demande quoi, qui l'a livre, et sur quelles preuves.
 
 | Role | Variable `NV_ROLE` | Autorite | Ne fait jamais |
 | --- | --- | --- | --- |
-| Architecture | `architect` | Vision, mandats, ADR, board, validation des livraisons | Coder, pousser vers `dev` |
+| Architecture | `architect` | Vision, mandats, ADR, board, validation des livraisons | Coder, livrer autre chose que de la gouvernance |
 | Integration et Securite | `secops` | CI, rulesets, threat model, revue de chaque livraison, veto | Coder des fonctionnalites |
 | UI-UX | `ui` | Design system, maquettes, revue visuelle, front sur sa branche | Pousser vers `dev` sans mandat |
 | Developpeur | `dev` | Execution des mandats, tests, livraison via `nv-deliver` | Modifier CI, hooks, rulesets |
@@ -56,8 +57,26 @@ Securite revoit la livraison, ecrit son avis dans le rapport  (status: delivered
 Architecture accepte ou rejette  (status: accepted | rejected)
 ```
 
+Un mandat `rejected` revient a son owner : il le repasse `in_progress` via
+`nv-board`, corrige sur une branche repartie de `origin/dev`, et relivre avec
+`nv-deliver M-xxx`. Le rapport garde l'historique des avis, section apres
+section.
+
 Les identifiants sont `M-001`, `M-002`, etc. pour les mandats et `H-001`, etc.
 pour les actions qui reviennent a un humain.
+
+## Trois livraisons vers dev, un seul script
+
+| Commande | Qui | Ce que les commits peuvent toucher | Checks | Board |
+| --- | --- | --- | --- | --- |
+| `nv-deliver M-xxx` | owner du mandat (`dev`, `ui`, `secops`) | tout, le commit de livraison seulement `.nv/` | `composer run ci:check`, `npm run build`, preuve `.nv/qa/` | `in_progress` vers `delivered` |
+| `nv-deliver --review M-xxx` | `secops` | `.nv/reports/`, `docs/` | verdict `approved` ou `changes_requested` dans le rapport | `delivered` vers `reviewed` |
+| `nv-deliver --governance <slug>` | `architect` | `.nv/` sauf `qa/`, `docs/`, `.claude/`, `.agents/`, `.githooks/`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore` | tests des hooks Claude et git | aucun changement de statut automatique |
+
+Chaque livraison se termine par un commit `chore(nv): <sorte> <ref>` qui porte
+le trailer `NV-Deliver`, `NV-Review` ou `NV-Governance`, et une ligne dans
+`.nv/journal.md`. La politique est dans `.claude/hooks/delivery.py`, lue par
+`nv-deliver` et par le hook `pre-push` via `check_delivery.py`.
 
 ## Branches
 

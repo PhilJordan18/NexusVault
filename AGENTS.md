@@ -32,7 +32,9 @@ Tout passe par `.nv/`. Lire `.nv/README.md` avant toute action, puis
 
 - `main` ne recoit que des PR depuis `dev`, revues par la session Securite et
   fusionnees par le PM. Aucune session ne pousse ni ne fusionne vers `main`.
-- `dev` ne recoit que des livraisons via `.nv/bin/nv-deliver M-xxx`.
+- `dev` ne recoit que des livraisons via `.nv/bin/nv-deliver` : un mandat
+  (`M-xxx`, par son owner), un avis securite (`--review M-xxx`, par secops) ou
+  de la gouvernance (`--governance <slug>`, par architect).
 - Branches de travail : `nv/<role>/M-xxx-slug`, creees depuis `origin/dev`.
 - Historique lineaire : aucun commit de merge, aucun force push, aucun
   `--amend` ni rebase de commits deja pousses. Seul `nv-deliver` rebase, et
