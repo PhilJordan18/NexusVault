@@ -5,13 +5,13 @@ namespace App\Services\Auth;
 use App\Models\User;
 use App\Services\Auth\Contracts\OAuthServiceInterface;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 
 final readonly class OAuthService implements OAuthServiceInterface
 {
+    public function __construct(private AuthenticatedSessionService $sessions) {}
+
     public function handleCallback($oauthUser, string $provider): RedirectResponse
     {
         $user = User::where('email', $oauthUser->email)->first();
@@ -35,8 +35,7 @@ final readonly class OAuthService implements OAuthServiceInterface
             ]);
         }
 
-        Auth::login($user);
-        Session::regenerate();
+        $this->sessions->establish($user);
 
         if ($user->mfa_enabled) {
             return redirect()->route('mfa.verify.login');

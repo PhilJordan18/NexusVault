@@ -35,21 +35,23 @@ Route::get('/accessibility', [LegalController::class, 'accessibility'])->name('l
 
 Route::post('/locale', LocaleController::class)->name('locale.update');
 
-// Regular Auth
-Route::get('/register', [RegisterController::class, 'index'])->name('register');
-Route::post('/register/validate', [RegisterController::class, 'validateRegistration'])
-    ->middleware('throttle:20,1')
-    ->name('register.validate');
-Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
+// Regular Auth (guest only: an authenticated session must log out before switching account)
+Route::middleware('guest')->group(function () {
+    Route::get('/register', [RegisterController::class, 'index'])->name('register');
+    Route::post('/register/validate', [RegisterController::class, 'validateRegistration'])
+        ->middleware('throttle:20,1')
+        ->name('register.validate');
+    Route::post('/register', [RegisterController::class, 'register'])->middleware('throttle:5,1');
 
-Route::get('/login', [LoginController::class, 'index'])->name('login');
-Route::post('/login', [LoginController::class, 'authenticateEmail'])
-    ->middleware('throttle:10,1')
-    ->name('login.authenticate.email');
-Route::get('/login/password', [LoginController::class, 'password'])->name('login.password');
-Route::post('/login/password', [LoginController::class, 'authenticate'])
-    ->middleware('throttle:5,1')
-    ->name('login.authenticate.password');
+    Route::get('/login', [LoginController::class, 'index'])->name('login');
+    Route::post('/login', [LoginController::class, 'authenticateEmail'])
+        ->middleware('throttle:10,1')
+        ->name('login.authenticate.email');
+    Route::get('/login/password', [LoginController::class, 'password'])->name('login.password');
+    Route::post('/login/password', [LoginController::class, 'authenticate'])
+        ->middleware('throttle:5,1')
+        ->name('login.authenticate.password');
+});
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Forgot Password
@@ -65,18 +67,22 @@ Route::post('/reset-password', [ResetPasswordController::class, 'reset'])
     ->name('password.update');
 
 // OAuth
-Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
-Route::get('/auth/github/callback', [OAuthController::class, 'handleGithub']);
-Route::get('/auth/google', [OAuthController::class, 'redirectGoogle']);
-Route::get('/auth/google/callback', [OAuthController::class, 'handleGoogle']);
+Route::middleware('guest')->group(function () {
+    Route::get('/auth/github', [OAuthController::class, 'redirectGithub']);
+    Route::get('/auth/github/callback', [OAuthController::class, 'handleGithub']);
+    Route::get('/auth/google', [OAuthController::class, 'redirectGoogle']);
+    Route::get('/auth/google/callback', [OAuthController::class, 'handleGoogle']);
+});
 
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::post('/webauthn/register/options', [WebAuthnRegisterController::class, 'options']);
     Route::post('/webauthn/register', [WebAuthnRegisterController::class, 'register']);
 });
 
-Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options'])->middleware('throttle:20,1');
-Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login'])->middleware('throttle:20,1');
+Route::middleware('guest')->group(function () {
+    Route::post('/webauthn/login/options', [WebAuthnLoginController::class, 'options'])->middleware('throttle:20,1');
+    Route::post('/webauthn/login', [WebAuthnLoginController::class, 'login'])->middleware('throttle:20,1');
+});
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
     Route::delete('/webauthn/credentials/{webauthn_credential}',
         [SettingsController::class, 'destroyPasskey']
