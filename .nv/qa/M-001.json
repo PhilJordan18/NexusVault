@@ -1,0 +1,19 @@
+{
+  "mandate": "M-001",
+  "head": "3596d77a8f8ce1f1d6990cc2c9f1ba202f90d4c3",
+  "branch": "nv/secops/M-001-ci-et-garde-fous",
+  "created": "2026-11-11T02:10:39Z",
+  "status": "pass",
+  "checks": [
+    {
+      "command": "composer run ci:check",
+      "exit_code": 0,
+      "duration_s": 22.6
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0,
+      "duration_s": 2.2
+    }
+  ]
+}
