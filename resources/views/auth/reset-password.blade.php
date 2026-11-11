@@ -19,7 +19,7 @@
             <div class="mb-5">
                 <label class="mb-1.5 block text-sm text-[var(--text-secondary)]">{{ __('New Password') }}</label>
                 <div class="relative">
-                    <input type="password" name="password" id="password" minlength="8" required
+                    <input type="password" name="password" id="password" minlength="12" required
                            class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-5 py-3.5 pr-12 outline-none focus:border-emerald-500">
                     <button type="button" id="toggle-password"
                             data-confirm-target="password_confirmation"
@@ -32,7 +32,7 @@
             <!-- Confirm Password -->
             <div class="mb-6">
                 <label class="mb-1.5 block text-sm text-[var(--text-secondary)]">{{ __('Confirm New Password') }}</label>
-                <input type="password" name="password_confirmation" id="password_confirmation" minlength="8" required
+                <input type="password" name="password_confirmation" id="password_confirmation" minlength="12" required
                        class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-5 py-3.5 pr-12 outline-none focus:border-emerald-500">
             </div>
 
@@ -42,7 +42,7 @@
                         data-password-generate
                         data-password-target="password"
                         data-password-confirm-target="password_confirmation"
-                        data-password-min-length="8"
+                        data-password-min-length="12"
                         class="mb-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-400 transition hover:border-emerald-500/40 hover:bg-emerald-500/15">
                     <i class="fa-solid fa-dice"></i>
                     <span>{{ __('Generate strong password') }}</span>
