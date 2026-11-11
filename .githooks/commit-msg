@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# NexusVault : message de commit conventionnel. S'applique a Claude, Codex et aux humains.
+set -euo pipefail
+ROOT="$(git rev-parse --show-toplevel)"
+if command -v python3 >/dev/null 2>&1; then
+  exec python3 "$ROOT/.claude/hooks/commit_rules.py" "$1"
+fi
+subject="$(grep -v '^#' "$1" | head -n 1)"
+if ! printf '%s' "$subject" | grep -Eq '^(feat|fix|security|refactor|perf|test|docs|style|build|ci|chore|revert)(\([a-z0-9._/-]+\))?!?: [^ ].{0,70}$'; then
+  echo "[nv-commit-msg] sujet attendu : type(scope): description, 72 caracteres max" >&2
+  exit 1
+fi
+if grep -Eq '^NV-Deliver:' "$1" && [ "${NV_DELIVER_RUN:-}" != "1" ]; then
+  echo "[nv-commit-msg] le trailer NV-Deliver est reserve a nv-deliver" >&2
+  exit 1
+fi

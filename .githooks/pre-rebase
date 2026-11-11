@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# NexusVault : pas de reecriture de commits deja pousses, sauf par nv-deliver sur une branche de travail.
+set -euo pipefail
+upstream="$1"
+branch="${2:-$(git symbolic-ref --short HEAD 2>/dev/null || echo HEAD)}"
+case "$branch" in
+  main|master|dev)
+    echo "[nv-pre-rebase] rebase de $branch refuse, son historique est immuable." >&2
+    exit 1 ;;
+esac
+if [ "${NV_DELIVER_RUN:-}" = "1" ]; then
+  exit 0
+fi
+if git show-ref --verify --quiet "refs/remotes/origin/$branch"; then
+  rewritten="$(git rev-list "$upstream..$branch" 2>/dev/null || true)"
+  for sha in $rewritten; do
+    if git merge-base --is-ancestor "$sha" "origin/$branch" 2>/dev/null; then
+      echo "[nv-pre-rebase] $sha est deja sur origin/$branch. Pas de reecriture d'historique pousse hors de nv-deliver." >&2
+      exit 1
+    fi
+  done
+fi

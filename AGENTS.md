@@ -1,3 +1,73 @@
+# NexusVault - contrat des agents
+
+Ce fichier est lu par Claude Code via `CLAUDE.md` et par Codex directement.
+Tout ce qui precede la balise `<laravel-boost-guidelines>` est tenu par la
+session Architecture. Le bloc Boost est regenere par `php artisan boost:update`
+et ne doit pas etre edite a la main.
+
+## Ce qu'est NexusVault
+
+Un gestionnaire de mots de passe zero-knowledge. Le navigateur chiffre, le
+serveur stocke des enveloppes et des ciphertexts. Les documents `docs/00` a
+`docs/11` et `docs/adr/` sont le contrat fonctionnel et securite. Une
+livraison qui les contredit sans ADR est rejetee.
+
+## Espace de travail agentique
+
+Tout passe par `.nv/`. Lire `.nv/README.md` avant toute action, puis
+`.nv/board.json` via `.nv/bin/nv-board list`.
+
+- Quatre roles de session : `architect`, `secops`, `ui`, `dev`. Le role est
+  declare par `NV_ROLE=<role>` au lancement ou par `.nv/bin/nv-role <role>`.
+  Sans declaration, les gardes appliquent `dev`.
+- Premiere action d'une session : charger le skill de son role,
+  `nv-role-architect`, `nv-role-secops`, `nv-role-ui` ou `nv-role-dev`.
+- Les skills partages sont dans `.agents/skills/`, lies depuis
+  `.claude/skills/`. Les agents Claude dans `.claude/agents/` ne font que
+  charger ces skills.
+- Un mandat `.nv/mandates/M-xxx-*.md` est la seule source d'un travail de
+  code. Pas de mandat, pas de code.
+
+## Regles git, non negociables
+
+- `main` ne recoit que des PR depuis `dev`, revues par la session Securite et
+  fusionnees par le PM. Aucune session ne pousse ni ne fusionne vers `main`.
+- `dev` ne recoit que des livraisons via `.nv/bin/nv-deliver M-xxx`.
+- Branches de travail : `nv/<role>/M-xxx-slug`, creees depuis `origin/dev`.
+- Historique lineaire : aucun commit de merge, aucun force push, aucun
+  `--amend` ni rebase de commits deja pousses. Seul `nv-deliver` rebase, et
+  seulement des commits qui ne sont pas encore sur `dev`.
+- Messages de commit : `type(scope): sujet`, 72 caracteres, types `feat`,
+  `fix`, `security`, `refactor`, `perf`, `test`, `docs`, `style`, `build`,
+  `ci`, `chore`, `revert`. Un sujet par commit.
+- Jamais `--no-verify`, jamais de modification de `core.hooksPath`.
+- Les hooks git dans `.githooks/` et les hooks Claude dans `.claude/hooks/`
+  appliquent ces regles. Les rulesets GitHub les appliquent cote serveur.
+
+## Regles securite pour tout code
+
+- Le serveur ne recoit jamais vault password, recovery key, vault key ni
+  private key en clair. Voir `docs/04`.
+- Aucun agent ne lit ni n'ecrit `.env`, les cles, ni les bases locales.
+- Toute route nouvelle porte les middlewares de sa voisine la plus proche.
+- Les reponses ne permettent pas d'enumerer des comptes.
+- Pas de nouvelle dependance sans mandat.
+- Chaque correctif de securite a un test Pest qui echouait avant.
+
+## Verification avant livraison
+
+```bash
+composer run ci:check
+npm run build
+python3 -m unittest discover -s .claude/hooks/tests
+```
+
+## Frontend
+
+ADR-005 acte la migration de Blade vers Inertia Vue 3. Tout nouvel ecran se
+fait en Vue sous `resources/js/pages`. Les ecrans Blade existants migrent
+selon le plan du mandat M-003.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 

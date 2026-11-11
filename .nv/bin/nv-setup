@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+# Installe le socle agentique NexusVault sur cette machine.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
+git config core.hooksPath .githooks
+chmod +x .githooks/* .nv/bin/*
+mkdir -p .nv/worktrees
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "python3 est requis pour les hooks Claude et nv-deliver" >&2
+  exit 1
+fi
+if [ ! -L .claude/skills ]; then
+  rm -rf .claude/skills
+  ln -s ../.agents/skills .claude/skills
+fi
+python3 -m unittest discover -s .claude/hooks/tests >/dev/null 2>&1 && echo "hooks : tests verts"
+echo "core.hooksPath = $(git config core.hooksPath)"
+echo "skills        = $(readlink .claude/skills)"
+echo
+echo "Lancer une session avec son role :"
+echo "  NV_ROLE=architect claude    ou    .nv/bin/nv-role architect"
+echo "Roles : architect, secops, ui, dev"

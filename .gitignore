@@ -25,3 +25,10 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# NexusVault agentic workspace
+.nv/worktrees/
+.nv/.role
+.claude/settings.local.json
+tests/Feature/_pentest/
+.DS_Store

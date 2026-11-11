@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "updated": "2026-11-11",
+  "statuses": ["draft", "ready", "in_progress", "delivered", "reviewed", "accepted", "rejected", "done"],
+  "mandates": [
+    {
+      "id": "M-001",
+      "title": "Garde-fous GitHub et CI unique avec gates securite",
+      "owner": "secops",
+      "status": "ready",
+      "priority": 1,
+      "file": "mandates/M-001-ci-et-garde-fous.md",
+      "branch": null
+    },
+    {
+      "id": "M-002",
+      "title": "Sprint 0 securite : contournements MFA et re-authentification",
+      "owner": "dev",
+      "status": "ready",
+      "priority": 1,
+      "file": "mandates/M-002-sprint-0-securite.md",
+      "branch": null
+    },
+    {
+      "id": "M-003",
+      "title": "Plan de migration du frontend vers Inertia Vue 3",
+      "owner": "ui",
+      "status": "ready",
+      "priority": 2,
+      "file": "mandates/M-003-plan-migration-vue.md",
+      "branch": null
+    }
+  ],
+  "human_actions": [
+    {
+      "id": "H-001",
+      "title": "Rotation des secrets compromis (E6) et sauvegarde Hetzner avant suppression",
+      "status": "ready",
+      "priority": 0,
+      "ref": "reports/2026-11-10-revue-securite.md"
+    },
+    {
+      "id": "H-002",
+      "title": "Creer les rulesets GitHub nv-main et nv-dev, activer Dependabot, secret scanning, CodeQL",
+      "status": "ready",
+      "priority": 1,
+      "ref": "PROCEDURES.md"
+    },
+    {
+      "id": "H-003",
+      "title": "Creer la branche dev depuis main",
+      "status": "ready",
+      "priority": 1,
+      "ref": "PROCEDURES.md"
+    }
+  ]
+}

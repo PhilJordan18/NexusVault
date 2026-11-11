@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Declare le role de la session courante quand NV_ROLE ne peut pas etre pose au lancement.
+set -euo pipefail
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+case "${1:-}" in
+  architect|secops|ui|dev)
+    printf '%s\n' "$1" > "$ROOT/.nv/.role"
+    echo "role de la session : $1 (fichier .nv/.role, non versionne)" ;;
+  "")
+    if [ -f "$ROOT/.nv/.role" ]; then cat "$ROOT/.nv/.role"; else echo "dev (par defaut)"; fi ;;
+  *)
+    echo "usage: nv-role [architect|secops|ui|dev]" >&2
+    exit 1 ;;
+esac
