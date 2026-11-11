@@ -1,0 +1,19 @@
+{
+  "mandate": "M-003",
+  "head": "04b7219a48d7303fc15593dad546884744805bd9",
+  "branch": "claude/eloquent-darwin-jd6pqq",
+  "created": "2026-11-11T02:16:03Z",
+  "status": "pass",
+  "checks": [
+    {
+      "command": "composer run ci:check",
+      "exit_code": 0,
+      "duration_s": 16.4
+    },
+    {
+      "command": "npm run build",
+      "exit_code": 0,
+      "duration_s": 1.3
+    }
+  ]
+}
