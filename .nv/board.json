@@ -34,10 +34,10 @@
       "id": "M-003",
       "title": "Plan de migration du frontend vers Inertia Vue 3",
       "owner": "ui",
-      "status": "ready",
+      "status": "in_progress",
       "priority": 2,
       "file": "mandates/M-003-plan-migration-vue.md",
-      "branch": null
+      "branch": "claude/eloquent-darwin-jd6pqq"
     }
   ],
   "human_actions": [
