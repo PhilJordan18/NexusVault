@@ -55,9 +55,14 @@ ligne dans `.nv/journal.md`. La politique est un seul module,
 Une session ne livre pas seule les regles qui la controlent : les gardes
 (`.githooks/`, `.claude/hooks/`, `.claude/settings.json`) sortent du
 perimetre de gouvernance et changent par un mandat porte par Securite, revu
-comme du code (M-008). La livraison `socle-livraisons`, qui introduit cette
-politique et touche elle-meme les gardes, est l'exception fondatrice ; l'avis
-Securite rendu sur la branche avant la livraison en tient lieu de revue.
+comme du code. Et un push vers `dev` est valide par la politique deja
+presente sur `dev`, jamais par celle de l'arbre de travail : une livraison
+qui change `delivery.py` est validee par l'ancienne regle et impose la
+nouvelle aux suivantes. La premiere livraison de gouvernance,
+`socle-livraisons`, revue par Securite le 2026-11-11, cree le mecanisme et
+touche elle-meme les gardes ; `gardes-hors-gouvernance`, validee par la
+politique du socle, ferme la porte juste derriere. Les suivantes ne touchent
+plus les gardes.
 
 ## Alternatives considerees
 
