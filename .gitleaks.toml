@@ -1,0 +1,29 @@
+# Configuration gitleaks de NexusVault (M-005). Lue par gitleaks-action
+# depuis la racine du depot. Elle etend les regles par defaut et n'ajoute
+# que des exceptions nominatives : chaque entree nomme la valeur autorisee
+# et le chemin ou elle est toleree, les deux conditions doivent etre vraies.
+#
+# L'exception est portee par la regle qui se declenche, pas par une
+# allowlist globale : gitleaks 8.24.3 (version installee par
+# gitleaks-action v3.0.0) fusionne les allowlists d'une regle de meme id
+# lors de l'extension, mais ignore un [[allowlists]] global.
+
+title = "NexusVault gitleaks config"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+# Secrets TOTP de fixture des tests Pest. Valeurs publiques, presentes dans
+# le depot depuis MfaSetupTest ; leur entropie declenche generic-api-key.
+[[rules.allowlists]]
+description = "Secrets TOTP de fixture des tests Pest"
+condition = "AND"
+regexTarget = "secret"
+paths = ['''^tests/.*\.php$''']
+regexes = [
+  '''^2UMPTX247VZPRA4YGFUPMCMF6UHRGW5O$''',
+  '''^JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP$''',
+]
