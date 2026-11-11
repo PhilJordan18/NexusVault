@@ -25,7 +25,7 @@
       "id": "M-002",
       "title": "Sprint 0 securite : contournements MFA et re-authentification",
       "owner": "dev",
-      "status": "delivered",
+      "status": "reviewed",
       "priority": 1,
       "file": "mandates/M-002-sprint-0-securite.md",
       "branch": "claude/autocompact-300k-bu83lf"
