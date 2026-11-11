@@ -126,7 +126,7 @@ Route::middleware('auth')->group(function () {
         ->name('mfa.verify');
 
     Route::post('/mfa/disable', [MfaController::class, 'disableMfa'])
-        ->middleware(['mfa', 'master_key'])
+        ->middleware(['mfa', 'master_key', 'throttle:fresh-authentication'])
         ->name('mfa.disable');
 });
 
@@ -165,7 +165,9 @@ Route::middleware(['auth', 'mfa', 'master_key'])->prefix('settings')->group(func
     Route::get('/', [SettingsController::class, 'index'])->name('settings');
     Route::post('/password', [SettingsController::class, 'updatePassword'])->name('settings.password.update');
     Route::post('/pfp', [SettingsController::class, 'updatePfp'])->name('settings.pfp.update');
-    Route::delete('/account', [SettingsController::class, 'destroy'])->name('settings.account.destroy');
+    Route::delete('/account', [SettingsController::class, 'destroy'])
+        ->middleware('throttle:fresh-authentication')
+        ->name('settings.account.destroy');
     Route::post('/theme', [SettingsController::class, 'updateTheme'])->name('settings.theme.update');
 });
 Route::middleware(['auth', 'mfa', 'master_key'])->group(function () {
