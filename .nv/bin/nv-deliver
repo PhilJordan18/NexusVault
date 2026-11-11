@@ -54,8 +54,8 @@ def board_status(mandate: str) -> tuple[str, str | None]:
 
 def preflight(mandate: str) -> str:
     branch = git("symbolic-ref", "--short", "HEAD")
-    if not branch.startswith("nv/"):
-        fail(f"branche courante {branch}, une livraison part d'une branche nv/<role>/{mandate}-slug")
+    if not branch.startswith(("nv/", "claude/", "codex/")):
+        fail(f"branche courante {branch}, une livraison part d'une branche nv/<role>/{mandate}-slug ou de la branche attribuee a une session cloud")
     if git("status", "--porcelain"):
         fail("arbre de travail non propre, commiter ou remiser avant de livrer")
     status, _ = board_status(mandate)
