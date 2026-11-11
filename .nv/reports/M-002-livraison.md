@@ -4,7 +4,7 @@ author: dev
 branch: claude/autocompact-300k-bu83lf
 head: cd4ff2b
 created: 2026-11-11
-review: changes_requested
+review: approved
 ---
 
 # Livraison M-002
@@ -324,6 +324,36 @@ bloque M-002 une fois les deux changements ci-dessus livres.
   `in_progress` et `dev` n'accepte que ses pousses. Cet avis est donc commite
   sur `nv/secops/M-002-revue-securite` et pousse sur cette branche, pas sur
   `dev`. Le socle doit prevoir comment un avis atteint `dev`.
+
+### Avis sur la relivraison (plage `0ff5744..8ddb010`)
+
+`review: approved` (secops, 2026-11-11). Les deux changements demandes sont
+livres et prouves.
+
+- **Changement 1, brute force TOTP.** Limiteur nomme `fresh-authentication`
+  dans `AppServiceProvider::configureRateLimiting()`, 6 essais par minute,
+  cle par identifiant utilisateur avec repli sur l'IP, applique a
+  `mfa.disable` et `settings.account.destroy` ; `vault.reset.store` garde
+  `throttle:3,1`. `FreshAuthenticationThrottleTest` : 429 au septieme essai
+  sur chaque route, budget partage entre les deux routes, budget compte par
+  utilisateur et non par adresse. Rejoue en local sur `8ddb010` : 17 tests
+  verts sur `FreshAuthentication|AccountEnumeration|Reauthentication`.
+- **Changement 2, oracle `/forgot-password`.** Le statut du broker est
+  ignore, la reponse est toujours la redirection avec le message generique,
+  sans erreur de session. `AccountEnumerationTest` compare les secondes
+  reponses d'un compte connu et d'un inconnu et verifie qu'un seul email
+  part. Le canal temporel (envoi synchrone sur le chemin "compte connu")
+  reste dans la dette tracee.
+- **Hygiene.** Aucun fichier hors `app/Providers`, `app/Http/Controllers`,
+  `routes`, `tests`, `docs/03` et `.nv`. `.nv/qa/M-002.json` porte `a6cf19f`,
+  dernier commit avant `chore(nv): deliver`. Le commit d'avis `ee8c378` a ete
+  repris tel quel en `2e33f34` : contenu identique, choix de socle a acter
+  par Architecture.
+- **Effet de bord CI.** `FreshAuthenticationThrottleTest.php:5` ajoute une
+  occurrence du secret TOTP de fixture : gitleaks 8.24.3 la signale (1 alerte
+  sur la plage), la CI de `dev` reste rouge jusqu'a la livraison de M-005
+  (`.gitleaks.toml`, allowlist nominative sous `tests/`, verifiee sur cette
+  plage : aucune alerte). Rien a changer cote dev.
 
 ## Decision Architecture
 
