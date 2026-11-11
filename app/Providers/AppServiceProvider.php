@@ -17,8 +17,11 @@ use App\Services\Vault\Contracts\ShareServiceInterface;
 use App\Services\Vault\ServiceService;
 use App\Services\Vault\ShareService;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -44,6 +47,18 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureRateLimiting();
+    }
+
+    /**
+     * Destructive actions confirmed by a password or a TOTP code share one attempt
+     * budget per user, so a stolen session cannot enumerate the six digit codes.
+     */
+    protected function configureRateLimiting(): void
+    {
+        RateLimiter::for('fresh-authentication', function (Request $request): Limit {
+            return Limit::perMinute(6)->by('fresh-authentication:'.($request->user()?->getAuthIdentifier() ?? $request->ip()));
+        });
     }
 
     /**
