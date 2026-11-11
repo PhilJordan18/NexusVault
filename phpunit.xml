@@ -13,8 +13,11 @@
         </testsuite>
     </testsuites>
     <source>
+        <!-- Couverture mesuree sur les services critiques (mandat M-001). -->
         <include>
-            <directory>app</directory>
+            <directory>app/Services/Auth</directory>
+            <directory>app/Services/Security</directory>
+            <directory>app/Services/Vault</directory>
         </include>
     </source>
     <php>
