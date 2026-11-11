@@ -46,13 +46,42 @@ Le login est separe en deux temps:
 `LoginService`:
 
 - retrouve l'utilisateur;
-- verifie `Hash::check`;
+- verifie `Hash::check`, contre un hash jetable si le compte est inconnu, pour
+  que le temps de reponse ne revele pas l'existence d'un compte;
+- renvoie le meme message `Invalid credentials` pour un compte inconnu et un
+  mauvais mot de passe;
 - exige email verifie;
-- connecte via `Auth::login`;
-- regenere la session;
+- etablit la session via `AuthenticatedSessionService`;
 - redirige vers MFA, vault setup ou vault unlock.
 
 Important: le login password n'est pas le vault password.
+
+### Etablissement de session (`AuthenticatedSessionService`)
+
+Tous les points d'entree qui connectent un utilisateur (login, OAuth, passkey,
+inscription) passent par `app/Services/Auth/AuthenticatedSessionService.php`:
+
+1. si la session appartient deja a un utilisateur, elle est invalidee en
+   entier (`Auth::logout` + `Session::invalidate`);
+2. sinon, les preuves par utilisateur sont purgees: `mfa_verified`,
+   `vault_unlocked_at`, `masterKey`, `mfa_pending_secret`;
+3. `Auth::login` puis `Session::regenerate`.
+
+Une session qui a passe la MFA d'un compte ne peut donc jamais servir a
+sauter la MFA d'un autre compte.
+
+Les routes de login, d'inscription, OAuth et de login passkey portent le
+middleware `guest`. Une session authentifiee qui les appelle est renvoyee vers
+`/mfa/verify`, `/vault/setup` ou `/vault/unlock` (voir `bootstrap/app.php`,
+`redirectUsersTo`). Pour changer de compte, il faut se deconnecter.
+
+### Politique de mot de passe
+
+Une seule politique, declaree dans `AppServiceProvider` via
+`Password::defaults()`: 12 caracteres minimum, majuscules et minuscules,
+chiffres et symboles. La verification HIBP (`uncompromised`) est ajoutee en
+production. Inscription, reinitialisation et changement de mot de passe
+utilisent toutes `Password::defaults()`.
 
 ## Inscription
 
@@ -102,6 +131,14 @@ Providers:
 - Google;
 - GitHub.
 
+Le flux utilise le `state` de Socialite (pas de `stateless()`): le callback
+compare le `state` recu a celui pose en session a la redirection et renvoie
+vers `/login` avec un message generique si l'un des deux manque ou differe.
+Cette protection exige que le cookie de session survive a l'aller-retour vers
+le fournisseur: `SESSION_SAME_SITE=lax` (valeur par defaut, `strict` casse le
+flux), un `SESSION_DOMAIN` qui correspond a l'hote reel et un
+`*_REDIRECT_URI` sur ce meme hote.
+
 Nouveau user OAuth:
 
 - password dummy random;
@@ -147,8 +184,44 @@ Le QR code est servi par `/mfa/qr-code` avec un `Content-Type: image/*`. Cela
 evite de dependre d'un `<img src="data:image/...">`, qui peut etre casse par
 certains contextes navigateur/headers.
 
-Le secret TOTP est stocke cote serveur dans `users.totp_secret`, parce que le
-serveur doit pouvoir verifier le code. Cette partie n'est pas zero-knowledge.
+Enrolement:
+
+1. `GET /mfa/setup` genere un secret et le garde en session
+   (`mfa_pending_secret`), pas en base;
+2. `/mfa/qr-code` encode ce secret pendant;
+3. `POST /mfa/setup` verifie le code contre le secret pendant; en cas de succes
+   le secret est ecrit dans `users.totp_secret`, `mfa_enabled` passe a `true`,
+   le secret pendant est retire de la session et `mfa_verified` est pose.
+
+Les trois routes d'enrolement portent `auth` et `mfa`: une session qui n'a pas
+encore passe la MFA ne peut pas re-enroler un autre authentificateur. Un
+secret confirme n'est jamais re-affiche: `/mfa/setup` redirige vers les
+reglages et `/mfa/qr-code` repond 404 quand `mfa_enabled` est vrai. Pour
+changer d'authentificateur, il faut desactiver la MFA puis la reactiver.
+
+Le secret TOTP confirme est stocke cote serveur dans `users.totp_secret`,
+parce que le serveur doit pouvoir verifier le code. Cette partie n'est pas
+zero-knowledge. La fenetre de tolerance est d'une periode de 30 secondes de
+chaque cote (`MfaService::TOTP_WINDOW`).
+
+### Re-authentification des actions destructrices
+
+Trois actions exigent une preuve fraiche en plus de la session:
+
+- suppression du compte (`DELETE /settings/account`);
+- desactivation de la MFA (`POST /mfa/disable`);
+- reinitialisation du coffre (`POST /vault/reset`).
+
+Le formulaire envoie `current_password` (mot de passe de connexion, jamais le
+mot de passe factice d'un compte OAuth) ou `totp_code` (code genere a
+l'instant). `ReauthenticationService` verifie l'un ou l'autre, et le trait de
+form request `ConfirmsFreshAuthentication` renvoie une seule erreur, sur
+`current_password`, quel que soit le facteur en echec. Un compte OAuth sans
+MFA ne dispose d'aucun facteur: il doit activer la MFA avant ces actions.
+
+La suppression de compte ferme la session avant de supprimer la ligne: un
+`Auth::logout` sur un modele deja supprime recyclerait le remember token et
+reinsererait le compte.
 
 ## Passkeys WebAuthn
 
@@ -210,7 +283,12 @@ Variables de session importantes:
 - `mfa_verified`: l'utilisateur a passe MFA dans cette session;
 - `vault_unlocked_at`: Laravel considere que le coffre est deverrouille pour les
   routes protegees;
+- `mfa_pending_secret`: secret TOTP en cours d'enrolement, retire des que la
+  MFA est confirmee;
 - `masterKey`: ancien modele serveur, absent pour les utilisateurs modernes.
+
+Ces quatre cles sont purgees a chaque nouveau login (voir
+`AuthenticatedSessionService`).
 
 Pour les utilisateurs zero-knowledge modernes, Laravel ne stocke pas la vault key.
 Le navigateur stocke la vault key dans `sessionStorage`.
@@ -306,11 +384,26 @@ etre accompagne d'un nettoyage navigateur pour etre ideal. Voir `11-roadmap`.
 | Etat utilisateur | Route sensible | Resultat |
 | --- | --- | --- |
 | Non connecte | `/dashboard` | redirection login |
+| Connecte | `/login`, `/register`, `/auth/*` | redirection vers l'etape suivante du login |
 | Connecte, MFA active non verifiee | `/dashboard` | redirection `/mfa/verify` |
+| Connecte, MFA active non verifiee | `/mfa/setup`, `/mfa/qr-code` | redirection `/mfa/verify` |
+| Connecte, MFA confirmee | `/mfa/setup` | redirection `/settings`, secret jamais re-affiche |
 | OAuth sans coffre | `/dashboard` | redirection `/vault/setup` |
 | Coffre client locked | `/dashboard` | redirection `/vault/unlock` |
 | Coffre client unlocked | `/dashboard` | autorise |
 | User legacy sans `masterKey` | `/dashboard` | redirection `/vault/unlock` |
+
+## Reinitialisation du mot de passe de connexion
+
+`POST /reset-password` ne verifie pas l'existence de l'email dans les regles de
+validation et renvoie le meme message (`passwords.token`) pour un email inconnu
+et pour un jeton invalide. Un formulaire qui repond differemment confirmerait
+quels comptes existent.
+
+Limite connue: `/register/validate` et `/register` repondent encore
+`email already taken` pour un email existant. Lever cette enumeration demande
+un flux d'inscription par email (verification avant creation), prevu avec le
+sprint identite.
 
 ## Ce que l'UI ne doit jamais etre seule a proteger
 
