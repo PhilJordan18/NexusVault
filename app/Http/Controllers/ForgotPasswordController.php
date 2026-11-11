@@ -14,13 +14,13 @@ final class ForgotPasswordController extends Controller
         return view('auth.forgot-password');
     }
 
+    /**
+     * The broker status (sent, unknown user or throttled) is never exposed: every
+     * request gets the same answer, so the endpoint cannot be used to enumerate accounts.
+     */
     public function sendResetLinkEmail(ForgotPasswordRequest $request): RedirectResponse
     {
-        $status = Password::sendResetLink($request->only('email'));
-
-        if ($status !== Password::RESET_LINK_SENT && $status !== Password::INVALID_USER) {
-            return back()->withErrors(['email' => __($status)]);
-        }
+        Password::sendResetLink($request->only('email'));
 
         return back()->with('status', __('If an account exists for this email, we have sent a password reset link.'));
     }
