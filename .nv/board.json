@@ -16,7 +16,7 @@
       "id": "M-001",
       "title": "Garde-fous GitHub et CI unique avec gates securite",
       "owner": "secops",
-      "status": "in_progress",
+      "status": "delivered",
       "priority": 1,
       "file": "mandates/M-001-ci-et-garde-fous.md",
       "branch": "nv/secops/M-001-ci-et-garde-fous"
