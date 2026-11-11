@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# NexusVault : jamais vers main, vers dev uniquement par nv-deliver, jamais de force push ni de merge commit.
+# NexusVault : jamais vers main, vers dev uniquement par nv-deliver (mandat, avis ou gouvernance),
+# jamais de force push ni de merge commit.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 zero="0000000000000000000000000000000000000000"
@@ -40,21 +41,8 @@ while read -r local_ref local_sha remote_ref remote_sha; do
       echo "[nv-pre-push] push vers dev refuse hors de .nv/bin/nv-deliver." >&2
       exit 1
     fi
-    mandate="$(git log -1 --format=%B "$local_sha" | git interpret-trailers --parse | sed -n 's/^NV-Deliver: *\(M-[0-9]\{3\}\).*/\1/p' | head -n 1)"
-    if [ -z "$mandate" ]; then
-      echo "[nv-pre-push] le commit livre n'a pas de trailer NV-Deliver: M-xxx." >&2
-      exit 1
-    fi
-    tested="$(git rev-parse "$local_sha^")"
-    if [ -n "$(git diff --name-only "$tested" "$local_sha" | grep -v '^\.nv/' || true)" ]; then
-      echo "[nv-pre-push] le commit de livraison ne doit toucher que .nv/." >&2
-      exit 1
-    fi
-    if ! git show "$local_sha:.nv/qa/$mandate.json" 2>/dev/null | python3 "$ROOT/.claude/hooks/check_qa_evidence.py" "$mandate" "$tested" -; then
-      exit 1
-    fi
-    if ! git cat-file -e "$local_sha:.nv/reports/$mandate-livraison.md" 2>/dev/null; then
-      echo "[nv-pre-push] rapport .nv/reports/$mandate-livraison.md absent du commit livre." >&2
+    # Trailer, chemins permis, preuve QA et rapport : politique dans .claude/hooks/delivery.py.
+    if ! python3 "$ROOT/.claude/hooks/check_delivery.py" "$remote_sha" "$local_sha"; then
       exit 1
     fi
   fi

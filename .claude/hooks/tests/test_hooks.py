@@ -162,6 +162,38 @@ class CommitRulesTest(unittest.TestCase):
         self.assertEqual(validate("chore(nv): deliver M-001\n\nNV-Deliver: M-001", allow_deliver_trailer=True), [])
 
 
+class DeliveryPolicyTest(unittest.TestCase):
+    def test_trailers(self) -> None:
+        from delivery import commit_message, parse_trailer, valid_ref
+        self.assertEqual(parse_trailer("chore(nv): deliver M-002\n\nNV-Deliver: M-002\n"), ("deliver", "M-002"))
+        self.assertEqual(parse_trailer("chore(nv): review M-002\n\nNV-Review: M-002\n"), ("review", "M-002"))
+        self.assertEqual(parse_trailer("chore(nv): governance socle\n\nNV-Governance: socle\n"), ("governance", "socle"))
+        self.assertIsNone(parse_trailer("feat(x): sans trailer"))
+        self.assertTrue(valid_ref("governance", "socle-livraisons"))
+        self.assertFalse(valid_ref("governance", "Socle Livraisons"))
+        self.assertFalse(valid_ref("review", "socle"))
+        self.assertEqual(commit_message("review", "M-003"), "chore(nv): review M-003\n\nNV-Review: M-003\n")
+
+    def test_paths_by_kind(self) -> None:
+        from delivery import disallowed_range_paths, disallowed_tip_paths
+        self.assertEqual(disallowed_range_paths(["app/Models/User.php", ".nv/qa/M-002.json"], "deliver"), [])
+        self.assertEqual(disallowed_range_paths([".nv/reports/M-002-livraison.md", "docs/07-threat-model.md"], "review"), [])
+        self.assertEqual(disallowed_range_paths(["app/Models/User.php", ".nv/mandates/M-009-x.md"], "review"),
+                         ["app/Models/User.php", ".nv/mandates/M-009-x.md"])
+        self.assertEqual(disallowed_range_paths([".nv/mandates/M-009-x.md", "docs/adr/ADR-006-x.md", "AGENTS.md",
+                                                 ".claude/hooks/guard_bash.py", ".agents/skills/nv-deliver/SKILL.md"], "governance"), [])
+        self.assertEqual(disallowed_range_paths(["app/Models/User.php", ".github/workflows/ci.yml", ".nv/qa/M-002.json"], "governance"),
+                         ["app/Models/User.php", ".github/workflows/ci.yml", ".nv/qa/M-002.json"])
+        self.assertEqual(disallowed_tip_paths([".nv/board.json", ".nv/journal.md"], "governance"), [])
+        self.assertEqual(disallowed_tip_paths(["routes/web.php"], "deliver"), ["routes/web.php"])
+
+    def test_review_verdict(self) -> None:
+        from delivery import review_verdict
+        self.assertEqual(review_verdict("---\nmandate: M-002\nreview: approved\n---\n# x\nreview: pending\n"), "approved")
+        self.assertEqual(review_verdict("---\nreview: changes_requested\n---\n"), "changes_requested")
+        self.assertIsNone(review_verdict("# pas de frontmatter\n"))
+
+
 class SecretFilesTest(unittest.TestCase):
     def test_read_env_denied(self) -> None:
         code, _ = run_hook("secret_files.py", {"tool_name": "Read", "tool_input": {"file_path": f"{ROOT}/.env"}})

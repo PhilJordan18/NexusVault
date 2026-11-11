@@ -1,32 +1,50 @@
 #!/usr/bin/env python3
-"""Livre un mandat vers la branche dev.
+"""Livre vers la branche dev. Trois sortes de livraison, un seul chemin.
 
-    nv-deliver M-002 [--skip-build]
+    nv-deliver M-002 [--skip-build]        mandat : code + rapport, par son owner
+    nv-deliver --review M-002              avis securite sur une livraison, par secops
+    nv-deliver --governance <slug>         mandats, ADR, board, socle, par architect
 
-Etapes : verifications de depart, rebase sur origin/dev, checks, preuve QA,
-mise a jour du board, commit de livraison avec trailer, push vers dev puis vers
-la branche de travail. Le hook pre-push revalide tout de son cote.
+Etapes communes : verifications de depart, rebase sur origin/dev, checks de la
+sorte de livraison, mise a jour du board et du journal, commit de livraison
+avec trailer, push vers dev puis vers la branche de travail. Le hook pre-push
+revalide tout de son cote avec check_delivery.py.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import os
-import re
 import subprocess
 import sys
 import time
+from datetime import date
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 sys.path.insert(0, os.path.join(ROOT, ".claude", "hooks"))
 
+from delivery import (  # noqa: E402
+    KINDS,
+    REVIEW_VERDICTS,
+    commit_message,
+    disallowed_range_paths,
+    journal_line,
+    review_verdict,
+    valid_ref,
+)
+from hook_io import current_role  # noqa: E402
 from qa_evidence import build, write  # noqa: E402
 
-MANDATE_RE = re.compile(r"^M-\d{3}$")
-CHECKS = (
+MANDATE_CHECKS = (
     ("composer run ci:check", ["composer", "run", "ci:check"]),
     ("npm run build", ["npm", "run", "build"]),
 )
+GOVERNANCE_CHECKS = (
+    ("python3 -m unittest discover -s .claude/hooks/tests", [sys.executable, "-m", "unittest", "discover", "-s", ".claude/hooks/tests"]),
+    ("bash .githooks/tests/test_githooks.sh", ["bash", ".githooks/tests/test_githooks.sh"]),
+)
+JOURNAL = os.path.join(ROOT, ".nv", "journal.md")
 
 
 def fail(message: str) -> None:
@@ -41,36 +59,47 @@ def git(*args: str, env: dict | None = None, check: bool = True) -> str:
     return result.stdout.strip()
 
 
-def board_status(mandate: str) -> tuple[str, str | None]:
-    import json
+def board_status(mandate: str) -> str:
     with open(os.path.join(ROOT, ".nv", "board.json"), encoding="utf-8") as handle:
         board = json.load(handle)
     for item in board.get("mandates", []):
         if item["id"] == mandate:
-            return item["status"], item.get("branch")
+            return item["status"]
     fail(f"{mandate} absent du board")
-    return "", None
+    return ""
 
 
-def preflight(mandate: str) -> str:
+def report_path(mandate: str) -> str:
+    return os.path.join(ROOT, ".nv", "reports", f"{mandate}-livraison.md")
+
+
+def preflight(kind: str, ref: str) -> str:
+    role = current_role()
+    if role not in KINDS[kind]["roles"]:
+        fail(f"une livraison {kind} est reservee au role {' ou '.join(KINDS[kind]['roles'])}, role courant : {role}")
     branch = git("symbolic-ref", "--short", "HEAD")
     if not branch.startswith(("nv/", "claude/", "codex/")):
-        fail(f"branche courante {branch}, une livraison part d'une branche nv/<role>/{mandate}-slug ou de la branche attribuee a une session cloud")
+        fail(f"branche courante {branch}, une livraison part d'une branche nv/<role>/<sujet> ou de la branche attribuee a une session cloud")
     if git("status", "--porcelain"):
         fail("arbre de travail non propre, commiter ou remiser avant de livrer")
-    status, _ = board_status(mandate)
-    if status != "in_progress":
-        fail(f"{mandate} est {status}, il doit etre in_progress")
-    report = os.path.join(ROOT, ".nv", "reports", f"{mandate}-livraison.md")
-    if not os.path.exists(report):
-        fail(f"rapport manquant : .nv/reports/{mandate}-livraison.md (gabarit dans .nv/templates/)")
+    if kind in ("deliver", "review"):
+        status = board_status(ref)
+        if status not in KINDS[kind]["status_before"]:
+            fail(f"{ref} est {status}, il doit etre {' ou '.join(KINDS[kind]['status_before'])}")
+        if not os.path.exists(report_path(ref)):
+            fail(f"rapport manquant : .nv/reports/{ref}-livraison.md (gabarit dans .nv/templates/)")
+    if kind == "review":
+        with open(report_path(ref), encoding="utf-8") as handle:
+            verdict = review_verdict(handle.read())
+        if verdict not in REVIEW_VERDICTS:
+            fail(f"le frontmatter du rapport porte review: {verdict}, un avis se livre avec {' ou '.join(REVIEW_VERDICTS)}")
     git("fetch", "origin", "dev", check=False)
     if subprocess.run(["git", "show-ref", "--verify", "--quiet", "refs/remotes/origin/dev"], cwd=ROOT).returncode != 0:
         fail("origin/dev n'existe pas encore, voir H-003 dans .nv/PROCEDURES.md")
     return branch
 
 
-def rebase_on_dev() -> None:
+def rebase_on_dev(kind: str) -> None:
     env = dict(os.environ, NV_DELIVER_RUN="1")
     result = subprocess.run(["git", "rebase", "origin/dev"], cwd=ROOT, env=env, text=True)
     if result.returncode != 0:
@@ -79,11 +108,16 @@ def rebase_on_dev() -> None:
         fail("commit de merge dans la plage a livrer, l'historique doit etre lineaire")
     if not git("rev-list", "origin/dev..HEAD"):
         fail("rien a livrer, HEAD est deja sur origin/dev")
+    touched = git("diff", "--name-only", "origin/dev", "HEAD").split()
+    bad = disallowed_range_paths(touched, kind)
+    if bad:
+        fail(f"une livraison {kind} ne peut pas toucher : {', '.join(bad)}")
 
 
-def run_checks(skip_build: bool) -> list[dict]:
+def run_checks(kind: str, skip_build: bool) -> list[dict]:
     checks: list[dict] = []
-    for label, argv in CHECKS:
+    plan = MANDATE_CHECKS if kind == "deliver" else GOVERNANCE_CHECKS if kind == "governance" else ()
+    for label, argv in plan:
         if skip_build and label == "npm run build":
             continue
         print(f"[nv-deliver] {label}")
@@ -92,19 +126,42 @@ def run_checks(skip_build: bool) -> list[dict]:
         checks.append({"command": label, "exit_code": result.returncode, "duration_s": round(time.monotonic() - started, 1)})
         if result.returncode != 0:
             break
+    if any(check["exit_code"] != 0 for check in checks) and kind != "deliver":
+        fail("checks en echec, pas de livraison")
     return checks
 
 
-def deliver_commit(mandate: str, branch: str, tested: str, checks: list[dict]) -> str:
-    evidence = build(mandate, branch, tested, checks)
-    write(ROOT, evidence)
-    if evidence["status"] != "pass":
-        fail("checks en echec, preuve ecrite dans .nv/qa/ mais pas de livraison")
-    subprocess.run([sys.executable, os.path.join(ROOT, ".nv", "bin", "nv-board"), "set", mandate, "delivered", "--branch", branch], cwd=ROOT, check=True)
-    git("add", ".nv/qa", ".nv/board.json")
+def append_journal(kind: str, ref: str, head: str, branch: str) -> None:
+    line = journal_line(kind, ref, head, branch, date.today().isoformat())
+    exists = os.path.exists(JOURNAL)
+    with open(JOURNAL, "a", encoding="utf-8") as handle:
+        if not exists:
+            handle.write(
+                "# Journal des livraisons vers dev\n\n"
+                "Ecrit par nv-deliver, une ligne par livraison : date, sorte, reference, commit teste, branche.\n\n"
+            )
+        handle.write(line)
+
+
+def deliver_commit(kind: str, ref: str, branch: str, tested: str, checks: list[dict]) -> str:
+    paths = [".nv/journal.md"]
+    if kind == "deliver":
+        evidence = build(ref, branch, tested, checks)
+        write(ROOT, evidence)
+        if evidence["status"] != "pass":
+            fail("checks en echec, preuve ecrite dans .nv/qa/ mais pas de livraison")
+        paths.append(".nv/qa")
+    status_after = KINDS[kind]["status_after"]
+    if status_after:
+        argv = [sys.executable, os.path.join(ROOT, ".nv", "bin", "nv-board"), "set", ref, status_after]
+        if kind == "deliver":
+            argv += ["--branch", branch]
+        subprocess.run(argv, cwd=ROOT, check=True)
+        paths.append(".nv/board.json")
+    append_journal(kind, ref, tested, branch)
+    git("add", *paths)
     env = dict(os.environ, NV_DELIVER_RUN="1")
-    message = f"chore(nv): deliver {mandate}\n\nNV-Deliver: {mandate}\n"
-    result = subprocess.run(["git", "commit", "-m", message], cwd=ROOT, env=env, capture_output=True, text=True)
+    result = subprocess.run(["git", "commit", "-m", commit_message(kind, ref)], cwd=ROOT, env=env, capture_output=True, text=True)
     if result.returncode != 0:
         fail(f"commit de livraison refuse :\n{result.stderr}")
     return git("rev-parse", "HEAD")
@@ -118,20 +175,32 @@ def push(head: str, branch: str) -> None:
     subprocess.run(["git", "push", "--force-with-lease", "-u", "origin", branch], cwd=ROOT, env=env, text=True)
 
 
-def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(prog="nv-deliver")
-    parser.add_argument("mandate")
+def parse(argv: list[str]) -> tuple[str, str, bool]:
+    parser = argparse.ArgumentParser(prog="nv-deliver", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("ref", nargs="?", help="M-xxx du mandat a livrer")
+    parser.add_argument("--review", metavar="M-xxx", help="livrer un avis securite (secops)")
+    parser.add_argument("--governance", metavar="SLUG", help="livrer mandats, ADR, board ou socle (architect)")
     parser.add_argument("--skip-build", action="store_true", help="ne pas lancer npm run build")
     args = parser.parse_args(argv[1:])
-    if not MANDATE_RE.match(args.mandate):
-        fail("identifiant attendu : M-xxx")
-    branch = preflight(args.mandate)
-    rebase_on_dev()
+    given = [name for name in ("ref", "review", "governance") if getattr(args, name)]
+    if len(given) != 1:
+        parser.error("indiquer exactement un de : M-xxx, --review M-xxx, --governance SLUG")
+    kind = "deliver" if args.ref else "review" if args.review else "governance"
+    ref = args.ref or args.review or args.governance
+    if not valid_ref(kind, ref):
+        fail("identifiant attendu : M-xxx pour un mandat ou un avis, slug en minuscules et tirets pour la gouvernance")
+    return kind, ref, args.skip_build
+
+
+def main(argv: list[str]) -> int:
+    kind, ref, skip_build = parse(argv)
+    branch = preflight(kind, ref)
+    rebase_on_dev(kind)
     tested = git("rev-parse", "HEAD")
-    checks = run_checks(args.skip_build)
-    head = deliver_commit(args.mandate, branch, tested, checks)
+    checks = run_checks(kind, skip_build)
+    head = deliver_commit(kind, ref, branch, tested, checks)
     push(head, branch)
-    print(f"[nv-deliver] {args.mandate} livre sur dev ({head[:10]}). La branche {branch} est close.")
+    print(f"[nv-deliver] {kind} {ref} livre sur dev ({head[:10]}).")
     return 0
 
 
