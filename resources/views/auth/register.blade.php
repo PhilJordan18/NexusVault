@@ -41,7 +41,7 @@
                            class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] py-3.5 pl-11 pr-12 outline-none transition focus:border-emerald-500"
                            placeholder="••••••••"
                            autocomplete="new-password"
-                           minlength="8"
+                           minlength="12"
                            required>
                     <button type="button" id="toggle-password"
                             data-confirm-target="password_confirmation"
@@ -63,7 +63,7 @@
                            class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] py-3.5 pl-11 pr-12 outline-none transition focus:border-emerald-500"
                            placeholder="••••••••"
                            autocomplete="new-password"
-                           minlength="8"
+                           minlength="12"
                            required>
                 </div>
             </div>
@@ -72,7 +72,7 @@
                     data-password-generate
                     data-password-target="password"
                     data-password-confirm-target="password_confirmation"
-                    data-password-min-length="8"
+                    data-password-min-length="12"
                     class="mb-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm font-medium text-emerald-400 transition hover:border-emerald-500/40 hover:bg-emerald-500/15">
                 <i class="fa-solid fa-dice"></i>
                 <span>{{ __('Generate strong login password') }}</span>

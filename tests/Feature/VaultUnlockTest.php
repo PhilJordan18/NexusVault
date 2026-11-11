@@ -16,7 +16,7 @@ function createVaultUnlockUser(): User
     $keys = app(UserKeyService::class)->provisionKey('vault-password-123!');
 
     return User::factory()->create([
-        'password' => Hash::make('login-password-123!'),
+        'password' => Hash::make('Login-password-123!'),
         'salt' => $keys['salt'],
         'public_key' => $keys['public_key'],
         'private_key' => base64_encode($keys['private_key']),
@@ -66,7 +66,7 @@ function fakeVaultRecoveryEnvelope(): string
 function createClientSideVaultUser(): User
 {
     return User::factory()->create([
-        'password' => Hash::make('login-password-123!'),
+        'password' => Hash::make('Login-password-123!'),
         'public_key' => "-----BEGIN PUBLIC KEY-----\ntest\n-----END PUBLIC KEY-----",
         'private_key' => fakeEncryptedPrivateKeyEnvelope(),
         'private_nonce' => null,
@@ -129,7 +129,7 @@ test('the login password cannot unlock a vault created with a separate vault pas
 
     $this->actingAs($user)
         ->from(route('vault.unlock'))
-        ->post(route('vault.unlock.store'), ['vault_password' => 'login-password-123!'])
+        ->post(route('vault.unlock.store'), ['vault_password' => 'Login-password-123!'])
         ->assertRedirect(route('vault.unlock'))
         ->assertSessionHasErrors('vault_password');
 
@@ -168,8 +168,8 @@ test('registration provisions the vault with a separate vault password', functio
     $this->post(route('register'), [
         'name' => 'Philippe MBA',
         'email' => 'philippe@example.com',
-        'password' => 'login-password-123!',
-        'password_confirmation' => 'login-password-123!',
+        'password' => 'Login-password-123!',
+        'password_confirmation' => 'Login-password-123!',
         'vault_key_envelope' => fakeVaultKeyEnvelope(),
         'vault_recovery_envelope' => fakeVaultRecoveryEnvelope(),
         'public_key' => $publicKey,
@@ -178,7 +178,7 @@ test('registration provisions the vault with a separate vault password', functio
 
     $user = User::where('email', 'philippe@example.com')->firstOrFail();
 
-    expect(Hash::check('login-password-123!', $user->password))->toBeTrue()
+    expect(Hash::check('Login-password-123!', $user->password))->toBeTrue()
         ->and($user->encrypted_master_key)->toBeNull()
         ->and($user->vault_key_envelope)->not->toBeEmpty()
         ->and($user->vault_recovery_envelope)->not->toBeEmpty()
@@ -198,8 +198,8 @@ test('registration requires a client encrypted vault envelope', function () {
         ->post(route('register'), [
             'name' => 'Philippe MBA',
             'email' => 'philippe@example.com',
-            'password' => 'same-password-123!',
-            'password_confirmation' => 'same-password-123!',
+            'password' => 'Same-password-123!',
+            'password_confirmation' => 'Same-password-123!',
         ])
         ->assertRedirect(route('register'))
         ->assertSessionHasErrors(['vault_key_envelope', 'vault_recovery_envelope', 'public_key', 'encrypted_private_key']);
@@ -211,8 +211,8 @@ test('registration validation checks account fields before vault package generat
     $this->postJson(route('register.validate'), [
         'name' => 'Philippe MBA',
         'email' => 'available@example.com',
-        'password' => 'login-password-123!',
-        'password_confirmation' => 'login-password-123!',
+        'password' => 'Login-password-123!',
+        'password_confirmation' => 'Login-password-123!',
     ])
         ->assertOk()
         ->assertJson(['valid' => true]);
@@ -222,8 +222,8 @@ test('registration validation checks account fields before vault package generat
     $this->postJson(route('register.validate'), [
         'name' => 'Philippe MBA',
         'email' => 'taken@example.com',
-        'password' => 'login-password-123!',
-        'password_confirmation' => 'login-password-123!',
+        'password' => 'Login-password-123!',
+        'password_confirmation' => 'Login-password-123!',
     ])
         ->assertUnprocessable()
         ->assertJsonValidationErrors(['email']);
@@ -231,7 +231,7 @@ test('registration validation checks account fields before vault package generat
     $this->postJson(route('register.validate'), [
         'name' => 'Philippe MBA',
         'email' => 'another@example.com',
-        'password' => 'login-password-123!',
+        'password' => 'Login-password-123!',
         'password_confirmation' => 'different-password',
     ])
         ->assertUnprocessable()
@@ -558,7 +558,7 @@ test('client side vault users can destructively reset their vault without a serv
     $this->actingAs($user)
         ->post(route('vault.reset.store'), [
             'confirmation' => 'RESET',
-            'current_password' => 'login-password-123!',
+            'current_password' => 'Login-password-123!',
             'vault_key_envelope' => $newVaultEnvelope,
             'vault_recovery_envelope' => $newRecoveryEnvelope,
             'public_key' => "-----BEGIN PUBLIC KEY-----\nnew-test\n-----END PUBLIC KEY-----",
@@ -602,7 +602,7 @@ test('vault reset requires explicit confirmation', function () {
         ->from(route('vault.unlock'))
         ->post(route('vault.reset.store'), [
             'confirmation' => 'DELETE',
-            'current_password' => 'login-password-123!',
+            'current_password' => 'Login-password-123!',
             'vault_key_envelope' => fakeVaultKeyEnvelope(),
             'vault_recovery_envelope' => fakeVaultRecoveryEnvelope(),
             'public_key' => "-----BEGIN PUBLIC KEY-----\nnew-test\n-----END PUBLIC KEY-----",
