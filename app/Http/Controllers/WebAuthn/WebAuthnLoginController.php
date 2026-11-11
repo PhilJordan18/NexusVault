@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\WebAuthn;
 
+use App\Services\Auth\AuthenticatedSessionService;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\JsonResponse;
 use Laragear\WebAuthn\Http\Requests\AssertedRequest;
@@ -12,6 +13,8 @@ use function response;
 
 readonly class WebAuthnLoginController
 {
+    public function __construct(private AuthenticatedSessionService $sessions) {}
+
     /**
      * Returns the challenge to assertion.
      */
@@ -25,6 +28,8 @@ readonly class WebAuthnLoginController
      */
     public function login(AssertedRequest $request): JsonResponse
     {
+        $this->sessions->prepareForLogin();
+
         $success = $request->login();
 
         if (! $success) {

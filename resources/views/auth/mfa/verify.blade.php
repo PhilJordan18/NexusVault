@@ -28,11 +28,12 @@
             </button>
         </form>
 
-        <div class="mt-8 text-center">
-            <a href="{{ route('logout') }}" class="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">
+        <form method="POST" action="{{ route('logout') }}" class="mt-8 text-center">
+            @csrf
+            <button type="submit" class="text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]">
                 <i class="fa-solid fa-arrow-left mr-1 text-xs"></i>
                 {{ __('Sign in with a different account') }}
-            </a>
-        </div>
+            </button>
+        </form>
     </div>
 </x-layouts.auth>

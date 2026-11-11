@@ -3,17 +3,20 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\RegisterUserRequest;
+use App\Services\Auth\AuthenticatedSessionService;
 use App\Services\Auth\Contracts\RegisterServiceInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
 
 final class RegisterController extends Controller
 {
-    public function __construct(private readonly RegisterServiceInterface $service) {}
+    public function __construct(
+        private readonly RegisterServiceInterface $service,
+        private readonly AuthenticatedSessionService $sessions,
+    ) {}
 
     public function index(): View
     {
@@ -30,7 +33,7 @@ final class RegisterController extends Controller
     public function register(RegisterUserRequest $request): RedirectResponse
     {
         $user = $this->service->register($request->validated());
-        Auth::login($user);
+        $this->sessions->establish($user);
 
         return redirect()->route('verification.notice')->with('status', 'verification-link-sent');
     }

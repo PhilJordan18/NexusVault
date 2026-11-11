@@ -13,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 final readonly class LoginService implements LoginServiceInterface
 {
+    public function __construct(private AuthenticatedSessionService $sessions) {}
+
     public function authenticate(array $credentials): RedirectResponse
     {
         $loginData = $this->createLoginData($credentials);
@@ -87,8 +89,7 @@ final readonly class LoginService implements LoginServiceInterface
 
     private function performLogin(User $user): void
     {
-        Auth::login($user);
-        Session::regenerate();
+        $this->sessions->establish($user);
     }
 
     private function redirectAfterLogin(User $user): RedirectResponse
