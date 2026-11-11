@@ -65,8 +65,13 @@ gitleaks (moteur 8.30.1, regles 8.24.3 via extend path)
   .gitleaks.toml avec useDefault sur 8.30.1     -> parse, no leaks found
 ```
 
-La preuve machine sera dans `.nv/qa/M-005.json` a la livraison. Le run
-GitHub Actions sur `dev` sera ajoute ici apres livraison.
+Run GitHub Actions vert sur la branche du mandat (`87147dd`) :
+https://github.com/PhilJordan18/NexusVault/actions/runs/43045651213
+(checks php 8.3 et 8.5, security, gate ci). Il prouve que `types:check`
+passe en CI sans `resources/js/routes` versionne.
+
+La preuve machine sera dans `.nv/qa/M-005.json` a la livraison. Le run sur
+`dev` sera ajoute ici apres livraison.
 
 ## Points d'attention pour la revue securite
 
