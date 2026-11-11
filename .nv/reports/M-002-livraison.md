@@ -2,7 +2,7 @@
 mandate: M-002
 author: dev
 branch: claude/autocompact-300k-bu83lf
-head: fc6cf9b
+head: cd4ff2b
 created: 2026-11-11
 review: pending
 ---
@@ -15,7 +15,7 @@ Branche cloud attribuee par la plateforme, repartie de `origin/dev`. Un
 commit `security(...)` par constat, chaque fois precede d'un test Pest vu
 rouge avant le correctif.
 
-- **C1, re-enrolement MFA** (`05f0a09`). Les routes `mfa.setup`,
+- **C1, re-enrolement MFA** (`f4f0447`). Les routes `mfa.setup`,
   `mfa.qr-code` et `mfa.setup.verify` passent sous `['auth', 'mfa']`.
   `MfaController::showSetup()` redirige vers les reglages si la MFA est deja
   active, sinon genere un secret temporaire conserve en session
@@ -23,7 +23,7 @@ rouge avant le correctif.
   plus jamais reaffiche ni reutilise. `MfaService::enableMfa()` ne persiste
   `totp_secret` qu'apres verification du code. Test :
   `tests/Feature/MfaEnrollmentBypassTest.php`.
-- **C2, drapeaux de session survivants** (`3426545`). Nouveau service
+- **C2, drapeaux de session survivants** (`4d87cde`). Nouveau service
   `App\Services\Auth\AuthenticatedSessionService` : `prepareForLogin()`
   purge `mfa_verified`, `vault_unlocked_at`, `masterKey` et
   `mfa_pending_secret`, et fait `Auth::logout()` + `Session::invalidate()`
@@ -34,11 +34,11 @@ rouge avant le correctif.
   utilisateurs deja connectes via `Middleware::redirectUsersTo` vers la
   verification MFA ou le coffre. Test :
   `tests/Feature/LoginSessionIsolationTest.php`.
-- **E1, OAuth sans verification d'etat** (`cb67f1d`). `stateless()` retire
+- **E1, OAuth sans verification d'etat** (`5a644de`). `stateless()` retire
   de `OAuthController`. `InvalidStateException` est attrapee et renvoie sur
   `login` avec un message generique. Test :
   `tests/Feature/OAuthStateTest.php`.
-- **E3, actions destructrices sans re-authentification** (`912446e`).
+- **E3, actions destructrices sans re-authentification** (`2974357`).
   Nouveau service `App\Services\Auth\ReauthenticationService` et trait
   `App\Http\Requests\Concerns\ConfirmsFreshAuthentication` : la requete
   doit porter `current_password` (compte local) ou `totp_code` (MFA
@@ -46,22 +46,22 @@ rouge avant le correctif.
   `DisableMfaRequest` (nouveau) et `VaultResetRequest`. Partial Blade
   `partials/fresh-authentication.blade.php` inclus dans les trois
   formulaires. Test : `tests/Feature/ReauthenticationTest.php`.
-- **M3, politique de mot de passe unique** (`9e88038`).
+- **M3, politique de mot de passe unique** (`aea098d`).
   `Password::defaults()` dans `AppServiceProvider` : 12 caracteres,
   casse mixte, lettres, chiffres, symboles, `uncompromised()` en
   production seulement. `RegisterUserRequest`, `ResetPasswordRequest` et
   `UpdatePasswordRequest` l'utilisent. Les vues register et reset-password
   passent a `minlength="12"`. Test : `tests/Feature/PasswordPolicyTest.php`.
-- **M4, enumeration de comptes** (`f637fdb`). `ResetPasswordRequest` ne
+- **M4, enumeration de comptes** (`a8835f4`). `ResetPasswordRequest` ne
   porte plus `exists:users,email` ; `ResetPasswordController` renvoie le
   meme message `passwords.token` pour tout echec. `LoginService::
   validateCredentials()` fait toujours un `Hash::check` contre un hash
   factice mis en cache quand le compte est inconnu, puis un seul message
   `Invalid credentials`. Test : `tests/Feature/AccountEnumerationTest.php`.
-- **M8, fenetre TOTP** (`fa8296a`). `MfaService::TOTP_WINDOW = 1`, une
+- **M8, fenetre TOTP** (`60256ad`). `MfaService::TOTP_WINDOW = 1`, une
   seule periode de tolerance au lieu de deux. Test :
   `tests/Feature/MfaTotpWindowTest.php`.
-- **Docs** (`9c46eaa`). `docs/03-authentification-sessions-et-acces.md`
+- **Docs** (`cd4ff2b`). `docs/03-authentification-sessions-et-acces.md`
   decrit le service de session, les routes `guest`, la politique de mot de
   passe, l'etat OAuth, le flux d'enrolement MFA, la re-authentification,
   les cles de session, la matrice d'acces et les messages uniformes.
@@ -72,13 +72,14 @@ change.
 
 ## Decisions prises en cours de route
 
-- **Deux commits de style hors perimetre** (`d9d50d9`, `fc6cf9b`).
-  `composer run ci:check`, donc `nv-deliver`, exigeait `prettier --check`
-  et `pint --test` verts. Quinze fichiers front et quinze fichiers PHP
-  anterieurs au mandat ne respectaient pas la configuration du depot.
-  Reformatage pur, aucun changement fonctionnel, isole dans ses propres
-  commits pour que la revue puisse les ignorer. A verifier sur `dev` que
-  la CI GitHub partage cette exigence.
+- **Rebase sur `dev` apres M-001 et M-003.** `origin/dev` a recu les
+  livraisons M-001 (CI, prettier et pint sur l'existant) et M-003 (pages
+  legales Inertia) pendant ce mandat. `nv-deliver` a rebase la branche :
+  conflits resolus dans `lang/en.json`, `lang/fr.json` (cles ajoutees des
+  deux cotes, les deux conservees), `OAuthController` et deux FormRequests
+  (dev n'y avait fait que du reformatage, version M-002 conservee). Mes
+  deux commits de reformatage preliminaires sont devenus vides apres le
+  rebase et ont ete abandonnes.
 - **`/register/validate` laisse hors de M4.** Cette route sert a la
   validation en direct du formulaire et renvoie par construction si l'email
   est pris. La rendre uniforme impose un flux d'inscription par email
