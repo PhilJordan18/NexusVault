@@ -41,15 +41,15 @@ final readonly class EncryptionRotationService
                 $encNotes = $notes ? $this->crypto->encryptWithCustomKey($notes, $newMasterKey) : null;
 
                 $service->update([
-                    'username'     => $encUsername['ciphertext'],
-                    'username_iv'  => $encUsername['iv'],
+                    'username' => $encUsername['ciphertext'],
+                    'username_iv' => $encUsername['iv'],
                     'username_tag' => $encUsername['tag'],
-                    'password'     => $encPassword['ciphertext'],
-                    'password_iv'  => $encPassword['iv'],
+                    'password' => $encPassword['ciphertext'],
+                    'password_iv' => $encPassword['iv'],
                     'password_tag' => $encPassword['tag'],
-                    'notes'        => $encNotes['ciphertext'] ?? null,
-                    'notes_iv'     => $encNotes['iv'] ?? null,
-                    'notes_tag'    => $encNotes['tag'] ?? null,
+                    'notes' => $encNotes['ciphertext'] ?? null,
+                    'notes_iv' => $encNotes['iv'] ?? null,
+                    'notes_tag' => $encNotes['tag'] ?? null,
                 ]);
             }
         });

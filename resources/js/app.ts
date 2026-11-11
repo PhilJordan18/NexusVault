@@ -45,7 +45,7 @@ async function bootBrowserModules(): Promise<void> {
         'create-strength-container',
         'create-strength-bar',
         'create-strength-text',
-        'create-generate-btn'
+        'create-generate-btn',
     );
     bindPasswordGeneratorCustomization();
 }

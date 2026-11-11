@@ -87,7 +87,10 @@ function textBytes(value: string): Uint8Array {
 }
 
 function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-    return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    return bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+    ) as ArrayBuffer;
 }
 
 function bytesText(bytes: Uint8Array): string {
@@ -96,7 +99,7 @@ function bytesText(bytes: Uint8Array): string {
 
 function bytesToBase64(bytes: Uint8Array): string {
     let binary = '';
-    bytes.forEach(byte => {
+    bytes.forEach((byte) => {
         binary += String.fromCharCode(byte);
     });
 
@@ -124,7 +127,9 @@ function pemToBytes(pem: string): Uint8Array {
 }
 
 function bytesToHex(bytes: Uint8Array): string {
-    return Array.from(bytes, byte => byte.toString(16).padStart(2, '0')).join('');
+    return Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join(
+        '',
+    );
 }
 
 function hexToBytes(hex: string): Uint8Array {
@@ -157,7 +162,10 @@ function recoveryKeyToBytes(recoveryKey: string): Uint8Array {
     return hexToBytes(normalized);
 }
 
-function splitCiphertextAndTag(payload: ArrayBuffer): { ciphertext: Uint8Array; tag: Uint8Array } {
+function splitCiphertextAndTag(payload: ArrayBuffer): {
+    ciphertext: Uint8Array;
+    tag: Uint8Array;
+} {
     const bytes = new Uint8Array(payload);
 
     return {
@@ -166,7 +174,10 @@ function splitCiphertextAndTag(payload: ArrayBuffer): { ciphertext: Uint8Array; 
     };
 }
 
-function joinCiphertextAndTag(ciphertextBase64: string, tagHex: string): Uint8Array {
+function joinCiphertextAndTag(
+    ciphertextBase64: string,
+    tagHex: string,
+): Uint8Array {
     const ciphertext = base64ToBytes(ciphertextBase64);
     const tag = hexToBytes(tagHex);
     const payload = new Uint8Array(ciphertext.length + tag.length);
@@ -177,13 +188,17 @@ function joinCiphertextAndTag(ciphertextBase64: string, tagHex: string): Uint8Ar
     return payload;
 }
 
-async function deriveWrappingKey(vaultPassword: string, saltBase64: string, iterations: number): Promise<CryptoKey> {
+async function deriveWrappingKey(
+    vaultPassword: string,
+    saltBase64: string,
+    iterations: number,
+): Promise<CryptoKey> {
     const passwordKey = await cryptoApi().subtle.importKey(
         'raw',
         toArrayBuffer(textBytes(vaultPassword)),
         'PBKDF2',
         false,
-        ['deriveKey']
+        ['deriveKey'],
     );
 
     return cryptoApi().subtle.deriveKey(
@@ -196,46 +211,55 @@ async function deriveWrappingKey(vaultPassword: string, saltBase64: string, iter
         passwordKey,
         { name: 'AES-GCM', length: 256 },
         false,
-        ['encrypt', 'decrypt']
+        ['encrypt', 'decrypt'],
     );
 }
 
-async function importVaultAesKey(vaultKeyBytes: Uint8Array): Promise<CryptoKey> {
+async function importVaultAesKey(
+    vaultKeyBytes: Uint8Array,
+): Promise<CryptoKey> {
     return cryptoApi().subtle.importKey(
         'raw',
         toArrayBuffer(vaultKeyBytes),
         { name: 'AES-GCM' },
         false,
-        ['encrypt', 'decrypt']
+        ['encrypt', 'decrypt'],
     );
 }
 
-async function importRecipientPublicKey(publicKeyPem: string): Promise<CryptoKey> {
+async function importRecipientPublicKey(
+    publicKeyPem: string,
+): Promise<CryptoKey> {
     return cryptoApi().subtle.importKey(
         'spki',
         toArrayBuffer(pemToBytes(publicKeyPem)),
         { name: 'RSA-OAEP', hash: 'SHA-256' },
         false,
-        ['encrypt']
+        ['encrypt'],
     );
 }
 
-async function importPrivateKey(privateKeyBytes: Uint8Array): Promise<CryptoKey> {
+async function importPrivateKey(
+    privateKeyBytes: Uint8Array,
+): Promise<CryptoKey> {
     return cryptoApi().subtle.importKey(
         'pkcs8',
         toArrayBuffer(privateKeyBytes),
         { name: 'RSA-OAEP', hash: 'SHA-256' },
         false,
-        ['decrypt']
+        ['decrypt'],
     );
 }
 
-async function encryptBytes(key: CryptoKey, bytes: Uint8Array): Promise<EncryptedString> {
+async function encryptBytes(
+    key: CryptoKey,
+    bytes: Uint8Array,
+): Promise<EncryptedString> {
     const iv = randomBytes(12);
     const encrypted = await cryptoApi().subtle.encrypt(
         { name: 'AES-GCM', iv: toArrayBuffer(iv), tagLength: aesTagLengthBits },
         key,
-        toArrayBuffer(bytes)
+        toArrayBuffer(bytes),
     );
     const { ciphertext, tag } = splitCiphertextAndTag(encrypted);
 
@@ -246,7 +270,10 @@ async function encryptBytes(key: CryptoKey, bytes: Uint8Array): Promise<Encrypte
     };
 }
 
-async function decryptBytes(key: CryptoKey, encrypted: EncryptedString): Promise<Uint8Array> {
+async function decryptBytes(
+    key: CryptoKey,
+    encrypted: EncryptedString,
+): Promise<Uint8Array> {
     const payload = joinCiphertextAndTag(encrypted.ciphertext, encrypted.tag);
 
     const decrypted = await cryptoApi().subtle.decrypt(
@@ -256,7 +283,7 @@ async function decryptBytes(key: CryptoKey, encrypted: EncryptedString): Promise
             tagLength: aesTagLengthBits,
         },
         key,
-        toArrayBuffer(payload)
+        toArrayBuffer(payload),
     );
 
     return new Uint8Array(decrypted);
@@ -284,15 +311,24 @@ async function getStoredVaultCryptoKey(): Promise<CryptoKey> {
     return importVaultAesKey(base64ToBytes(stored));
 }
 
-export async function createRegistrationVaultPackage(vaultPassword: string): Promise<RegistrationVaultPackage> {
+export async function createRegistrationVaultPackage(
+    vaultPassword: string,
+): Promise<RegistrationVaultPackage> {
     const salt = randomBytes(16);
     const vaultKeyBytes = randomBytes(32);
     const recoveryKeyBytes = randomBytes(32);
-    const wrappingKey = await deriveWrappingKey(vaultPassword, bytesToBase64(salt), vaultIterations);
+    const wrappingKey = await deriveWrappingKey(
+        vaultPassword,
+        bytesToBase64(salt),
+        vaultIterations,
+    );
     const wrappedVaultKey = await encryptBytes(wrappingKey, vaultKeyBytes);
     const vaultKey = await importVaultAesKey(vaultKeyBytes);
     const recoveryWrappingKey = await importVaultAesKey(recoveryKeyBytes);
-    const wrappedRecoveryVaultKey = await encryptBytes(recoveryWrappingKey, vaultKeyBytes);
+    const wrappedRecoveryVaultKey = await encryptBytes(
+        recoveryWrappingKey,
+        vaultKeyBytes,
+    );
     const rsaAlgorithm: RsaHashedKeyGenParams = {
         name: 'RSA-OAEP',
         modulusLength: 2048,
@@ -300,14 +336,15 @@ export async function createRegistrationVaultPackage(vaultPassword: string): Pro
         hash: 'SHA-256',
     };
 
-    const rsaKeys = await cryptoApi().subtle.generateKey(
-        rsaAlgorithm,
-        true,
-        ['encrypt', 'decrypt']
-    );
+    const rsaKeys = await cryptoApi().subtle.generateKey(rsaAlgorithm, true, [
+        'encrypt',
+        'decrypt',
+    ]);
 
     const publicKey = await exportPublicKeyPem(rsaKeys.publicKey);
-    const privateKeyBytes = new Uint8Array(await cryptoApi().subtle.exportKey('pkcs8', rsaKeys.privateKey));
+    const privateKeyBytes = new Uint8Array(
+        await cryptoApi().subtle.exportKey('pkcs8', rsaKeys.privateKey),
+    );
     const encryptedPrivateKey = await encryptBytes(vaultKey, privateKeyBytes);
 
     storeVaultKey(vaultKeyBytes);
@@ -338,27 +375,43 @@ export async function createRegistrationVaultPackage(vaultPassword: string): Pro
     };
 }
 
-export async function unlockVaultKey(envelope: VaultKeyEnvelope, vaultPassword: string): Promise<void> {
-    const wrappingKey = await deriveWrappingKey(vaultPassword, envelope.salt, envelope.iterations);
+export async function unlockVaultKey(
+    envelope: VaultKeyEnvelope,
+    vaultPassword: string,
+): Promise<void> {
+    const wrappingKey = await deriveWrappingKey(
+        vaultPassword,
+        envelope.salt,
+        envelope.iterations,
+    );
     const vaultKeyBytes = await decryptBytes(wrappingKey, envelope);
 
     storeVaultKey(vaultKeyBytes);
 }
 
-export async function unlockVaultKeyWithRecovery(envelope: VaultRecoveryEnvelope, recoveryKey: string): Promise<void> {
-    const recoveryWrappingKey = await importVaultAesKey(recoveryKeyToBytes(recoveryKey));
+export async function unlockVaultKeyWithRecovery(
+    envelope: VaultRecoveryEnvelope,
+    recoveryKey: string,
+): Promise<void> {
+    const recoveryWrappingKey = await importVaultAesKey(
+        recoveryKeyToBytes(recoveryKey),
+    );
     const vaultKeyBytes = await decryptBytes(recoveryWrappingKey, envelope);
 
     storeVaultKey(vaultKeyBytes);
 }
 
-export async function encryptVaultString(value: string): Promise<EncryptedString> {
+export async function encryptVaultString(
+    value: string,
+): Promise<EncryptedString> {
     const vaultKey = await getStoredVaultCryptoKey();
 
     return encryptBytes(vaultKey, textBytes(value));
 }
 
-export async function decryptVaultString(encrypted: EncryptedString): Promise<string> {
+export async function decryptVaultString(
+    encrypted: EncryptedString,
+): Promise<string> {
     const vaultKey = await getStoredVaultCryptoKey();
     const decrypted = await decryptBytes(vaultKey, encrypted);
 
@@ -369,13 +422,20 @@ export async function generateSharedItemKey(): Promise<string> {
     return bytesToBase64(randomBytes(32));
 }
 
-async function importSharedItemKey(sharedKeyBase64: string): Promise<CryptoKey> {
+async function importSharedItemKey(
+    sharedKeyBase64: string,
+): Promise<CryptoKey> {
     return importVaultAesKey(base64ToBytes(sharedKeyBase64));
 }
 
-export async function encryptSharedKeyForVault(sharedKeyBase64: string): Promise<SharedKeyEnvelope> {
+export async function encryptSharedKeyForVault(
+    sharedKeyBase64: string,
+): Promise<SharedKeyEnvelope> {
     const vaultKey = await getStoredVaultCryptoKey();
-    const encrypted = await encryptBytes(vaultKey, base64ToBytes(sharedKeyBase64));
+    const encrypted = await encryptBytes(
+        vaultKey,
+        base64ToBytes(sharedKeyBase64),
+    );
 
     return {
         version: 1,
@@ -385,20 +445,28 @@ export async function encryptSharedKeyForVault(sharedKeyBase64: string): Promise
     };
 }
 
-export async function decryptSharedKeyFromVault(envelope: SharedKeyEnvelope): Promise<string> {
+export async function decryptSharedKeyFromVault(
+    envelope: SharedKeyEnvelope,
+): Promise<string> {
     const vaultKey = await getStoredVaultCryptoKey();
     const sharedKeyBytes = await decryptBytes(vaultKey, envelope);
 
     return bytesToBase64(sharedKeyBytes);
 }
 
-export async function encryptSharedVaultString(value: string, sharedKeyBase64: string): Promise<EncryptedString> {
+export async function encryptSharedVaultString(
+    value: string,
+    sharedKeyBase64: string,
+): Promise<EncryptedString> {
     const sharedKey = await importSharedItemKey(sharedKeyBase64);
 
     return encryptBytes(sharedKey, textBytes(value));
 }
 
-export async function decryptSharedVaultString(encrypted: EncryptedString, sharedKeyBase64: string): Promise<string> {
+export async function decryptSharedVaultString(
+    encrypted: EncryptedString,
+    sharedKeyBase64: string,
+): Promise<string> {
     const sharedKey = await importSharedItemKey(sharedKeyBase64);
     const decrypted = await decryptBytes(sharedKey, encrypted);
 
@@ -407,30 +475,45 @@ export async function decryptSharedVaultString(encrypted: EncryptedString, share
 
 export async function encryptSharedItemFields(
     sensitiveData: ClientShareSensitiveData,
-    sharedKeyBase64: string
+    sharedKeyBase64: string,
 ): Promise<SharedItemFields> {
     return {
-        username: await encryptSharedVaultString(sensitiveData.username, sharedKeyBase64),
-        password: await encryptSharedVaultString(sensitiveData.password, sharedKeyBase64),
-        notes: sensitiveData.notes ? await encryptSharedVaultString(sensitiveData.notes, sharedKeyBase64) : null,
+        username: await encryptSharedVaultString(
+            sensitiveData.username,
+            sharedKeyBase64,
+        ),
+        password: await encryptSharedVaultString(
+            sensitiveData.password,
+            sharedKeyBase64,
+        ),
+        notes: sensitiveData.notes
+            ? await encryptSharedVaultString(
+                  sensitiveData.notes,
+                  sharedKeyBase64,
+              )
+            : null,
     };
 }
 
 export async function encryptSharedKeyForRecipient(
     sharedKeyBase64: string,
-    recipientPublicKeyPem: string
+    recipientPublicKeyPem: string,
 ): Promise<string> {
-    const recipientPublicKey = await importRecipientPublicKey(recipientPublicKeyPem);
+    const recipientPublicKey = await importRecipientPublicKey(
+        recipientPublicKeyPem,
+    );
     const encryptedShareKey = await cryptoApi().subtle.encrypt(
         { name: 'RSA-OAEP' },
         recipientPublicKey,
-        toArrayBuffer(base64ToBytes(sharedKeyBase64))
+        toArrayBuffer(base64ToBytes(sharedKeyBase64)),
     );
 
     return bytesToBase64(new Uint8Array(encryptedShareKey));
 }
 
-async function decryptPrivateKeyEnvelope(encryptedPrivateKey: EncryptedPrivateKeyEnvelope): Promise<CryptoKey> {
+async function decryptPrivateKeyEnvelope(
+    encryptedPrivateKey: EncryptedPrivateKeyEnvelope,
+): Promise<CryptoKey> {
     const vaultKey = await getStoredVaultCryptoKey();
     const privateKeyBytes = await decryptBytes(vaultKey, encryptedPrivateKey);
 
@@ -439,13 +522,13 @@ async function decryptPrivateKeyEnvelope(encryptedPrivateKey: EncryptedPrivateKe
 
 export async function decryptSharedKeyFromRecipient(
     encryptedSharedKey: string,
-    encryptedPrivateKey: EncryptedPrivateKeyEnvelope
+    encryptedPrivateKey: EncryptedPrivateKeyEnvelope,
 ): Promise<string> {
     const privateKey = await decryptPrivateKeyEnvelope(encryptedPrivateKey);
     const sharedKeyBytes = await cryptoApi().subtle.decrypt(
         { name: 'RSA-OAEP' },
         privateKey,
-        toArrayBuffer(base64ToBytes(encryptedSharedKey))
+        toArrayBuffer(base64ToBytes(encryptedSharedKey)),
     );
 
     return bytesToBase64(new Uint8Array(sharedKeyBytes));
@@ -454,16 +537,32 @@ export async function decryptSharedKeyFromRecipient(
 export async function createClientSyncSharePayload(
     sensitiveData: ClientShareSensitiveData,
     recipientPublicKeyPem: string,
-    existingSharedKeyEnvelope?: SharedKeyEnvelope | null
-): Promise<ClientSharePayload & { shared_key_envelope: SharedKeyEnvelope; shared_fields: SharedItemFields }> {
+    existingSharedKeyEnvelope?: SharedKeyEnvelope | null,
+): Promise<
+    ClientSharePayload & {
+        shared_key_envelope: SharedKeyEnvelope;
+        shared_fields: SharedItemFields;
+    }
+> {
     const sharedKeyBase64 = existingSharedKeyEnvelope
         ? await decryptSharedKeyFromVault(existingSharedKeyEnvelope)
         : await generateSharedItemKey();
     const sharedKey = await importSharedItemKey(sharedKeyBase64);
-    const sharedKeyEnvelope = existingSharedKeyEnvelope ?? await encryptSharedKeyForVault(sharedKeyBase64);
-    const sharedFields = await encryptSharedItemFields(sensitiveData, sharedKeyBase64);
-    const encryptedData = await encryptBytes(sharedKey, textBytes(JSON.stringify(sensitiveData)));
-    const encryptedShareKey = await encryptSharedKeyForRecipient(sharedKeyBase64, recipientPublicKeyPem);
+    const sharedKeyEnvelope =
+        existingSharedKeyEnvelope ??
+        (await encryptSharedKeyForVault(sharedKeyBase64));
+    const sharedFields = await encryptSharedItemFields(
+        sensitiveData,
+        sharedKeyBase64,
+    );
+    const encryptedData = await encryptBytes(
+        sharedKey,
+        textBytes(JSON.stringify(sensitiveData)),
+    );
+    const encryptedShareKey = await encryptSharedKeyForRecipient(
+        sharedKeyBase64,
+        recipientPublicKeyPem,
+    );
 
     return {
         version: 2,
@@ -477,17 +576,22 @@ export async function createClientSyncSharePayload(
 
 export async function createClientSharePayload(
     sensitiveData: ClientShareSensitiveData,
-    recipientPublicKeyPem: string
+    recipientPublicKeyPem: string,
 ): Promise<ClientSharePayload> {
     const shareKeyBytes = randomBytes(32);
     const shareKey = await importVaultAesKey(shareKeyBytes);
-    const recipientPublicKey = await importRecipientPublicKey(recipientPublicKeyPem);
+    const recipientPublicKey = await importRecipientPublicKey(
+        recipientPublicKeyPem,
+    );
 
-    const encryptedData = await encryptBytes(shareKey, textBytes(JSON.stringify(sensitiveData)));
+    const encryptedData = await encryptBytes(
+        shareKey,
+        textBytes(JSON.stringify(sensitiveData)),
+    );
     const encryptedShareKey = await cryptoApi().subtle.encrypt(
         { name: 'RSA-OAEP' },
         recipientPublicKey,
-        toArrayBuffer(shareKeyBytes)
+        toArrayBuffer(shareKeyBytes),
     );
 
     return {
@@ -500,13 +604,13 @@ export async function createClientSharePayload(
 
 export async function decryptClientSharePayload(
     payload: ClientSharePayload,
-    encryptedPrivateKey: EncryptedPrivateKeyEnvelope
+    encryptedPrivateKey: EncryptedPrivateKeyEnvelope,
 ): Promise<ClientShareSensitiveData> {
     const privateKey = await decryptPrivateKeyEnvelope(encryptedPrivateKey);
     const shareKeyBytes = await cryptoApi().subtle.decrypt(
         { name: 'RSA-OAEP' },
         privateKey,
-        toArrayBuffer(base64ToBytes(payload.encrypted_aes_key))
+        toArrayBuffer(base64ToBytes(payload.encrypted_aes_key)),
     );
     const shareKey = await importVaultAesKey(new Uint8Array(shareKeyBytes));
     const decryptedData = await decryptBytes(shareKey, payload.encrypted_data);
@@ -515,7 +619,9 @@ export async function decryptClientSharePayload(
 }
 
 async function exportPublicKeyPem(publicKey: CryptoKey): Promise<string> {
-    const spki = new Uint8Array(await cryptoApi().subtle.exportKey('spki', publicKey));
+    const spki = new Uint8Array(
+        await cryptoApi().subtle.exportKey('spki', publicKey),
+    );
     const base64 = bytesToBase64(spki);
     const lines = base64.match(/.{1,64}/g) ?? [];
 

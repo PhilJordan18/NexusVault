@@ -25,8 +25,10 @@ if (searchInput && dropdown) {
     });
 
     document.addEventListener('click', (e) => {
-        if (!(e.target as HTMLElement).closest('#search-input') &&
-            !(e.target as HTMLElement).closest('#search-dropdown')) {
+        if (
+            !(e.target as HTMLElement).closest('#search-input') &&
+            !(e.target as HTMLElement).closest('#search-dropdown')
+        ) {
             dropdown.classList.add('hidden');
         }
     });
@@ -34,20 +36,22 @@ if (searchInput && dropdown) {
 
 async function fetchResults(query: string) {
     dropdown.classList.remove('hidden');
-    dropdown.innerHTML = '<div class="px-4 py-4 text-center text-white/40">Searching…</div>';
+    dropdown.innerHTML =
+        '<div class="px-4 py-4 text-center text-white/40">Searching…</div>';
 
     try {
         const res = await fetch(`/search?q=${encodeURIComponent(query)}`, {
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'text/html',
-            }
+                Accept: 'text/html',
+            },
         });
         const html = await res.text();
         dropdown.innerHTML = html;
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
-        dropdown.innerHTML = '<div class="px-4 py-4 text-center text-red-400">Error</div>';
+        dropdown.innerHTML =
+            '<div class="px-4 py-4 text-center text-red-400">Error</div>';
     }
 }
 

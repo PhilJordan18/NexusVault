@@ -33,6 +33,7 @@ class WebAuthnRegisterController
             $credential = $request->user()->webAuthnCredentials()->latest()->first();
             $credential?->forceFill(['alias' => $alias])->save();
         }
+
         return response()->noContent();
     }
 }

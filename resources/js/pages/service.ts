@@ -7,7 +7,10 @@ import {
     encryptVaultString,
     hasStoredVaultKey,
 } from '../../ts/zero-knowledge';
-import type { EncryptedString, SharedKeyEnvelope } from '../../ts/zero-knowledge';
+import type {
+    EncryptedString,
+    SharedKeyEnvelope,
+} from '../../ts/zero-knowledge';
 
 // Types
 type Account = {
@@ -26,7 +29,7 @@ type Account = {
     name?: string;
     client_encrypted?: boolean;
     shared_user_id?: number | null;
-    strength?: string;          // 'very_weak', 'weak', 'strong', 'very_strong'
+    strength?: string; // 'very_weak', 'weak', 'strong', 'very_strong'
     compromised?: boolean;
     reused?: boolean;
     shared_group_id?: string | null;
@@ -48,18 +51,23 @@ type ShareRecipient = {
 let currentAccount: Account | null = null;
 
 function t(key: string): string {
-    const translations = (window as any).nexusVaultTranslations as Record<string, string> | undefined;
+    const translations = (window as any).nexusVaultTranslations as
+        | Record<string, string>
+        | undefined;
 
     return translations?.[key] ?? key;
 }
 
-const itemTypeLabels: Record<ItemType, {
-    username: string;
-    secret: string;
-    notes: string;
-    hiddenSecret: string;
-    editTitle: string;
-}> = {
+const itemTypeLabels: Record<
+    ItemType,
+    {
+        username: string;
+        secret: string;
+        notes: string;
+        hiddenSecret: string;
+        editTitle: string;
+    }
+> = {
     login: {
         username: t('Username / Email'),
         secret: t('Password'),
@@ -93,7 +101,9 @@ function labelsFor(account: Account) {
 
 // Helper CSRF
 function csrfToken(): string {
-    const meta = document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement;
+    const meta = document.querySelector(
+        'meta[name="csrf-token"]',
+    ) as HTMLMetaElement;
 
     return meta?.content || '';
 }
@@ -127,7 +137,8 @@ async function decryptAccount(account: Account): Promise<Account> {
         ? await decryptSharedKeyFromVault(account.shared_key_envelope)
         : null;
     const decryptString = sharedKey
-        ? (encrypted: EncryptedString) => decryptSharedVaultString(encrypted, sharedKey)
+        ? (encrypted: EncryptedString) =>
+              decryptSharedVaultString(encrypted, sharedKey)
         : decryptVaultString;
 
     const username = await decryptString({
@@ -142,13 +153,14 @@ async function decryptAccount(account: Account): Promise<Account> {
         tag: account.password_tag ?? '',
     });
 
-    const notes = account.notes && account.notes_iv && account.notes_tag
-        ? await decryptString({
-            ciphertext: account.notes,
-            iv: account.notes_iv,
-            tag: account.notes_tag,
-        })
-        : undefined;
+    const notes =
+        account.notes && account.notes_iv && account.notes_tag
+            ? await decryptString({
+                  ciphertext: account.notes,
+                  iv: account.notes_iv,
+                  tag: account.notes_tag,
+              })
+            : undefined;
 
     return {
         ...account,
@@ -160,28 +172,43 @@ async function decryptAccount(account: Account): Promise<Account> {
 }
 
 async function decryptLoadedAccounts(): Promise<void> {
-    const accounts = (window as any).accounts as Record<number, Account> | undefined;
+    const accounts = (window as any).accounts as
+        | Record<number, Account>
+        | undefined;
 
     if (!accounts || !usesClientEncryption()) {
         return;
     }
 
     const entries = await Promise.all(
-        Object.entries(accounts).map(async ([id, account]) => [id, await decryptAccount(account)] as const)
+        Object.entries(accounts).map(
+            async ([id, account]) =>
+                [id, await decryptAccount(account)] as const,
+        ),
     );
 
     (window as any).accounts = Object.fromEntries(entries);
     entries.forEach(([, account]) => updateAccountListItem(account));
 }
 
-async function encryptEditableFields(account: Account, username: string, password: string, notes: string | null): Promise<{
+async function encryptEditableFields(
+    account: Account,
+    username: string,
+    password: string,
+    notes: string | null,
+): Promise<{
     username: EncryptedString;
     password: EncryptedString;
     notes: EncryptedString | null;
 }> {
     if (account.shared_key_envelope) {
-        const sharedKey = await decryptSharedKeyFromVault(account.shared_key_envelope);
-        const sharedFields = await encryptSharedItemFields({ username, password, notes }, sharedKey);
+        const sharedKey = await decryptSharedKeyFromVault(
+            account.shared_key_envelope,
+        );
+        const sharedFields = await encryptSharedItemFields(
+            { username, password, notes },
+            sharedKey,
+        );
 
         return {
             username: sharedFields.username,
@@ -198,7 +225,9 @@ async function encryptEditableFields(account: Account, username: string, passwor
 }
 
 function accountListLabel(account: Account): string {
-    return account.username?.trim() || account.name?.trim() || t('Encrypted item');
+    return (
+        account.username?.trim() || account.name?.trim() || t('Encrypted item')
+    );
 }
 
 function accountListInitial(account: Account): string {
@@ -206,8 +235,12 @@ function accountListInitial(account: Account): string {
 }
 
 function updateAccountListItem(account: Account): void {
-    const label = document.querySelector<HTMLElement>(`[data-account-list-label="${account.id}"]`);
-    const icon = document.querySelector<HTMLElement>(`[data-account-list-icon="${account.id}"]`);
+    const label = document.querySelector<HTMLElement>(
+        `[data-account-list-label="${account.id}"]`,
+    );
+    const icon = document.querySelector<HTMLElement>(
+        `[data-account-list-icon="${account.id}"]`,
+    );
 
     if (label) {
         label.textContent = accountListLabel(account);
@@ -219,9 +252,14 @@ function updateAccountListItem(account: Account): void {
 }
 
 function updateSelectedListItem(id: number): void {
-    document.querySelectorAll<HTMLElement>('[data-account-list-item]').forEach(item => {
-        item.classList.toggle('bg-[var(--bg-input)]', item.dataset.accountListItem === id.toString());
-    });
+    document
+        .querySelectorAll<HTMLElement>('[data-account-list-item]')
+        .forEach((item) => {
+            item.classList.toggle(
+                'bg-[var(--bg-input)]',
+                item.dataset.accountListItem === id.toString(),
+            );
+        });
 }
 
 // ===== PUBLIC API =====
@@ -243,29 +281,42 @@ function updateSelectedListItem(id: number): void {
     panel.classList.remove('hidden');
     document.getElementById('empty-state')?.classList.add('hidden');
 
-    document.getElementById('delete-account-container')?.classList.remove('hidden');
+    document
+        .getElementById('delete-account-container')
+        ?.classList.remove('hidden');
 
-    (document.getElementById('detail-username') as HTMLElement).textContent = account.username;
-    (document.getElementById('detail-name') as HTMLElement).textContent = account.name || '';
-    (document.getElementById('detail-secret-label') as HTMLElement).textContent = labels.secret;
+    (document.getElementById('detail-username') as HTMLElement).textContent =
+        account.username;
+    (document.getElementById('detail-name') as HTMLElement).textContent =
+        account.name || '';
+    (
+        document.getElementById('detail-secret-label') as HTMLElement
+    ).textContent = labels.secret;
 
     const sharedBadge = document.getElementById('detail-shared-badge');
 
     if (account.shared_group_id) {
         if (sharedBadge) {
             sharedBadge.classList.remove('hidden');
-            sharedBadge.textContent = account.shared_key_envelope ? t('Shared sync') : t('Shared copy');
+            sharedBadge.textContent = account.shared_key_envelope
+                ? t('Shared sync')
+                : t('Shared copy');
         }
     } else {
         sharedBadge?.classList.add('hidden');
     }
 
-    document.getElementById('share-account-button')?.classList.toggle(
-        'hidden',
-        account.shared_user_id !== null && account.shared_user_id !== undefined
-    );
+    document
+        .getElementById('share-account-button')
+        ?.classList.toggle(
+            'hidden',
+            account.shared_user_id !== null &&
+                account.shared_user_id !== undefined,
+        );
 
-    const passwordEl = document.getElementById('detail-password') as HTMLElement;
+    const passwordEl = document.getElementById(
+        'detail-password',
+    ) as HTMLElement;
     passwordEl.textContent = labels.hiddenSecret;
     passwordEl.dataset.hidden = 'true';
     passwordEl.dataset.realPassword = account.password || '';
@@ -296,7 +347,6 @@ function updateSelectedListItem(id: number): void {
 };
 
 (window as any).togglePassword = () => {
-
     if (!currentAccount) {
         return;
     }
@@ -322,26 +372,51 @@ function updateSelectedListItem(id: number): void {
     }
 
     const labels = labelsFor(currentAccount);
-    (document.getElementById('edit-service-id') as HTMLInputElement).value = currentAccount.id.toString();
-    (document.getElementById('edit-type') as HTMLInputElement).value = typeOf(currentAccount);
-    (document.getElementById('edit-username') as HTMLInputElement).value = currentAccount.username;
-    (document.getElementById('edit-password') as HTMLInputElement).value = currentAccount.password;
-    (document.getElementById('edit-notes') as HTMLTextAreaElement).value = currentAccount.notes || '';
-    (document.getElementById('edit-name') as HTMLInputElement).value = currentAccount.name ?? '';
-    (document.getElementById('edit-url') as HTMLInputElement).value = currentAccount.url ?? '';
-    (document.getElementById('edit-username-label') as HTMLElement).textContent = labels.username;
-    (document.getElementById('edit-password-label') as HTMLElement).textContent = labels.secret;
-    (document.getElementById('edit-notes-label') as HTMLElement).textContent = labels.notes;
-    document.querySelector('#edit-account-modal h3')!.textContent = labels.editTitle;
+    (document.getElementById('edit-service-id') as HTMLInputElement).value =
+        currentAccount.id.toString();
+    (document.getElementById('edit-type') as HTMLInputElement).value =
+        typeOf(currentAccount);
+    (document.getElementById('edit-username') as HTMLInputElement).value =
+        currentAccount.username;
+    (document.getElementById('edit-password') as HTMLInputElement).value =
+        currentAccount.password;
+    (document.getElementById('edit-notes') as HTMLTextAreaElement).value =
+        currentAccount.notes || '';
+    (document.getElementById('edit-name') as HTMLInputElement).value =
+        currentAccount.name ?? '';
+    (document.getElementById('edit-url') as HTMLInputElement).value =
+        currentAccount.url ?? '';
+    (
+        document.getElementById('edit-username-label') as HTMLElement
+    ).textContent = labels.username;
+    (
+        document.getElementById('edit-password-label') as HTMLElement
+    ).textContent = labels.secret;
+    (document.getElementById('edit-notes-label') as HTMLElement).textContent =
+        labels.notes;
+    document.querySelector('#edit-account-modal h3')!.textContent =
+        labels.editTitle;
 
-    const editPassword = document.getElementById('edit-password') as HTMLInputElement;
+    const editPassword = document.getElementById(
+        'edit-password',
+    ) as HTMLInputElement;
     const isLogin = typeOf(currentAccount) === 'login';
     editPassword.type = isLogin ? 'password' : 'text';
     editPassword.dataset.passwordStrengthDisabled = isLogin ? 'false' : 'true';
-    document.getElementById('edit-generate-btn')?.classList.toggle('hidden', !isLogin);
-    document.querySelector('[data-password-generator-controls-for="edit-generate-btn"]')?.classList.toggle('hidden', !isLogin);
-    document.getElementById('edit-strength-container')?.classList.toggle('hidden', !isLogin);
-    document.getElementById('edit-url-container')?.classList.toggle('hidden', !isLogin);
+    document
+        .getElementById('edit-generate-btn')
+        ?.classList.toggle('hidden', !isLogin);
+    document
+        .querySelector(
+            '[data-password-generator-controls-for="edit-generate-btn"]',
+        )
+        ?.classList.toggle('hidden', !isLogin);
+    document
+        .getElementById('edit-strength-container')
+        ?.classList.toggle('hidden', !isLogin);
+    document
+        .getElementById('edit-url-container')
+        ?.classList.toggle('hidden', !isLogin);
 
     document.getElementById('edit-account-modal')!.classList.remove('hidden');
 };
@@ -372,11 +447,20 @@ function updateSelectedListItem(id: number): void {
         return;
     }
 
-    const serviceId = Number((document.getElementById('edit-service-id') as HTMLInputElement).value);
-    const type = (document.getElementById('edit-type') as HTMLInputElement).value as ItemType;
-    const username = (document.getElementById('edit-username') as HTMLInputElement).value.trim();
-    const password = (document.getElementById('edit-password') as HTMLInputElement).value.trim();
-    const notes = (document.getElementById('edit-notes') as HTMLTextAreaElement).value.trim();
+    const serviceId = Number(
+        (document.getElementById('edit-service-id') as HTMLInputElement).value,
+    );
+    const type = (document.getElementById('edit-type') as HTMLInputElement)
+        .value as ItemType;
+    const username = (
+        document.getElementById('edit-username') as HTMLInputElement
+    ).value.trim();
+    const password = (
+        document.getElementById('edit-password') as HTMLInputElement
+    ).value.trim();
+    const notes = (
+        document.getElementById('edit-notes') as HTMLTextAreaElement
+    ).value.trim();
 
     if (!username || !password) {
         alert(t('Username and password are required.'));
@@ -384,12 +468,19 @@ function updateSelectedListItem(id: number): void {
         return;
     }
 
-    const buttons = document.querySelectorAll<HTMLButtonElement>('#edit-account-form button');
-    buttons.forEach(b => (b.disabled = true));
+    const buttons = document.querySelectorAll<HTMLButtonElement>(
+        '#edit-account-form button',
+    );
+    buttons.forEach((b) => (b.disabled = true));
 
     try {
         const encryptedFields = usesClientEncryption()
-            ? await encryptEditableFields(currentAccount, username, password, notes || null)
+            ? await encryptEditableFields(
+                  currentAccount,
+                  username,
+                  password,
+                  notes || null,
+              )
             : null;
 
         const response = await fetch(`/services/${serviceId}`, {
@@ -397,12 +488,22 @@ function updateSelectedListItem(id: number): void {
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrfToken(),
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
             body: JSON.stringify({
-                name: (document.getElementById('edit-name') as HTMLInputElement).value,
+                name: (document.getElementById('edit-name') as HTMLInputElement)
+                    .value,
                 type,
-                url: type === 'login' ? normalizeUrl((document.getElementById('edit-url') as HTMLInputElement).value) : null,
+                url:
+                    type === 'login'
+                        ? normalizeUrl(
+                              (
+                                  document.getElementById(
+                                      'edit-url',
+                                  ) as HTMLInputElement
+                              ).value,
+                          )
+                        : null,
                 username: encryptedFields?.username.ciphertext ?? username,
                 username_iv: encryptedFields?.username.iv,
                 username_tag: encryptedFields?.username.tag,
@@ -418,7 +519,10 @@ function updateSelectedListItem(id: number): void {
 
         if (response.ok) {
             const updated = await response.json();
-            const accounts = (window as any).accounts as Record<number, Account>;
+            const accounts = (window as any).accounts as Record<
+                number,
+                Account
+            >;
 
             accounts[serviceId] = {
                 ...accounts[serviceId],
@@ -445,17 +549,20 @@ function updateSelectedListItem(id: number): void {
         console.error(err);
         alert(t('Network error while updating account.'));
     } finally {
-        buttons.forEach(b => (b.disabled = false));
+        buttons.forEach((b) => (b.disabled = false));
     }
 };
 
 // ===== SHARE =====
 
 (window as any).shareCurrentAccount = () => {
-
     if (!currentAccount) {
-        const accounts = (window as any).accounts as Record<number, Account> | undefined;
-        const firstId = accounts ? Number(Object.keys(accounts)[0]) : Number.NaN;
+        const accounts = (window as any).accounts as
+            | Record<number, Account>
+            | undefined;
+        const firstId = accounts
+            ? Number(Object.keys(accounts)[0])
+            : Number.NaN;
 
         if (Number.isFinite(firstId)) {
             (window as any).selectAccount(firstId);
@@ -489,7 +596,7 @@ async function revokeShare(shareId: number): Promise<void> {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': csrfToken(),
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
         });
 
@@ -499,14 +606,19 @@ async function revokeShare(shareId: number): Promise<void> {
             throw new Error(error.message || t('Failed to revoke access.'));
         }
 
-        currentAccount.shared_with = (currentAccount.shared_with ?? []).filter(share => share.id !== shareId);
+        currentAccount.shared_with = (currentAccount.shared_with ?? []).filter(
+            (share) => share.id !== shareId,
+        );
         const accounts = (window as any).accounts as Record<number, Account>;
         accounts[currentAccount.id] = currentAccount;
         renderShareRecipients(currentAccount);
         (window as any).showToast?.(t('Shared access revoked.'), 'success');
     } catch (error) {
         console.error(error);
-        (window as any).showToast?.(t('Failed to revoke shared access.'), 'error');
+        (window as any).showToast?.(
+            t('Failed to revoke shared access.'),
+            'error',
+        );
     }
 }
 
@@ -530,16 +642,18 @@ function renderShareRecipients(account: Account): void {
 
     container.classList.remove('hidden');
 
-    recipients.forEach(recipient => {
+    recipients.forEach((recipient) => {
         const row = document.createElement('div');
-        row.className = 'flex items-center justify-between gap-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl px-4 py-3';
+        row.className =
+            'flex items-center justify-between gap-3 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-2xl px-4 py-3';
 
         const identity = document.createElement('div');
         identity.className = 'min-w-0';
 
         const name = document.createElement('p');
         name.className = 'font-medium truncate';
-        name.textContent = recipient.name || recipient.email || t('Unknown user');
+        name.textContent =
+            recipient.name || recipient.email || t('Unknown user');
 
         const details = document.createElement('p');
         details.className = 'text-xs text-[var(--text-secondary)] truncate';
@@ -551,16 +665,21 @@ function renderShareRecipients(account: Account): void {
         actions.className = 'flex items-center gap-2 flex-shrink-0';
 
         const status = document.createElement('span');
-        status.className = recipient.status === 'Accepted'
-            ? 'text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400'
-            : 'text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400';
+        status.className =
+            recipient.status === 'Accepted'
+                ? 'text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-400'
+                : 'text-xs px-2 py-1 rounded-full bg-yellow-500/10 text-yellow-400';
         status.textContent = t(recipient.status);
 
         const revokeButton = document.createElement('button');
         revokeButton.type = 'button';
-        revokeButton.className = 'text-xs px-3 py-1.5 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition';
+        revokeButton.className =
+            'text-xs px-3 py-1.5 rounded-xl text-red-500 hover:text-red-400 hover:bg-red-500/10 transition';
         revokeButton.textContent = t('Revoke');
-        revokeButton.addEventListener('click', () => void revokeShare(recipient.id));
+        revokeButton.addEventListener(
+            'click',
+            () => void revokeShare(recipient.id),
+        );
 
         actions.append(status, revokeButton);
         row.append(identity, actions);
@@ -621,7 +740,10 @@ function renderSecurityFromAccount(account: Account) {
                 </div>
             </div>
         `;
-    } else if (account.strength === 'very_weak' || account.strength === 'weak') {
+    } else if (
+        account.strength === 'very_weak' ||
+        account.strength === 'weak'
+    ) {
         html = `
             <div class="security-red border rounded-2xl p-5 flex gap-4">
                 <div class="w-10 h-10 flex-shrink-0 bg-red-500/20 text-red-400 rounded-2xl flex items-center justify-center">
@@ -667,16 +789,20 @@ function renderSecurityFromAccount(account: Account) {
 }
 
 (window as any).deleteAccount = async () => {
-
     if (!currentAccount) {
         return;
     }
 
-    const confirmation = currentAccount.shared_group_id && !currentAccount.shared_user_id
-        ? t('Delete this shared account for everyone? This will revoke access for all recipients.')
-        : currentAccount.shared_group_id
-            ? t('Remove this shared account from your vault? The original will remain available to its owner.')
-            : t('Are you sure you want to delete this account?');
+    const confirmation =
+        currentAccount.shared_group_id && !currentAccount.shared_user_id
+            ? t(
+                  'Delete this shared account for everyone? This will revoke access for all recipients.',
+              )
+            : currentAccount.shared_group_id
+              ? t(
+                    'Remove this shared account from your vault? The original will remain available to its owner.',
+                )
+              : t('Are you sure you want to delete this account?');
 
     if (!confirm(confirmation)) {
         return;
@@ -687,14 +813,17 @@ function renderSecurityFromAccount(account: Account) {
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': csrfToken(),
-                'Accept': 'application/json',
+                Accept: 'application/json',
             },
         });
 
         if (res.ok) {
             window.location.href = '/dashboard';
         } else {
-            (window as any).showToast?.(t('Failed to delete account.'), 'error');
+            (window as any).showToast?.(
+                t('Failed to delete account.'),
+                'error',
+            );
         }
         // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (e) {
@@ -704,7 +833,9 @@ function renderSecurityFromAccount(account: Account) {
 
 // ===== INITIALISATION =====
 function initServicePage(): void {
-    const accounts = (window as any).accounts as Record<number, Account> | undefined;
+    const accounts = (window as any).accounts as
+        | Record<number, Account>
+        | undefined;
 
     void decryptLoadedAccounts().then(() => {
         if (!accounts) {
@@ -725,7 +856,7 @@ function initServicePage(): void {
             'edit-strength-container',
             'edit-strength-bar',
             'edit-strength-text',
-            'edit-generate-btn'
+            'edit-generate-btn',
         );
     }
 }
