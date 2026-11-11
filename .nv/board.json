@@ -74,6 +74,15 @@
       "owner": "dev",
       "file": "mandates/M-007-verification-email-effective.md",
       "branch": null
+    },
+    {
+      "id": "M-008",
+      "title": "Gardes de livraison, hooks hors gouvernance et trailers reserves",
+      "status": "ready",
+      "priority": 1,
+      "owner": "secops",
+      "file": "mandates/M-008-gardes-de-livraison.md",
+      "branch": null
     }
   ],
   "human_actions": [

@@ -73,6 +73,9 @@ pour les actions qui reviennent a un humain.
 | `nv-deliver --review M-xxx` | `secops` | `.nv/reports/`, `docs/` | verdict `approved` ou `changes_requested` dans le rapport | `delivered` vers `reviewed` |
 | `nv-deliver --governance <slug>` | `architect` | `.nv/` sauf `qa/`, `docs/`, `.claude/`, `.agents/`, `.githooks/`, `AGENTS.md`, `CLAUDE.md`, `README.md`, `.gitignore` | tests des hooks Claude et git | aucun changement de statut automatique |
 
+Les gardes eux-memes (`.githooks/`, `.claude/hooks/`, `.claude/settings.json`)
+sortent de la gouvernance avec M-008 : ils changent par un mandat secops.
+
 Chaque livraison se termine par un commit `chore(nv): <sorte> <ref>` qui porte
 le trailer `NV-Deliver`, `NV-Review` ou `NV-Governance`, et une ligne dans
 `.nv/journal.md`. La politique est dans `.claude/hooks/delivery.py`, lue par

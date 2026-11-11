@@ -52,6 +52,12 @@ Architecture) ne touche que `.nv/`, `docs/`, les skills, les agents, les hooks
 et les fichiers de contrat. Les trois portent un trailer distinct et une
 ligne dans `.nv/journal.md`. La politique est un seul module,
 `.claude/hooks/delivery.py`, lu par le script et par le hook `pre-push`.
+Une session ne livre pas seule les regles qui la controlent : les gardes
+(`.githooks/`, `.claude/hooks/`, `.claude/settings.json`) sortent du
+perimetre de gouvernance et changent par un mandat porte par Securite, revu
+comme du code (M-008). La livraison `socle-livraisons`, qui introduit cette
+politique et touche elle-meme les gardes, est l'exception fondatrice ; l'avis
+Securite rendu sur la branche avant la livraison en tient lieu de revue.
 
 ## Alternatives considerees
 
