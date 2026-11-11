@@ -367,5 +367,9 @@
     "MFA successfully disabled": "MFA désactivé avec succès",
     "Code incorrect. Try again.": "Code incorrect. Réessayez.",
     "TOTP Code is incorrect. Try again.": "Le code TOTP est incorrect. Réessayez.",
-    "The sign-in request has expired or is invalid. Please try again.": "La demande de connexion a expiré ou est invalide. Veuillez réessayer."
+    "The sign-in request has expired or is invalid. Please try again.": "La demande de connexion a expiré ou est invalide. Veuillez réessayer.",
+    "Confirm this action with your login password or a current authenticator code.": "Confirmez cette action avec votre mot de passe de connexion ou un code d'authentification actuel.",
+    "Or a current authenticator code": "Ou un code d'authentification actuel",
+    "Authenticator code": "Code d'authentification",
+    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Activez d'abord l'authentification à deux facteurs : cette action doit être confirmée par un code d'authentification."
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DisableMfaRequest;
 use App\Http\Requests\MfaRequest;
 use App\Models\User;
 use App\Services\Auth\Contracts\MfaServiceInterface;
@@ -95,8 +96,9 @@ final class MfaController extends Controller
         return back()->with('error', __('TOTP Code is incorrect. Try again.'));
     }
 
-    public function disableMfa(): RedirectResponse
+    public function disableMfa(DisableMfaRequest $request): RedirectResponse
     {
+        $request->validated();
         $this->service->disableMfa($this->getUser());
 
         return redirect()->route('settings')->with('success', __('MFA successfully disabled'));

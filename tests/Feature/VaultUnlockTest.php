@@ -558,6 +558,7 @@ test('client side vault users can destructively reset their vault without a serv
     $this->actingAs($user)
         ->post(route('vault.reset.store'), [
             'confirmation' => 'RESET',
+            'current_password' => 'login-password-123!',
             'vault_key_envelope' => $newVaultEnvelope,
             'vault_recovery_envelope' => $newRecoveryEnvelope,
             'public_key' => "-----BEGIN PUBLIC KEY-----\nnew-test\n-----END PUBLIC KEY-----",
@@ -601,6 +602,7 @@ test('vault reset requires explicit confirmation', function () {
         ->from(route('vault.unlock'))
         ->post(route('vault.reset.store'), [
             'confirmation' => 'DELETE',
+            'current_password' => 'login-password-123!',
             'vault_key_envelope' => fakeVaultKeyEnvelope(),
             'vault_recovery_envelope' => fakeVaultRecoveryEnvelope(),
             'public_key' => "-----BEGIN PUBLIC KEY-----\nnew-test\n-----END PUBLIC KEY-----",

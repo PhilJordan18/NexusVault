@@ -2,11 +2,14 @@
 
 namespace App\Http\Requests;
 
+use App\Http\Requests\Concerns\ConfirmsFreshAuthentication;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 final class VaultResetRequest extends FormRequest
 {
+    use ConfirmsFreshAuthentication;
+
     /**
      * Determine if the user is authorized to make this request.
      */
@@ -23,6 +26,7 @@ final class VaultResetRequest extends FormRequest
     public function rules(): array
     {
         return [
+            ...$this->freshAuthenticationRules(),
             'confirmation' => ['required', 'string', 'in:RESET'],
             'vault_key_envelope' => ['required', 'json'],
             'vault_recovery_envelope' => ['required', 'json'],
