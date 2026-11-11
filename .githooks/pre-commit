@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # NexusVault : pas de commit sur main ou dev, pas de secret ni de fichier parasite dans l'index.
+# Compatible bash 3.2 (macOS) : pas de mapfile.
 set -euo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 branch="$(git symbolic-ref --short HEAD 2>/dev/null || echo detached)"
@@ -8,7 +9,8 @@ case "$branch" in
     echo "[nv-pre-commit] commit direct sur $branch refuse. Travailler sur nv/<role>/M-xxx-slug." >&2
     exit 1 ;;
 esac
-mapfile -t staged < <(git diff --cached --name-only --diff-filter=ACMR)
+staged=()
+while IFS= read -r file; do staged+=("$file"); done < <(git diff --cached --name-only --diff-filter=ACMR)
 [ "${#staged[@]}" -eq 0 ] && exit 0
 for file in "${staged[@]}"; do
   case "$file" in
