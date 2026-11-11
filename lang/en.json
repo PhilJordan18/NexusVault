@@ -359,5 +359,7 @@
     "passkey_count": "{0} passkeys|{1} passkey|[2,*] passkeys",
     "pending_share_count": "{0} pending|{1} pending|[2,*] pending",
     "service_count": "{0} services|{1} service|[2,*] services",
-    "© :year NexusVault. Built with love and strong cryptography.": "© :year NexusVault. Built with love and strong cryptography."
+    "© :year NexusVault. Built with love and strong cryptography.": "© :year NexusVault. Built with love and strong cryptography.",
+    "Skip to main content": "Skip to main content",
+    "Main navigation": "Main navigation"
 }

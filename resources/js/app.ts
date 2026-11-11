@@ -1,11 +1,24 @@
-import { createInertiaApp } from '@inertiajs/vue3';
+import { createInertiaApp, router } from '@inertiajs/vue3';
 
 const appName = 'NexusVault';
+
+function syncDocumentLocale(locale: unknown): void {
+    if (typeof locale === 'string' && locale !== '') {
+        document.documentElement.lang = locale;
+    }
+}
 
 function bootInertiaApp(): void {
     if (!document.querySelector('[data-page]')) {
         return;
     }
+
+    router.on('navigate', (event) => {
+        syncDocumentLocale(event.detail.page.props.locale);
+    });
+    router.on('success', (event) => {
+        syncDocumentLocale(event.detail.page.props.locale);
+    });
 
     void createInertiaApp({
         title: (title) => (title ? `${title} - ${appName}` : appName),

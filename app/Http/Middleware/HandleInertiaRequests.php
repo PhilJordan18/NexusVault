@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Lang;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -41,6 +42,19 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
+            'locale' => app()->getLocale(),
+            'locales' => config('app.supported_locales', ['en', 'fr']),
+            'translations' => fn (): array => $this->translations(app()->getLocale()),
         ];
+    }
+
+    /**
+     * The JSON translation catalog of lang/{locale}.json, exposed to Vue pages.
+     *
+     * @return array<string, string>
+     */
+    private function translations(string $locale): array
+    {
+        return Lang::getLoader()->load($locale, '*', '*');
     }
 }
