@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\DeleteAccountRequest;
 use App\Http\Requests\UpdatePasswordRequest;
 use App\Http\Requests\UpdatePfpRequest;
 use App\Http\Requests\UpdateThemeRequest;
@@ -78,10 +79,20 @@ final class SettingsController extends Controller
         ]);
     }
 
-    public function destroy(): RedirectResponse
+    /**
+     * The session is closed before the row is deleted: logging out a deleted model would
+     * cycle its remember token and silently re-insert the account.
+     */
+    public function destroy(DeleteAccountRequest $request): RedirectResponse
     {
-        $this->accountDeletionService->delete(auth()->user());
+        $request->validated();
+        $user = $request->user();
+
         auth()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        $this->accountDeletionService->delete($user);
 
         return redirect()->route('login')->with('success', 'Your account has been deleted.');
     }

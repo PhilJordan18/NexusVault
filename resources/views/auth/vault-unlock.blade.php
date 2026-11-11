@@ -93,6 +93,8 @@
                                autocomplete="new-password">
                     </div>
 
+                    @include('partials.fresh-authentication', ['user' => auth()->user()])
+
                     <div>
                         <label class="mb-1.5 block text-sm text-[var(--text-secondary)]">{{ __('Type RESET to confirm') }}</label>
                         <input type="text" name="confirmation"

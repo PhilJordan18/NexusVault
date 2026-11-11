@@ -367,5 +367,9 @@
     "MFA successfully disabled": "MFA successfully disabled",
     "Code incorrect. Try again.": "Code incorrect. Try again.",
     "TOTP Code is incorrect. Try again.": "TOTP Code is incorrect. Try again.",
-    "The sign-in request has expired or is invalid. Please try again.": "The sign-in request has expired or is invalid. Please try again."
+    "The sign-in request has expired or is invalid. Please try again.": "The sign-in request has expired or is invalid. Please try again.",
+    "Confirm this action with your login password or a current authenticator code.": "Confirm this action with your login password or a current authenticator code.",
+    "Or a current authenticator code": "Or a current authenticator code",
+    "Authenticator code": "Authenticator code",
+    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Enable two-factor authentication first: this action must be confirmed with an authenticator code."
 }

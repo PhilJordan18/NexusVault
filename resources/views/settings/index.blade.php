@@ -56,9 +56,12 @@
                         </div>
 
                         @if(auth()->user()->mfa_enabled)
-                            <form method="POST" action="{{ route('mfa.disable') }}">
+                            <form method="POST" action="{{ route('mfa.disable') }}" class="flex flex-col items-stretch gap-2 sm:items-end">
                                 @csrf
-                                <button type="submit" class="inline-flex items-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/10 hover:text-red-400">
+                                <input type="text" name="totp_code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" autocomplete="one-time-code"
+                                       class="w-full rounded-2xl border border-[var(--border-color)] bg-[var(--bg-input)] px-4 py-2 text-center font-mono text-sm tracking-widest focus:border-red-500 sm:w-40"
+                                       placeholder="000000" aria-label="{{ __('Authenticator code') }}" required>
+                                <button type="submit" class="inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/10 hover:text-red-400">
                                     <i class="fa-solid fa-ban"></i>
                                     <span>{{ __('Disable MFA') }}</span>
                                 </button>
@@ -284,10 +287,11 @@
                         </div>
                     </div>
 
-                    <form method="POST" action="{{ route('settings.account.destroy') }}"
+                    <form method="POST" action="{{ route('settings.account.destroy') }}" class="space-y-3"
                           onsubmit="return confirm({{ Illuminate\Support\Js::from(__('Are you sure? This action cannot be undone.')) }})">
                         @csrf
                         @method('DELETE')
+                        @include('partials.fresh-authentication', ['user' => auth()->user()])
                         <button type="submit" class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500/10 px-5 py-3 text-sm font-medium text-red-500 transition hover:bg-red-500/20 hover:text-red-400">
                             <i class="fa-solid fa-trash"></i>
                             <span>{{ __('Delete my account') }}</span>
