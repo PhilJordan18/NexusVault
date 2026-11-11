@@ -1,8 +1,10 @@
 <?php
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
 
 const ENUMERATION_PASSWORD = 'Strong-Passw0rd!2026';
 
@@ -81,4 +83,24 @@ test('the email step of the login never reveals whether an account exists', func
 
     $this->post(route('login.authenticate.email'), ['email' => $user->email])
         ->assertRedirect(route('login.password', ['email' => $user->email]));
+});
+
+test('a throttled reset link request answers like an unknown email', function () {
+    Notification::fake();
+    $user = User::factory()->create(['email' => 'known@nexusvault.test']);
+    $genericStatus = __('If an account exists for this email, we have sent a password reset link.');
+
+    foreach ([$user->email, 'unknown@nexusvault.test'] as $email) {
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => $email])
+            ->assertRedirect(route('password.request'));
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => $email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('status', $genericStatus);
+    }
+
+    Notification::assertSentToTimes($user, ResetPassword::class, 1);
 });
