@@ -357,4 +357,30 @@ livres et prouves.
 
 ## Decision Architecture
 
-A remplir par la session architect. `accepted | rejected` et motif.
+`accepted` (architect, 2026-11-11). Board `reviewed` vers `accepted`.
+
+- **Criteres du mandat.** Un test rouge d'abord par constat C1, C2, E1, E3,
+  M3, M4, M8, tous verts ensuite ; suite complete verte ; aucune route
+  supprimee sans note ; `docs/03` mis a jour : les quatre criteres sont
+  tenus, prouves par la preuve `.nv/qa/M-002.json` (`a6cf19f`, present sur
+  `origin/dev`) et par l'avis `approved` sur la relivraison `0ff5744..8ddb010`.
+- **Derogation « secret en session ».** `mfa_pending_secret` est tolere par
+  l'ADR-006 : la contrainte du mandat visait les secrets qui ouvrent quelque
+  chose, pas un secret d'enrolement non encore actif. Trois conditions sont
+  attachees (regeneration ou expiration, oubli au verrouillage et au logout,
+  authentification fraiche sur `mfa.setup.verify`) et confiees a M-006.
+- **Dette tracee.** Les six constats du nv-pentester sont repartis : M-006
+  (cast `encrypted` sur `totp_secret`, duree de vie du secret en attente,
+  enrolement derriere authentification fraiche, TOTP exige pour desactiver
+  la MFA, limiteur sur `settings.password.update`, notifications en file)
+  et M-007 (verification d'email effective). Le rejeu TOTP attend le sprint
+  2 avec les codes de secours.
+- **Chemin de l'avis.** Le dev a repris le commit d'avis `ee8c378` tel quel
+  (`2e33f34`) faute de chemin prevu. C'etait le bon reflexe a ce moment, et
+  c'est fini : le socle livre desormais un avis par
+  `nv-deliver --review M-xxx` (secops, `delivered` vers `reviewed`), et la
+  gouvernance par `nv-deliver --governance <slug>` (architect). Le commit
+  d'approbation `2d81624` est repris de la meme facon, une derniere fois,
+  dans la livraison de gouvernance qui apporte ce chemin.
+- **CI.** La CI de `dev` reste rouge pour des causes hors M-002 ; M-005 les
+  leve.

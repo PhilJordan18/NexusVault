@@ -25,7 +25,7 @@
       "id": "M-002",
       "title": "Sprint 0 securite : contournements MFA et re-authentification",
       "owner": "dev",
-      "status": "reviewed",
+      "status": "accepted",
       "priority": 1,
       "file": "mandates/M-002-sprint-0-securite.md",
       "branch": "claude/autocompact-300k-bu83lf"
@@ -38,6 +38,42 @@
       "priority": 2,
       "file": "mandates/M-003-plan-migration-vue.md",
       "branch": "claude/eloquent-darwin-jd6pqq"
+    },
+    {
+      "id": "M-004",
+      "title": "Mise a jour des dependances et composer audit bloquant",
+      "status": "draft",
+      "priority": 2,
+      "owner": "dev",
+      "file": "mandates/M-004-dependances-et-composer-audit.md",
+      "branch": null
+    },
+    {
+      "id": "M-005",
+      "title": "CI de dev verte, Wayfinder dans ci:check et allowlist gitleaks nominative",
+      "status": "in_progress",
+      "priority": 1,
+      "owner": "secops",
+      "file": "mandates/M-005-ci-wayfinder-gitleaks.md",
+      "branch": "nv/secops/M-005-ci-wayfinder-gitleaks"
+    },
+    {
+      "id": "M-006",
+      "title": "Sprint 1 securite, dettes tracees par la revue de M-002",
+      "status": "draft",
+      "priority": 1,
+      "owner": "dev",
+      "file": "mandates/M-006-sprint-1-securite-dettes-m-002.md",
+      "branch": null
+    },
+    {
+      "id": "M-007",
+      "title": "Verification d'email effective avant usage du coffre",
+      "status": "draft",
+      "priority": 2,
+      "owner": "dev",
+      "file": "mandates/M-007-verification-email-effective.md",
+      "branch": null
     }
   ],
   "human_actions": [
