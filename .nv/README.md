@@ -32,7 +32,13 @@ sur qui a demande quoi, qui l'a livre, et sur quelles preuves.
 | Developpeur | `dev` | Execution des mandats, tests, livraison via `nv-deliver` | Modifier CI, hooks, rulesets |
 
 Le role est annonce au lancement de la session par la variable d'environnement
-`NV_ROLE`. Sans variable, les gardes appliquent le role `dev`, le plus restreint.
+`NV_ROLE`, ou par `.nv/bin/nv-role <role>` dans une session cloud de l'app
+Claude, ou la variable ne peut pas etre posee. Sans declaration, les gardes
+appliquent le role `dev`, le plus restreint.
+
+Dans une session cloud, la branche attribuee par la plateforme, `claude/...`
+ou `codex/...`, remplace la branche `nv/<role>/M-xxx-slug`. `nv-deliver`
+l'accepte. Un hook SessionStart lance `nv-setup` a chaque demarrage.
 
 ## Cycle d'un mandat
 

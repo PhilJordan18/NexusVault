@@ -25,6 +25,10 @@ git switch -c nv/dev/M-xxx-slug origin/dev
 Si `origin/dev` n'existe pas encore, partir de `origin/main` et le dire dans
 le rapport.
 
+Dans une session cloud de l'app Claude, rester sur la branche attribuee par
+la plateforme et la repartir de `origin/dev` si elle n'a pas encore de commit.
+Declarer le role avec `.nv/bin/nv-role dev` si ce n'est pas deja fait.
+
 ## Boucle de travail
 
 Charger `nv-implementing`. Un critere d'acceptation a la fois : test rouge,

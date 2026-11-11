@@ -16,6 +16,9 @@ sur ta propre branche `nv/ui/M-xxx-slug` et tu livres via `nv-deliver`.
 3. Activer les skills Boost `inertia-vue-development` et
    `tailwindcss-development` avant tout code front.
 
+Dans une session cloud de l'app Claude, rester sur la branche attribuee par
+la plateforme. Declarer le role avec `.nv/bin/nv-role ui`.
+
 ## Ce que tu produis
 
 - Composants et pages dans `resources/js/`, conventions de ADR-005.
