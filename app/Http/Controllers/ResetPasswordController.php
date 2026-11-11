@@ -24,6 +24,10 @@ final class ResetPasswordController extends Controller
         ]);
     }
 
+    /**
+     * Every failure maps to the same message: an unknown email and a bad token must be
+     * indistinguishable, otherwise the form confirms which accounts exist.
+     */
     public function reset(ResetPasswordRequest $request): RedirectResponse
     {
         $status = Password::reset(
@@ -34,8 +38,10 @@ final class ResetPasswordController extends Controller
             }
         );
 
-        return $status === Password::PASSWORD_RESET
-            ? redirect()->route('login')->with('success', 'Your password has been reset successfully. Please log in.')
-            : back()->withErrors(['email' => __($status)]);
+        if ($status === Password::PASSWORD_RESET) {
+            return redirect()->route('login')->with('success', __('Your password has been reset successfully. Please log in.'));
+        }
+
+        return back()->withErrors(['email' => __('passwords.token')]);
     }
 }

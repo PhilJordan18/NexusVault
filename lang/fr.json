@@ -371,5 +371,6 @@
     "Confirm this action with your login password or a current authenticator code.": "Confirmez cette action avec votre mot de passe de connexion ou un code d'authentification actuel.",
     "Or a current authenticator code": "Ou un code d'authentification actuel",
     "Authenticator code": "Code d'authentification",
-    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Activez d'abord l'authentification à deux facteurs : cette action doit être confirmée par un code d'authentification."
+    "Enable two-factor authentication first: this action must be confirmed with an authenticator code.": "Activez d'abord l'authentification à deux facteurs : cette action doit être confirmée par un code d'authentification.",
+    "Your password has been reset successfully. Please log in.": "Votre mot de passe a été réinitialisé avec succès. Veuillez vous connecter."
 }
