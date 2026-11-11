@@ -203,24 +203,32 @@ test feature.
 
 ## CI
 
-Workflows presents:
+Un seul workflow, `.github/workflows/ci.yml`, avec un seul statut requis par
+les rulesets GitHub : le job `ci`. Il se declenche sur push vers `dev` et les
+branches de travail (`nv/**`, `claude/**`, `codex/**`) et sur PR vers `dev` et
+`main`.
 
 ```text
-.github/workflows/lint.yml
-.github/workflows/tests.yml
+checks (php 8.3 et 8.5)   composer run ci:check, npm run build,
+                          couverture de app/Services/{Auth,Security,Vault} (8.5)
+security                  composer audit, npm audit --omit=dev --audit-level=high,
+                          gitleaks, tests des hooks .githooks et .claude/hooks
+ci                        porte : vert seulement si checks et security le sont
 ```
 
-Objectif CI ideal:
+Regles du workflow : `permissions: contents: read`, aucune action tierce sans
+SHA epingle, aucun secret du depot. Le preset securite de Pest
+(`tests/Unit/ArchitectureSecurityTest.php`) interdit md5, sha1, eval, exec,
+unserialize, etc. ; seul `PasswordService` est exclu pour le SHA-1 du protocole
+k-anonymat de Have I Been Pwned.
 
-```bash
-composer install --no-interaction --prefer-dist
-npm ci
-composer run ci:check
-npm run build
-```
+`composer audit` avertit sans bloquer tant que le lock n'est pas mis a jour,
+voir le seuil dans `.nv/reports/M-001-livraison.md`. `npm audit` bloque des le
+niveau high sur les dependances de production. Dependabot ouvre des PR
+hebdomadaires vers `dev` pour composer, npm et github-actions.
 
-Attention: si le build genere des assets ignores localement, CI doit simplement
-verifier qu'il compile, pas necessairement committer `public/build`.
+En local, `composer run ci:check` puis `npm run build` reproduisent `checks` ;
+c'est aussi ce que `.nv/bin/nv-deliver` exige avant de pousser vers `dev`.
 
 ## Strategie de qualite pour chaque PR
 

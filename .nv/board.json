@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "updated": "2026-11-11",
+  "updated": "2026-11-10",
   "statuses": [
     "draft",
     "ready",
@@ -16,10 +16,10 @@
       "id": "M-001",
       "title": "Garde-fous GitHub et CI unique avec gates securite",
       "owner": "secops",
-      "status": "ready",
+      "status": "in_progress",
       "priority": 1,
       "file": "mandates/M-001-ci-et-garde-fous.md",
-      "branch": null
+      "branch": "nv/secops/M-001-ci-et-garde-fous"
     },
     {
       "id": "M-002",

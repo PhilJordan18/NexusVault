@@ -1,0 +1,137 @@
+# CI unique de NexusVault (mandat M-001).
+#
+# Le job `ci` est le seul statut requis par les rulesets GitHub nv-main et
+# nv-dev : il agrege `checks` (style, types, tests, build, couverture des
+# services critiques) et `security` (audits de dependances, scan de secrets,
+# tests des hooks). Permissions en lecture seule, aucun secret du depot,
+# chaque action tierce est epinglee par SHA (version en commentaire).
+name: ci
+
+on:
+  push:
+    branches:
+      - dev
+      - 'nv/**'
+      - 'claude/**'
+      - 'codex/**'
+  pull_request:
+    branches:
+      - dev
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: checks (php ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 8.3 est le minimum de composer.json, 8.5 la cible de production.
+        php: ['8.3', '8.5']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          coverage: ${{ matrix.php == '8.5' && 'pcov' || 'none' }}
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress --optimize-autoloader
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Prepare test environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate --no-interaction
+
+      - name: Style, types and tests (composer run ci:check)
+        run: composer run ci:check
+
+      - name: Build assets
+        run: npm run build
+
+      - name: Coverage of app/Services/{Auth,Security,Vault}
+        if: matrix.php == '8.5'
+        run: php artisan test --compact --coverage
+
+  security:
+    name: security
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full history for secret scanning)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # 2.40.0
+        with:
+          php-version: '8.5'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      - name: composer audit (production dependencies)
+        # Seuil documente dans .nv/reports/M-001-livraison.md : le lock de
+        # novembre 2025 porte des avis que seul un mandat de mise a jour des
+        # dependances peut lever. D'ici la, l'etape avertit sans bloquer.
+        # Pour rendre l'etape bloquante : retirer le `|| { ...; }`.
+        run: |
+          composer audit --locked --no-dev --abandoned=report --format=summary || {
+            echo "::warning title=composer audit::des avis de securite touchent les dependances de production, voir le seuil dans .nv/reports/M-001-livraison.md"
+          }
+
+      - name: npm audit (production dependencies, high and above)
+        run: npm audit --omit=dev --audit-level=high
+
+      - name: Secret scanning (gitleaks)
+        uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_COMMENTS: 'false'
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: 'false'
+
+      - name: Hooks tests (.claude/hooks and .githooks)
+        run: |
+          python3 -m unittest discover -s .claude/hooks/tests
+          bash .githooks/tests/test_githooks.sh
+
+  ci:
+    name: ci
+    needs: [checks, security]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every required job succeeded
+        env:
+          CHECKS: ${{ needs.checks.result }}
+          SECURITY: ${{ needs.security.result }}
+        run: |
+          echo "checks=$CHECKS security=$SECURITY"
+          test "$CHECKS" = "success" && test "$SECURITY" = "success"
