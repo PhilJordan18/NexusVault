@@ -366,5 +366,6 @@
     "MFA successfully enabled": "MFA activé avec succès",
     "MFA successfully disabled": "MFA désactivé avec succès",
     "Code incorrect. Try again.": "Code incorrect. Réessayez.",
-    "TOTP Code is incorrect. Try again.": "Le code TOTP est incorrect. Réessayez."
+    "TOTP Code is incorrect. Try again.": "Le code TOTP est incorrect. Réessayez.",
+    "The sign-in request has expired or is invalid. Please try again.": "La demande de connexion a expiré ou est invalide. Veuillez réessayer."
 }
