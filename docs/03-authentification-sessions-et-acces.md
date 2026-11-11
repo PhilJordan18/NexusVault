@@ -219,6 +219,13 @@ form request `ConfirmsFreshAuthentication` renvoie une seule erreur, sur
 `current_password`, quel que soit le facteur en echec. Un compte OAuth sans
 MFA ne dispose d'aucun facteur: il doit activer la MFA avant ces actions.
 
+Un code TOTP n'a que six chiffres: sans limite, une session volee les
+enumere en quelques minutes. `DELETE /settings/account` et
+`POST /mfa/disable` portent donc le limiteur nomme `fresh-authentication`
+(`AppServiceProvider`): six essais par minute, comptes par utilisateur et non
+par adresse IP, partages entre les deux routes. `POST /vault/reset` garde son
+`throttle:3,1`.
+
 La suppression de compte ferme la session avant de supprimer la ligne: un
 `Auth::logout` sur un modele deja supprime recyclerait le remember token et
 reinsererait le compte.
@@ -399,6 +406,12 @@ etre accompagne d'un nettoyage navigateur pour etre ideal. Voir `11-roadmap`.
 validation et renvoie le meme message (`passwords.token`) pour un email inconnu
 et pour un jeton invalide. Un formulaire qui repond differemment confirmerait
 quels comptes existent.
+
+`POST /forgot-password` renvoie toujours le meme message generique, que le
+lien soit envoye, que l'email soit inconnu ou que le broker refuse un nouvel
+envoi sous son delai de 60 secondes (`RESET_THROTTLED`). Le statut du broker
+n'est jamais expose: une erreur "Please wait before retrying." ne
+s'afficherait que pour un compte existant.
 
 Limite connue: `/register/validate` et `/register` repondent encore
 `email already taken` pour un email existant. Lever cette enumeration demande
