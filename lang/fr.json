@@ -361,5 +361,10 @@
     "service_count": "{0} services|{1} service|[2,*] services",
     "© :year NexusVault. Built with love and strong cryptography.": "© :year NexusVault. Conçu avec soin et une cryptographie robuste.",
     "Skip to main content": "Aller au contenu principal",
-    "Main navigation": "Navigation principale"
+    "Main navigation": "Navigation principale",
+    "Two-factor authentication is already enabled.": "L'authentification à deux facteurs est déjà activée.",
+    "MFA successfully enabled": "MFA activé avec succès",
+    "MFA successfully disabled": "MFA désactivé avec succès",
+    "Code incorrect. Try again.": "Code incorrect. Réessayez.",
+    "TOTP Code is incorrect. Try again.": "Le code TOTP est incorrect. Réessayez."
 }

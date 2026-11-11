@@ -14,15 +14,15 @@ test('mfa setup renders a same origin qr code image route', function () {
         ->assertSee(route('mfa.qr-code', [], false), false)
         ->assertDontSee('QR Code failed to load');
 
-    expect($user->refresh()->totp_secret)->not->toBeNull();
+    expect(session('mfa_pending_secret'))->not->toBeEmpty()
+        ->and($user->refresh()->totp_secret)->toBeNull();
 });
 
 test('mfa qr code route returns an image response', function () {
-    $user = User::factory()->create([
-        'totp_secret' => '2UMPTX247VZPRA4YGFUPMCMF6UHRGW5O',
-    ]);
+    $user = User::factory()->create();
 
     $response = $this->actingAs($user)
+        ->withSession(['mfa_pending_secret' => '2UMPTX247VZPRA4YGFUPMCMF6UHRGW5O'])
         ->get(route('mfa.qr-code'))
         ->assertOk()
         ->assertHeader('X-Content-Type-Options', 'nosniff');
@@ -46,16 +46,16 @@ test('mfa qr service exposes raw svg output as svg image content', function () {
 
     $user = User::factory()->make([
         'email' => 'oauth-user@nexusvault.test',
-        'totp_secret' => '2UMPTX247VZPRA4YGFUPMCMF6UHRGW5O',
     ]);
+    $pendingSecret = '2UMPTX247VZPRA4YGFUPMCMF6UHRGW5O';
 
     $mfaService = new MfaService(new Google2FAQRCode($rawSvgQrService));
-    $qrImage = $mfaService->getQrCodeImage($user);
+    $qrImage = $mfaService->getQrCodeImage($user, $pendingSecret);
 
     expect($qrImage)->toBe([
         'mime_type' => 'image/svg+xml',
         'contents' => '<svg xmlns="http://www.w3.org/2000/svg"></svg>',
     ]);
 
-    $this->assertStringStartsWith('data:image/svg+xml;base64,', $mfaService->getQrCodeUrl($user));
+    $this->assertStringStartsWith('data:image/svg+xml;base64,', $mfaService->getQrCodeUrl($user, $pendingSecret));
 });
