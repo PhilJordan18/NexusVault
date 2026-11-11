@@ -144,6 +144,38 @@ La preuve machine est dans `.nv/qa/M-002.json`.
    vide a chaque requete (driver `array`), le cout reste celui d'un
    `Hash::make` + `Hash::check`, toujours uniforme.
 
+## Reponse aux changements demandes
+
+Branche `claude/autocompact-300k-bu83lf` repartie de `dev` a `0ff5744`. Le
+mandat est repasse `in_progress` pour permettre la relivraison.
+
+1. **Brute force TOTP sur les actions destructrices** (`3b568ba`). Limiteur
+   nomme `fresh-authentication` dans `AppServiceProvider` : 6 essais par
+   minute, cle `fresh-authentication:<id utilisateur>` (repli sur l'IP sans
+   utilisateur), un seul budget partage par `mfa.disable` et
+   `settings.account.destroy`. Test ecrit rouge d'abord :
+   `tests/Feature/FreshAuthenticationThrottleTest.php`. Avant correctif, le
+   septieme essai rendait 302 sur les deux routes ; apres, 429. Deux tests
+   complementaires prouvent que le budget est partage entre les deux routes et
+   compte par utilisateur, pas par adresse.
+2. **Oracle d'enumeration sur `/forgot-password`** (`05f3346`).
+   `ForgotPasswordController::sendResetLinkEmail()` ignore desormais le
+   statut du broker et renvoie toujours le message generique. Test ecrit rouge
+   d'abord dans `tests/Feature/AccountEnumerationTest.php` : deux envois pour
+   un compte existant puis pour un inconnu, les secondes reponses sont
+   identiques (meme redirection, aucune erreur, meme statut) et un seul email
+   part.
+3. **Docs.** `docs/03` decrit le limiteur et la reponse uniforme de
+   `/forgot-password`.
+
+Decision de socle : le commit d'avis secops `ee8c378` a ete repris tel quel
+(`2e33f34`) en tete de cette relivraison, pour que le rapport sur `dev` porte
+l'avis auquel ces correctifs repondent. Si Architecture fixe un autre chemin
+pour les avis, ce choix est a revoir.
+
+Non traites, hors demande : `settings.password.update` sans throttle (sprint 1
+selon l'avis) et les constats de dette tracee pour Architecture.
+
 ## Avis Securite
 
 `review: changes_requested` (secops, 2026-11-11, plage `94631ac..0ff5744`,
